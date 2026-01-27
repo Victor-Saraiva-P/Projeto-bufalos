@@ -3,3 +3,4 @@ rembg[cpu]
 numpy<=2.3.0
 onnxruntime
 pillow
+openpyxl
