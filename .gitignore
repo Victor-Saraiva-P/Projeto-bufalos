@@ -196,7 +196,7 @@ pyrightconfig.json
 
 # Custom ignores
 data/Original
-data/Mascara
+data/Ground-of-truth
 data/Indice.xlsx
 generated/
 rembg
