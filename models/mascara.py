@@ -14,7 +14,6 @@ class Mascara:
 
     @staticmethod
     def calcular_area(image_path: str):
-        print("Calculando area")
         with Image.open(image_path) as img:
             img_gray = img.convert("L")
             arr = np.array(img_gray)
