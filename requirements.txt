@@ -1,7 +1,7 @@
 pandas
-rembg[cpu]
+rembg[gpu]
 numpy
-onnxruntime
+onnxruntime-gpu
 pillow
 openpyxl
 matplotlib
