@@ -1,16 +1,27 @@
 import numpy as np
 from PIL import Image
 
+from path_utils import caminho_ground_truth_output, caminho_segmentada_modelo
+
 
 class Mascara:
     modelo: str
     area: int
     perimetro: int
 
-    def __init__(self, modelo: str, image_path: str):
+    def __init__(self, modelo: str, nome_arquivo: str):
         self.modelo = modelo
+        image_path = self.obter_caminho_mascara(modelo, nome_arquivo)
+
         self.area = self.calcular_area(image_path)
         self.perimetro = self.calcular_perimetro(image_path)
+
+    @staticmethod
+    def obter_caminho_mascara(modelo: str, nome_arquivo: str) -> str:
+        if modelo == "ground-of-truth":
+            return caminho_ground_truth_output(nome_arquivo)
+
+        return caminho_segmentada_modelo(modelo, nome_arquivo)
 
     @staticmethod
     def calcular_area(image_path: str):
