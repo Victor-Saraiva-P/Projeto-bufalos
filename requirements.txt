@@ -1,6 +1,6 @@
-pandas~=3.0.0
+pandas
 rembg[cpu]
-numpy<=2.3.0
+numpy
 onnxruntime
 pillow
 openpyxl
