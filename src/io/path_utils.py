@@ -1,6 +1,6 @@
 import os
 
-from config import (
+from src.config import (
     GROUND_OF_TRUTH,
     GROUND_OF_TRUTH_OUTPUT,
     ORIGINAL_IMAGE_TYPE,

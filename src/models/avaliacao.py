@@ -1,5 +1,5 @@
-from config import MODELOS_PARA_AVALIACAO
-from models.mascara import Mascara
+from src.config import MODELOS_PARA_AVALIACAO
+from src.models.mascara import Mascara
 
 
 class Avaliacao:

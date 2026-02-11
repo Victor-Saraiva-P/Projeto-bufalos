@@ -1,8 +1,8 @@
 import os
 
 
-# Diretorio base do projeto (diretorio deste arquivo)
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Diretorio base do projeto (diretorio pai de src)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Diretorios mais gerais
 DATA_DIR = os.path.join(BASE_DIR, "data")

@@ -2,8 +2,8 @@ from decimal import Decimal
 
 import pandas as pd
 
-from config import FAZENDA_COL, INDICE_PATH, NOME_COL, PESO_COL
-from models.indice_linha import IndiceLinha
+from src.config import FAZENDA_COL, INDICE_PATH, NOME_COL, PESO_COL
+from src.models.indice_linha import IndiceLinha
 
 
 def carregar_indice_excel() -> list[IndiceLinha]:

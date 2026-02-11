@@ -151,9 +151,16 @@ projeto-bufalos/
   data/                 # Dados de entrada
   docs/                 # Documentacao adicional
   generated/            # Saidas geradas (mascaras segmentadas)
-  models/               # Classes Python do projeto
+  notebooks/            # Notebooks do projeto
+    script.ipynb        # Notebook principal de segmentacao
+    avaliar.ipynb       # Notebook de avaliacao
+  src/                  # Codigo Python do projeto
+    config.py
+    io/
+    logs/
+    models/
+    runtime/
   rembg/                # Repositorio do rembg clonado (referencia)
-  script.ipynb          # Notebook principal
   requirements.txt      # Dependencias Python
 ```
 

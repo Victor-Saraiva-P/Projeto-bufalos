@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 
-from path_utils import caminho_ground_truth_output, caminho_segmentada_modelo
+from src.io.path_utils import caminho_ground_truth_output, caminho_segmentada_modelo
 
 
 class Mascara:
