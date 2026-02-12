@@ -1,21 +1,33 @@
 import numpy as np
-import cv2
 from PIL import Image
 
 from src.io.path_utils import caminho_ground_truth_output, caminho_segmentada_modelo
+from src.metrics.area import Area
+from src.metrics.perimetro import Perimetro
 
 
 class Mascara:
     modelo: str
-    area: int
-    perimetro: float
+    nome_arquivo: str
+    mask_array: np.ndarray
+    area: int | None
+    perimetro: float | None
 
     def __init__(self, modelo: str, nome_arquivo: str):
         self.modelo = modelo
-        image_path = self.obter_caminho_mascara(modelo, nome_arquivo)
+        self.nome_arquivo = nome_arquivo
 
-        self.area = self.calcular_area(image_path)
-        self.perimetro = self.calcular_perimetro(image_path)
+        # Inicializar métricas como None
+        self.area = None
+        self.perimetro = None
+
+        # APENAS carregar máscara (SEM calcular métricas)
+        image_path = self.obter_caminho_mascara(modelo, nome_arquivo)
+        self.mask_array = self._carregar_mascara_binaria(image_path)
+
+    def calcular_metricas(self) -> None:
+        self.area = Area.calcular(self.mask_array)
+        self.perimetro = Perimetro.calcular(self.mask_array)
 
     @staticmethod
     def obter_caminho_mascara(modelo: str, nome_arquivo: str) -> str:
@@ -25,62 +37,7 @@ class Mascara:
         return caminho_segmentada_modelo(modelo, nome_arquivo)
 
     @staticmethod
-    def calcular_area(image_path: str) -> int:
-        """
-        Calcula área da máscara (número de pixels brancos).
-
-        Args:
-            image_path: Caminho para imagem PNG binária
-
-        Returns:
-            Área em pixels
-        """
-        with Image.open(image_path) as img:
-            img_gray = img.convert("L")
-            arr = np.array(img_gray)
-
-        area = int((arr == 255).sum())
-        return area
-
-    @staticmethod
-    def calcular_perimetro(image_path: str) -> float:
-        """
-        Calcula perímetro usando distância Euclidiana (método CORRETO).
-
-        Usa cv2.findContours + cv2.arcLength para calcular o perímetro real.
-        Diagonais contam como √2 ≈ 1.414 (matematicamente correto).
-
-        JUSTIFICATIVA (Notebook 03 - análise em 387 imagens, 4 métodos):
-          • Método Manhattan superestima perímetro em ~20%
-          • Erro amplifica para ~44% na estimativa de peso (Fórmula de Schaeffer)
-          • Euclidiano simula corretamente medição com fita métrica
-          • Erro é INVARIANTE ao método de binarização
-
-        Análise completa em:
-          notebooks/03_analise_perimetro_manhattan_vs_euclidiano.ipynb
-
-        Args:
-            image_path: Caminho para imagem PNG binária
-
-        Returns:
-            Perímetro em pixels (distância Euclidiana)
-        """
+    def _carregar_mascara_binaria(image_path: str) -> np.ndarray:
         with Image.open(image_path) as img:
             arr = np.array(img.convert("L"))
-
-        binary_mask = (arr > 0).astype(np.uint8)
-
-        # Encontra contornos externos
-        contours, _ = cv2.findContours(
-            binary_mask,
-            cv2.RETR_EXTERNAL,  # Apenas contorno externo
-            cv2.CHAIN_APPROX_NONE,  # Todos os pontos (sem aproximação)
-        )
-
-        if len(contours) == 0:
-            return 0.0
-
-        # Pega o maior contorno (se houver múltiplos, soma todos)
-        perimetro_total = sum(cv2.arcLength(cnt, closed=True) for cnt in contours)
-
-        return float(perimetro_total)
+        return (arr > 0).astype(np.uint8)
