@@ -65,7 +65,7 @@ METRICS_CACHE_PATH = os.path.join(EVALUATION_DIR, "metrics_cache.csv")
 
 # Pesos para ranking (devem somar 1.0)
 RANKING_WEIGHTS = {
-    "iou": 0.4,  # 40% - Sobreposicao (Intersection over Union)
-    "area_diff_rel": 0.3,  # 30% - Diferenca de area
-    "perimetro_diff_rel": 0.3,  # 30% - Diferenca de perimetro
+    "iou": 0.34,  # 40% - Sobreposicao (Intersection over Union)
+    "area_similarity": 0.33,  # 30% - Similaridade de area
+    "perimetro_similarity": 0.33,  # 30% - Similaridade de perimetro
 }

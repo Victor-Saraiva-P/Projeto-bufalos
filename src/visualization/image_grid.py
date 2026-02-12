@@ -31,7 +31,7 @@ def plot_image_grid(
         df_subset: DataFrame com top/bottom resultados (define quais imagens mostrar)
         df_all: DataFrame completo com TODAS as métricas
         title: Título do plot
-        metric_name: Nome da métrica principal (iou, area_diff_rel, etc)
+        metric_name: Nome da métrica principal (iou, area_similarity, etc)
         max_images: Máximo de imagens a mostrar
 
     Returns:
@@ -115,15 +115,15 @@ def plot_image_grid(
                     def format_metric(name, value):
                         if name == "iou":
                             return f"IoU: {value:.3f}"
-                        elif name == "area_diff_rel":
+                        elif name == "area_similarity":
                             return f"Área: {value * 100:.1f}%"
-                        elif name == "perimetro_diff_rel":
+                        elif name == "perimetro_similarity":
                             return f"Per: {value * 100:.1f}%"
                         return f"{value:.2f}"
 
                     # Montar string com métrica principal primeiro
                     metrics_order = [metric_name]
-                    for m in ["iou", "area_diff_rel", "perimetro_diff_rel"]:
+                    for m in ["iou", "area_similarity", "perimetro_similarity"]:
                         if m != metric_name:
                             metrics_order.append(m)
 

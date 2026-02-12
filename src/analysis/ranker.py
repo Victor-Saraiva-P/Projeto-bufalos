@@ -50,7 +50,7 @@ class ModelRanker:
         Raises:
             ValueError: Se pesos não somam ~1.0 ou contêm métricas inválidas
         """
-        expected_metrics = {"iou", "area_diff_rel", "perimetro_diff_rel"}
+        expected_metrics = {"iou", "area_similarity", "perimetro_similarity"}
         provided_metrics = set(self.weights.keys())
 
         if expected_metrics != provided_metrics:
@@ -77,18 +77,18 @@ class ModelRanker:
             DataFrame com colunas:
                 - modelo: nome do modelo
                 - iou_mean: média do IoU
-                - area_diff_rel_mean: média da diferença relativa de área
-                - perimetro_diff_rel_mean: média da diferença relativa de perímetro
+                - area_similarity_mean: média da similaridade de área
+                - perimetro_similarity_mean: média da similaridade de perímetro
                 - iou_norm: IoU normalizado (0-1)
-                - area_diff_norm: diferença de área normalizada (0-1, invertida)
-                - perimetro_diff_norm: diferença de perímetro normalizada (0-1, invertida)
+                - area_similarity_norm: similaridade de área normalizada (0-1)
+                - perimetro_similarity_norm: similaridade de perímetro normalizada (0-1)
                 - score: score final ponderado (0-1, maior = melhor)
                 - rank: posição no ranking (1 = melhor)
         """
         # 1. Calcular médias por modelo
         avg_metrics = (
             self.metrics_df.groupby("modelo")[
-                ["iou", "area_diff_rel", "perimetro_diff_rel"]
+                ["iou", "area_similarity", "perimetro_similarity"]
             ]
             .mean()
             .reset_index()
@@ -98,8 +98,8 @@ class ModelRanker:
         avg_metrics.columns = [
             "modelo",
             "iou_mean",
-            "area_diff_rel_mean",
-            "perimetro_diff_rel_mean",
+            "area_similarity_mean",
+            "perimetro_similarity_mean",
         ]
 
         # 2. Normalizar métricas
@@ -108,8 +108,11 @@ class ModelRanker:
         # 3. Calcular score final
         normalized["score"] = (
             (normalized["iou_norm"] * self.weights["iou"])
-            + (normalized["area_diff_norm"] * self.weights["area_diff_rel"])
-            + (normalized["perimetro_diff_norm"] * self.weights["perimetro_diff_rel"])
+            + (normalized["area_similarity_norm"] * self.weights["area_similarity"])
+            + (
+                normalized["perimetro_similarity_norm"]
+                * self.weights["perimetro_similarity"]
+            )
         )
 
         # 4. Ordenar e adicionar ranking
@@ -124,11 +127,11 @@ class ModelRanker:
             "modelo",
             "score",
             "iou_mean",
-            "area_diff_rel_mean",
-            "perimetro_diff_rel_mean",
+            "area_similarity_mean",
+            "perimetro_similarity_mean",
             "iou_norm",
-            "area_diff_norm",
-            "perimetro_diff_norm",
+            "area_similarity_norm",
+            "perimetro_similarity_norm",
         ]
         normalized = normalized[column_order]
 
@@ -141,8 +144,8 @@ class ModelRanker:
 
         Regras:
         - IoU: já está em 0-1, usar direto (maior = melhor)
-        - area_diff_rel: normalizar invertido (menor diferença = melhor)
-        - perimetro_diff_rel: normalizar invertido (menor diferença = melhor)
+        - area_similarity: já está em 0-1, usar direto (maior = melhor)
+        - perimetro_similarity: já está em 0-1, usar direto (maior = melhor)
 
         Args:
             df: DataFrame com médias das métricas
@@ -155,14 +158,11 @@ class ModelRanker:
         # IoU: já está normalizado (0-1), maior = melhor
         df["iou_norm"] = df["iou_mean"]
 
-        # Área: normalizar diferença relativa (min-max scaling invertido)
-        # Menor diferença = melhor → normalizar e inverter
-        df["area_diff_norm"] = self._normalize_inverse(df["area_diff_rel_mean"])
+        # Similaridade de área: já está em 0-1, maior = melhor
+        df["area_similarity_norm"] = df["area_similarity_mean"]
 
-        # Perímetro: normalizar diferença relativa (invertido)
-        df["perimetro_diff_norm"] = self._normalize_inverse(
-            df["perimetro_diff_rel_mean"]
-        )
+        # Similaridade de perímetro: já está em 0-1, maior = melhor
+        df["perimetro_similarity_norm"] = df["perimetro_similarity_mean"]
 
         return df
 
@@ -226,7 +226,7 @@ class ModelRanker:
             raise ValueError("DataFrame de métricas está vazio.")
 
         stats = self.metrics_df.groupby("modelo")[
-            ["iou", "area_diff_rel", "perimetro_diff_rel"]
+            ["iou", "area_similarity", "perimetro_similarity"]
         ].agg(["count", "mean", "std", "min", "max"])
 
         return stats

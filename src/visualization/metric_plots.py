@@ -52,19 +52,20 @@ def plot_area_analysis(df: pd.DataFrame, figsize: Tuple[int, int] = (10, 6)) -> 
     """
     Análise SIMPLIFICADA de Área.
 
-    1 gráfico: Barplot com diferença média por modelo (ordenado)
+    1 gráfico: Barplot com similaridade média por modelo (ordenado)
     """
     fig, ax = plt.subplots(figsize=figsize)
-    fig.suptitle("Análise de Área (Diferença Relativa)", fontsize=14, fontweight="bold")
+    fig.suptitle("Análise de Área (Similaridade)", fontsize=14, fontweight="bold")
 
-    # Calcular médias (ordenar por menor diferença = melhor)
-    means = df.groupby("modelo")["area_diff_rel"].mean().sort_values()
+    # Calcular médias (ordenar por maior similaridade = melhor)
+    means = df.groupby("modelo")["area_similarity"].mean().sort_values(ascending=False)
 
     # Barplot horizontal
     (means * 100).plot(kind="barh", ax=ax, color="lightcoral", edgecolor="black")
-    ax.set_title("Diferença Média de Área por Modelo", fontsize=12)
-    ax.set_xlabel("Diferença Relativa (%)", fontsize=11)
+    ax.set_title("Similaridade Média de Área por Modelo", fontsize=12)
+    ax.set_xlabel("Similaridade (%)", fontsize=11)
     ax.set_ylabel("")
+    ax.set_xlim(0, 100)
     ax.grid(axis="x", alpha=0.3)
 
     # Adicionar valores
@@ -88,21 +89,22 @@ def plot_perimetro_analysis(
     """
     Análise SIMPLIFICADA de Perímetro.
 
-    1 gráfico: Barplot com diferença média por modelo (ordenado)
+    1 gráfico: Barplot com similaridade média por modelo (ordenado)
     """
     fig, ax = plt.subplots(figsize=figsize)
-    fig.suptitle(
-        "Análise de Perímetro (Diferença Relativa)", fontsize=14, fontweight="bold"
-    )
+    fig.suptitle("Análise de Perímetro (Similaridade)", fontsize=14, fontweight="bold")
 
-    # Calcular médias (ordenar por menor diferença = melhor)
-    means = df.groupby("modelo")["perimetro_diff_rel"].mean().sort_values()
+    # Calcular médias (ordenar por maior similaridade = melhor)
+    means = (
+        df.groupby("modelo")["perimetro_similarity"].mean().sort_values(ascending=False)
+    )
 
     # Barplot horizontal
     (means * 100).plot(kind="barh", ax=ax, color="lightgreen", edgecolor="black")
-    ax.set_title("Diferença Média de Perímetro por Modelo", fontsize=12)
-    ax.set_xlabel("Diferença Relativa (%)", fontsize=11)
+    ax.set_title("Similaridade Média de Perímetro por Modelo", fontsize=12)
+    ax.set_xlabel("Similaridade (%)", fontsize=11)
     ax.set_ylabel("")
+    ax.set_xlim(0, 100)
     ax.grid(axis="x", alpha=0.3)
 
     # Adicionar valores
@@ -210,32 +212,32 @@ def get_top_bottom_area(
     df: pd.DataFrame, n: int = 5
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Retorna top N (menor dif) e bottom N (maior dif) para área.
+    Retorna top N (maior similaridade) e bottom N (menor similaridade) para área.
 
     Para top N (melhores): inclui também o pior resultado para cada imagem
     Para bottom N (piores): inclui também o melhor resultado para cada imagem
     """
-    sorted_df = df.sort_values("area_diff_rel", ascending=True)
+    sorted_df = df.sort_values("area_similarity", ascending=False)
 
-    # Top N - pegar melhores (menor diferença) + pior de cada imagem
+    # Top N - pegar melhores (maior similaridade) + pior de cada imagem
     top_results = sorted_df.head(n).copy()
     top_images = top_results["nome_arquivo"].unique()
     for img in top_images:
         worst_for_img = (
             df[df["nome_arquivo"] == img]
-            .sort_values("area_diff_rel", ascending=False)
+            .sort_values("area_similarity", ascending=True)
             .iloc[0]
         )
         if worst_for_img.name not in top_results.index:
             top_results = pd.concat([top_results, pd.DataFrame([worst_for_img])])
 
-    # Bottom N - pegar piores (maior diferença) + melhor de cada imagem
+    # Bottom N - pegar piores (menor similaridade) + melhor de cada imagem
     bottom_results = sorted_df.tail(n).copy()
     bottom_images = bottom_results["nome_arquivo"].unique()
     for img in bottom_images:
         best_for_img = (
             df[df["nome_arquivo"] == img]
-            .sort_values("area_diff_rel", ascending=True)
+            .sort_values("area_similarity", ascending=False)
             .iloc[0]
         )
         if best_for_img.name not in bottom_results.index:
@@ -248,32 +250,32 @@ def get_top_bottom_perimetro(
     df: pd.DataFrame, n: int = 5
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """
-    Retorna top N (menor dif) e bottom N (maior dif) para perímetro.
+    Retorna top N (maior similaridade) e bottom N (menor similaridade) para perímetro.
 
     Para top N (melhores): inclui também o pior resultado para cada imagem
     Para bottom N (piores): inclui também o melhor resultado para cada imagem
     """
-    sorted_df = df.sort_values("perimetro_diff_rel", ascending=True)
+    sorted_df = df.sort_values("perimetro_similarity", ascending=False)
 
-    # Top N - pegar melhores (menor diferença) + pior de cada imagem
+    # Top N - pegar melhores (maior similaridade) + pior de cada imagem
     top_results = sorted_df.head(n).copy()
     top_images = top_results["nome_arquivo"].unique()
     for img in top_images:
         worst_for_img = (
             df[df["nome_arquivo"] == img]
-            .sort_values("perimetro_diff_rel", ascending=False)
+            .sort_values("perimetro_similarity", ascending=True)
             .iloc[0]
         )
         if worst_for_img.name not in top_results.index:
             top_results = pd.concat([top_results, pd.DataFrame([worst_for_img])])
 
-    # Bottom N - pegar piores (maior diferença) + melhor de cada imagem
+    # Bottom N - pegar piores (menor similaridade) + melhor de cada imagem
     bottom_results = sorted_df.tail(n).copy()
     bottom_images = bottom_results["nome_arquivo"].unique()
     for img in bottom_images:
         best_for_img = (
             df[df["nome_arquivo"] == img]
-            .sort_values("perimetro_diff_rel", ascending=True)
+            .sort_values("perimetro_similarity", ascending=False)
             .iloc[0]
         )
         if best_for_img.name not in bottom_results.index:

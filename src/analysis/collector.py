@@ -62,9 +62,9 @@ class MetricsCollector:
                 - area_gt: área do ground truth
                 - perimetro_gt: perímetro do ground truth
                 - area_diff_abs: |area - area_gt|
-                - area_diff_rel: |area - area_gt| / area_gt
+                - area_similarity: 1 - (|area - area_gt| / area_gt)
                 - perimetro_diff_abs: |perimetro - perimetro_gt|
-                - perimetro_diff_rel: |perimetro - perimetro_gt| / perimetro_gt
+                - perimetro_similarity: 1 - (|perimetro - perimetro_gt| / perimetro_gt)
         """
         # Tentar carregar do cache
         if not self.force_recalculate:
@@ -155,12 +155,19 @@ class MetricsCollector:
             area_diff_abs = abs(segmentacao.area - gt_area)  # type: ignore
             perimetro_diff_abs = abs(segmentacao.perimetro - gt_perimetro)  # type: ignore
 
-            # Calcular diferenças relativas (percentuais)
+            # Calcular SIMILARIDADE (não diferença)
+            # Similaridade = 1 - (diferença / valor_gt)
+            # Valor 1.0 = idêntico ao GT (perfeito)
+            # Valor 0.0 = completamente diferente
             # Evitar divisão por zero
-            area_diff_rel = area_diff_abs / gt_area if gt_area > 0 else 0.0  # type: ignore
-            perimetro_diff_rel = (
-                perimetro_diff_abs / gt_perimetro if gt_perimetro > 0 else 0.0  # type: ignore
+            area_similarity = 1.0 - (area_diff_abs / gt_area) if gt_area > 0 else 0.0  # type: ignore
+            perimetro_similarity = (
+                1.0 - (perimetro_diff_abs / gt_perimetro) if gt_perimetro > 0 else 0.0  # type: ignore
             )
+
+            # Garantir que similaridade não seja negativa (pode acontecer se modelo >> GT)
+            area_similarity = max(0.0, area_similarity)
+            perimetro_similarity = max(0.0, perimetro_similarity)
 
             metrics_list.append(
                 {
@@ -172,9 +179,9 @@ class MetricsCollector:
                     "area_gt": gt_area,
                     "perimetro_gt": gt_perimetro,
                     "area_diff_abs": area_diff_abs,
-                    "area_diff_rel": area_diff_rel,
+                    "area_similarity": area_similarity,
                     "perimetro_diff_abs": perimetro_diff_abs,
-                    "perimetro_diff_rel": perimetro_diff_rel,
+                    "perimetro_similarity": perimetro_similarity,
                 }
             )
 
@@ -220,9 +227,9 @@ class MetricsCollector:
                 "area_gt",
                 "perimetro_gt",
                 "area_diff_abs",
-                "area_diff_rel",
+                "area_similarity",
                 "perimetro_diff_abs",
-                "perimetro_diff_rel",
+                "perimetro_similarity",
             }
 
             if not expected_cols.issubset(df.columns):
