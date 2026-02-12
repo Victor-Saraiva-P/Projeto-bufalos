@@ -52,3 +52,20 @@ MODELOS_PARA_AVALIACAO = {
     "birefnet-cod": "gpu",
     "birefnet-massive": "cpu",
 }
+
+# ==============================================================================
+# EVALUATION SYSTEM CONFIGURATION
+# ==============================================================================
+
+# Diretorio de avaliacao
+EVALUATION_DIR = os.path.join(GENERATED_DIR, "evaluation")
+
+# Cache de metricas
+METRICS_CACHE_PATH = os.path.join(EVALUATION_DIR, "metrics_cache.csv")
+
+# Pesos para ranking (devem somar 1.0)
+RANKING_WEIGHTS = {
+    "iou": 0.4,  # 40% - Sobreposicao (Intersection over Union)
+    "area_diff_rel": 0.3,  # 30% - Diferenca de area
+    "perimetro_diff_rel": 0.3,  # 30% - Diferenca de perimetro
+}
