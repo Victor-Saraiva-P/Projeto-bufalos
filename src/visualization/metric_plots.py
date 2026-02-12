@@ -175,22 +175,108 @@ def plot_ranking_analysis(
 def get_top_bottom_iou(
     df: pd.DataFrame, n: int = 5
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Retorna top N e bottom N por IoU."""
+    """
+    Retorna top N e bottom N por IoU.
+
+    Para top N (melhores): inclui também o pior resultado para cada imagem
+    Para bottom N (piores): inclui também o melhor resultado para cada imagem
+    """
     sorted_df = df.sort_values("iou", ascending=False)
-    return sorted_df.head(n).copy(), sorted_df.tail(n).copy()
+
+    # Top N - pegar melhores + pior de cada imagem
+    top_results = sorted_df.head(n).copy()
+    top_images = top_results["nome_arquivo"].unique()
+    for img in top_images:
+        worst_for_img = (
+            df[df["nome_arquivo"] == img].sort_values("iou", ascending=True).iloc[0]
+        )
+        if worst_for_img.name not in top_results.index:
+            top_results = pd.concat([top_results, pd.DataFrame([worst_for_img])])
+
+    # Bottom N - pegar piores + melhor de cada imagem
+    bottom_results = sorted_df.tail(n).copy()
+    bottom_images = bottom_results["nome_arquivo"].unique()
+    for img in bottom_images:
+        best_for_img = (
+            df[df["nome_arquivo"] == img].sort_values("iou", ascending=False).iloc[0]
+        )
+        if best_for_img.name not in bottom_results.index:
+            bottom_results = pd.concat([bottom_results, pd.DataFrame([best_for_img])])
+
+    return top_results, bottom_results
 
 
 def get_top_bottom_area(
     df: pd.DataFrame, n: int = 5
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Retorna top N (menor dif) e bottom N (maior dif) para área."""
+    """
+    Retorna top N (menor dif) e bottom N (maior dif) para área.
+
+    Para top N (melhores): inclui também o pior resultado para cada imagem
+    Para bottom N (piores): inclui também o melhor resultado para cada imagem
+    """
     sorted_df = df.sort_values("area_diff_rel", ascending=True)
-    return sorted_df.head(n).copy(), sorted_df.tail(n).copy()
+
+    # Top N - pegar melhores (menor diferença) + pior de cada imagem
+    top_results = sorted_df.head(n).copy()
+    top_images = top_results["nome_arquivo"].unique()
+    for img in top_images:
+        worst_for_img = (
+            df[df["nome_arquivo"] == img]
+            .sort_values("area_diff_rel", ascending=False)
+            .iloc[0]
+        )
+        if worst_for_img.name not in top_results.index:
+            top_results = pd.concat([top_results, pd.DataFrame([worst_for_img])])
+
+    # Bottom N - pegar piores (maior diferença) + melhor de cada imagem
+    bottom_results = sorted_df.tail(n).copy()
+    bottom_images = bottom_results["nome_arquivo"].unique()
+    for img in bottom_images:
+        best_for_img = (
+            df[df["nome_arquivo"] == img]
+            .sort_values("area_diff_rel", ascending=True)
+            .iloc[0]
+        )
+        if best_for_img.name not in bottom_results.index:
+            bottom_results = pd.concat([bottom_results, pd.DataFrame([best_for_img])])
+
+    return top_results, bottom_results
 
 
 def get_top_bottom_perimetro(
     df: pd.DataFrame, n: int = 5
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """Retorna top N (menor dif) e bottom N (maior dif) para perímetro."""
+    """
+    Retorna top N (menor dif) e bottom N (maior dif) para perímetro.
+
+    Para top N (melhores): inclui também o pior resultado para cada imagem
+    Para bottom N (piores): inclui também o melhor resultado para cada imagem
+    """
     sorted_df = df.sort_values("perimetro_diff_rel", ascending=True)
-    return sorted_df.head(n).copy(), sorted_df.tail(n).copy()
+
+    # Top N - pegar melhores (menor diferença) + pior de cada imagem
+    top_results = sorted_df.head(n).copy()
+    top_images = top_results["nome_arquivo"].unique()
+    for img in top_images:
+        worst_for_img = (
+            df[df["nome_arquivo"] == img]
+            .sort_values("perimetro_diff_rel", ascending=False)
+            .iloc[0]
+        )
+        if worst_for_img.name not in top_results.index:
+            top_results = pd.concat([top_results, pd.DataFrame([worst_for_img])])
+
+    # Bottom N - pegar piores (maior diferença) + melhor de cada imagem
+    bottom_results = sorted_df.tail(n).copy()
+    bottom_images = bottom_results["nome_arquivo"].unique()
+    for img in bottom_images:
+        best_for_img = (
+            df[df["nome_arquivo"] == img]
+            .sort_values("perimetro_diff_rel", ascending=True)
+            .iloc[0]
+        )
+        if best_for_img.name not in bottom_results.index:
+            bottom_results = pd.concat([bottom_results, pd.DataFrame([best_for_img])])
+
+    return top_results, bottom_results

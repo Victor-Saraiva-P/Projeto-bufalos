@@ -31,7 +31,7 @@ def plot_image_grid(
         df_subset: DataFrame com top/bottom resultados (define quais imagens mostrar)
         df_all: DataFrame completo com TODAS as métricas
         title: Título do plot
-        metric_name: Nome da métrica (iou, area_diff_rel, etc)
+        metric_name: Nome da métrica principal (iou, area_diff_rel, etc)
         max_images: Máximo de imagens a mostrar
 
     Returns:
@@ -107,17 +107,33 @@ def plot_image_grid(
                 seg_img = Image.open(seg_path).convert("L")
                 axes[row_idx, col_idx].imshow(seg_img, cmap="gray")
 
-                # Formatar métrica se disponível
+                # Formatar TODAS as métricas (principal primeiro)
                 if not model_data.empty:
-                    metric_value = model_data.iloc[0][metric_name]
-                    if metric_name == "iou":
-                        metric_str = f"{metric_value:.3f}"
-                    elif "diff_rel" in metric_name:
-                        metric_str = f"{metric_value * 100:.1f}%"
-                    else:
-                        metric_str = f"{metric_value:.2f}"
+                    row_data = model_data.iloc[0]
+
+                    # Função auxiliar para formatar métricas
+                    def format_metric(name, value):
+                        if name == "iou":
+                            return f"IoU: {value:.3f}"
+                        elif name == "area_diff_rel":
+                            return f"Área: {value * 100:.1f}%"
+                        elif name == "perimetro_diff_rel":
+                            return f"Per: {value * 100:.1f}%"
+                        return f"{value:.2f}"
+
+                    # Montar string com métrica principal primeiro
+                    metrics_order = [metric_name]
+                    for m in ["iou", "area_diff_rel", "perimetro_diff_rel"]:
+                        if m != metric_name:
+                            metrics_order.append(m)
+
+                    metric_lines = [
+                        format_metric(m, row_data[m]) for m in metrics_order
+                    ]
+                    metric_str = "\n".join(metric_lines)
+
                     axes[row_idx, col_idx].set_title(
-                        f"{modelo}\n{metric_str}", fontsize=7
+                        f"{modelo}\n{metric_str}", fontsize=6
                     )
                 else:
                     axes[row_idx, col_idx].set_title(f"{modelo}\nN/A", fontsize=7)
