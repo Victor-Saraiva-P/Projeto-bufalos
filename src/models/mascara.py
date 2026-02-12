@@ -1,4 +1,5 @@
 import numpy as np
+import cv2
 from PIL import Image
 
 from src.io.path_utils import caminho_ground_truth_output, caminho_segmentada_modelo
@@ -7,7 +8,7 @@ from src.io.path_utils import caminho_ground_truth_output, caminho_segmentada_mo
 class Mascara:
     modelo: str
     area: int
-    perimetro: int
+    perimetro: float
 
     def __init__(self, modelo: str, nome_arquivo: str):
         self.modelo = modelo
@@ -24,42 +25,62 @@ class Mascara:
         return caminho_segmentada_modelo(modelo, nome_arquivo)
 
     @staticmethod
-    def calcular_area(image_path: str):
+    def calcular_area(image_path: str) -> int:
+        """
+        Calcula área da máscara (número de pixels brancos).
+
+        Args:
+            image_path: Caminho para imagem PNG binária
+
+        Returns:
+            Área em pixels
+        """
         with Image.open(image_path) as img:
             img_gray = img.convert("L")
             arr = np.array(img_gray)
 
         area = int((arr == 255).sum())
-
         return area
 
     @staticmethod
-    def calcular_perimetro(image_path: str):
-        with Image.open(image_path) as img:
-            img_gray = img.convert("L")
-            arr = np.array(img_gray)
+    def calcular_perimetro(image_path: str) -> float:
+        """
+        Calcula perímetro usando distância Euclidiana (método CORRETO).
 
-        # Cria máscara binária (1 para pixels brancos, 0 para pretos)
+        Usa cv2.findContours + cv2.arcLength para calcular o perímetro real.
+        Diagonais contam como √2 ≈ 1.414 (matematicamente correto).
+
+        JUSTIFICATIVA (Notebook 03 - análise em 387 imagens, 4 métodos):
+          • Método Manhattan superestima perímetro em ~20%
+          • Erro amplifica para ~44% na estimativa de peso (Fórmula de Schaeffer)
+          • Euclidiano simula corretamente medição com fita métrica
+          • Erro é INVARIANTE ao método de binarização
+
+        Análise completa em:
+          notebooks/03_analise_perimetro_manhattan_vs_euclidiano.ipynb
+
+        Args:
+            image_path: Caminho para imagem PNG binária
+
+        Returns:
+            Perímetro em pixels (distância Euclidiana)
+        """
+        with Image.open(image_path) as img:
+            arr = np.array(img.convert("L"))
+
         binary_mask = (arr > 0).astype(np.uint8)
 
-        edges = 0
-        h, w = binary_mask.shape
+        # Encontra contornos externos
+        contours, _ = cv2.findContours(
+            binary_mask,
+            cv2.RETR_EXTERNAL,  # Apenas contorno externo
+            cv2.CHAIN_APPROX_NONE,  # Todos os pontos (sem aproximação)
+        )
 
-        # Para cada pixel branco, conta quantas arestas ele tem expostas
-        for i in range(h):
-            for j in range(w):
-                if binary_mask[i, j] == 1:
-                    # Borda esquerda
-                    if j == 0 or binary_mask[i, j - 1] == 0:
-                        edges += 1
-                    # Borda direita
-                    if j == w - 1 or binary_mask[i, j + 1] == 0:
-                        edges += 1
-                    # Borda superior
-                    if i == 0 or binary_mask[i - 1, j] == 0:
-                        edges += 1
-                    # Borda inferior
-                    if i == h - 1 or binary_mask[i + 1, j] == 0:
-                        edges += 1
+        if len(contours) == 0:
+            return 0.0
 
-        return edges
+        # Pega o maior contorno (se houver múltiplos, soma todos)
+        perimetro_total = sum(cv2.arcLength(cnt, closed=True) for cnt in contours)
+
+        return float(perimetro_total)
