@@ -6,3 +6,5 @@ pillow
 openpyxl
 matplotlib
 scikit-image
+scipy
+opencv-python
