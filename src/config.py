@@ -31,6 +31,15 @@ ORIGINAL_IMAGE_TYPE = ".jpg"
 REMBG_IMAGE_TYPE = ".png"
 
 # Configuracao de binarizacao
+# Metodo: Gaussian Blur + Morphological Opening
+# 1. Gaussian Blur: suaviza artefatos de compressao JPG
+# 2. Threshold: separa foreground (>127) de background (<=127)
+# 3. Morphological Opening: erosao seguida de dilatacao - remove pixels isolados e suaviza bordas
+BINARIZATION_SIGMA = 1.0  # Intensidade do blur gaussiano
+BINARIZATION_THRESHOLD = 127  # Limiar de binarizacao (0-255)
+BINARIZATION_KERNEL_SIZE = 3  # Tamanho do elemento estruturante para opening
+
+# Deprecated - usar BINARIZATION_THRESHOLD
 LIMIAR_BINARIZACAO = 127
 
 # Modelos para avaliacao (modelo: provider)
