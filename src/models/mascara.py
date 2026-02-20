@@ -1,7 +1,10 @@
 import numpy as np
 from PIL import Image
 
-from src.io.path_utils import caminho_ground_truth_output, caminho_segmentada_modelo
+from src.io.path_utils import (
+    caminho_ground_truth_binaria,
+    caminho_mascara_predita,
+)
 from src.metrics.area import Area
 from src.metrics.perimetro import Perimetro
 
@@ -31,10 +34,10 @@ class Mascara:
 
     @staticmethod
     def obter_caminho_mascara(modelo: str, nome_arquivo: str) -> str:
-        if modelo == "ground-of-truth":
-            return caminho_ground_truth_output(nome_arquivo)
+        if modelo == "ground_truth":
+            return caminho_ground_truth_binaria(nome_arquivo)
 
-        return caminho_segmentada_modelo(modelo, nome_arquivo)
+        return caminho_mascara_predita(modelo, nome_arquivo)
 
     @staticmethod
     def _carregar_mascara_binaria(image_path: str) -> np.ndarray:

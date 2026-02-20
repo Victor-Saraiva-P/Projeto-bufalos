@@ -260,7 +260,7 @@ df_metrics = collector.collect_all_metrics()
 ### Modelos faltando
 
 Se modelos não aparecem no ranking:
-- Verifique se segmentações existem em `generated/segmentada/binarized/`
+- Verifique se segmentações existem em `generated/predicted_masks_binary/`
 - Execute notebook 01 para gerar segmentações faltantes
 - Recalcule métricas com `force_recalculate=True`
 

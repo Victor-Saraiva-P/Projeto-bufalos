@@ -12,7 +12,7 @@ class Avaliacao:
         self.nome_arquivo = nome_arquivo
 
         # Criar máscaras (SEM calcular métricas)
-        self.ground_truth = Mascara("ground-of-truth", nome_arquivo)
+        self.ground_truth = Mascara("ground_truth", nome_arquivo)
         self.segmentacoes = [
             MascaraSegmentada(modelo, nome_arquivo, ground_truth=self.ground_truth)
             for modelo in MODELOS_PARA_AVALIACAO

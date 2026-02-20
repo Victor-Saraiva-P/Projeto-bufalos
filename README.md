@@ -8,8 +8,8 @@ Estrutura esperada na pasta `data`:
 
 ```
 data/
-  Ground-of-truth/  # mascaras de referencia (segmentacao manual)
-  Original/         # imagens originais de entrada
+  ground_truth/     # mascaras de referencia (segmentacao manual)
+  images/           # imagens originais de entrada
   Indice.xlsx       # planilha com indice das imagens
 ```
 
@@ -117,7 +117,7 @@ print(ort.get_available_providers())
 Ou via CLI:
 
 ```bash
-rembg p data/Original generated/test -m u2net
+rembg p data/images generated/test -m u2net
 # Deve processar usando GPU
 ```
 

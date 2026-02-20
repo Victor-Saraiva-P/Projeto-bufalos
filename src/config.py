@@ -9,14 +9,13 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 GENERATED_DIR = os.path.join(BASE_DIR, "generated")
 
 # Diretorios especificos
-ORIGINAL_PHOTOS_DIR = os.path.join(DATA_DIR, "Original")
-GROUND_OF_TRUTH = os.path.join(DATA_DIR, "Ground-of-truth")
+IMAGES_DIR = os.path.join(DATA_DIR, "images")
+GROUND_TRUTH_DIR = os.path.join(DATA_DIR, "ground_truth")
 
-SEGMENTED_PHOTOS_DIR = os.path.join(GENERATED_DIR, "segmentada")
-SEGMENTED_RAW_DIR = os.path.join(SEGMENTED_PHOTOS_DIR, "raw")
-SEGMENTED_BINARIZED_DIR = os.path.join(SEGMENTED_PHOTOS_DIR, "binarized")
+PREDICTED_MASKS_DIR = os.path.join(GENERATED_DIR, "predicted_masks")
+PREDICTED_MASKS_BINARY = os.path.join(GENERATED_DIR, "predicted_masks_binary")
 
-GROUND_OF_TRUTH_OUTPUT = os.path.join(GENERATED_DIR, "ground-of-truth")
+GROUND_TRUTH_BINARY = os.path.join(GENERATED_DIR, "ground_truth_binary")
 
 # Caminhos de arquivos
 INDICE_PATH = os.path.join(DATA_DIR, "Indice.xlsx")
@@ -27,7 +26,7 @@ FAZENDA_COL = "fazenda"
 PESO_COL = "peso"
 
 # Configuracao do tipo de arquivo
-ORIGINAL_IMAGE_TYPE = ".jpg"
+IMAGES_TYPE = ".jpg"
 REMBG_IMAGE_TYPE = ".png"
 
 # Configuracao de binarizacao
@@ -53,13 +52,13 @@ MODELOS_PARA_AVALIACAO = {
     "isnet-general-use": "gpu",
     "isnet-anime": "gpu",
     "sam": "gpu",
-    "birefnet-general": "cpu",
-    "birefnet-general-lite": "gpu",
-    "birefnet-portrait": "gpu",
-    "birefnet-dis": "gpu",
-    "birefnet-hrsod": "gpu",
-    "birefnet-cod": "gpu",
-    "birefnet-massive": "cpu",
+    # "birefnet-general": "cpu",
+    # "birefnet-general-lite": "gpu",
+    # "birefnet-portrait": "gpu",
+    # "birefnet-dis": "gpu",
+    # "birefnet-hrsod": "gpu",
+    # "birefnet-cod": "gpu",
+    # "birefnet-massive": "cpu",
 }
 
 # ==============================================================================
