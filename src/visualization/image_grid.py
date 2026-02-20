@@ -2,7 +2,6 @@
 Funções para visualização simplificada de imagens com segmentações.
 """
 
-import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -10,10 +9,10 @@ from PIL import Image
 from typing import Tuple
 from matplotlib.figure import Figure
 
-from src.config import IMAGES_DIR, IMAGES_TYPE
 from src.io.path_utils import (
+    caminho_foto_original,
     caminho_ground_truth_binaria,
-    caminho_mascara_predita,
+    caminho_mascara_predita_binaria,
 )
 
 
@@ -67,12 +66,7 @@ def plot_image_grid(
     for row_idx, nome_arquivo in enumerate(unique_images):
         # Coluna 0: Imagem Original
         try:
-            filename = (
-                nome_arquivo
-                if "." in nome_arquivo
-                else f"{nome_arquivo}{IMAGES_TYPE}"
-            )
-            img_path = os.path.join(IMAGES_DIR, filename)
+            img_path = caminho_foto_original(nome_arquivo)
             img = Image.open(img_path)
             axes[row_idx, 0].imshow(img)
             axes[row_idx, 0].set_title(f"Original\n{nome_arquivo[:15]}...", fontsize=8)
@@ -106,7 +100,7 @@ def plot_image_grid(
             ]
 
             try:
-                seg_path = caminho_mascara_predita(modelo, nome_arquivo)
+                seg_path = caminho_mascara_predita_binaria(modelo, nome_arquivo)
                 seg_img = Image.open(seg_path).convert("L")
                 axes[row_idx, col_idx].imshow(seg_img, cmap="gray")
 
@@ -173,7 +167,7 @@ def plot_single_image_comparison(
         raise ValueError(f"Imagem {nome_arquivo} não encontrada")
 
     # Ordenar por IoU decrescente
-    img_data = img_data.sort_values("iou", ascending=False)
+    img_data = img_data.sort_values(by="iou", ascending=False)
 
     n_modelos = len(img_data)
 
@@ -193,12 +187,7 @@ def plot_single_image_comparison(
     # Original (canto superior esquerdo)
     ax_orig = fig.add_subplot(gs[0, 0])
     try:
-        filename = (
-            nome_arquivo
-            if "." in nome_arquivo
-            else f"{nome_arquivo}{IMAGES_TYPE}"
-        )
-        img_path = os.path.join(IMAGES_DIR, filename)
+        img_path = caminho_foto_original(nome_arquivo)
         img = Image.open(img_path)
         ax_orig.imshow(img)
         ax_orig.set_title("Original", fontsize=10)
@@ -227,7 +216,7 @@ def plot_single_image_comparison(
         ax = fig.add_subplot(gs[row_pos, col_pos])
 
         try:
-            seg_path = caminho_mascara_predita(row["modelo"], nome_arquivo)
+            seg_path = caminho_mascara_predita_binaria(str(row["modelo"]), nome_arquivo)
             seg_img = Image.open(seg_path).convert("L")
             ax.imshow(seg_img, cmap="gray")
             ax.set_title(f"{row['modelo']}\\nIoU: {row['iou']:.4f}", fontsize=9)
