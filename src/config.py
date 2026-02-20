@@ -52,13 +52,13 @@ MODELOS_PARA_AVALIACAO = {
     "isnet-general-use": "gpu",
     "isnet-anime": "gpu",
     "sam": "gpu",
-    # "birefnet-general": "cpu",
-    # "birefnet-general-lite": "gpu",
-    # "birefnet-portrait": "gpu",
-    # "birefnet-dis": "gpu",
-    # "birefnet-hrsod": "gpu",
-    # "birefnet-cod": "gpu",
-    # "birefnet-massive": "cpu",
+    "birefnet-general": "cpu",
+    "birefnet-general-lite": "gpu",
+    "birefnet-portrait": "gpu",
+    "birefnet-dis": "gpu",
+    "birefnet-hrsod": "gpu",
+    "birefnet-cod": "gpu",
+    "birefnet-massive": "cpu",
 }
 
 # ==============================================================================
