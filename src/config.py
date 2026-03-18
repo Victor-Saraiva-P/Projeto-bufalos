@@ -24,6 +24,7 @@ INDICE_PATH = os.path.join(DATA_DIR, "Indice.xlsx")
 NOME_COL = "nome do arquivo"
 FAZENDA_COL = "fazenda"
 PESO_COL = "peso"
+TAGS_COL = "tags"
 
 # Configuracao do tipo de arquivo
 IMAGES_TYPE = ".jpg"
