@@ -56,36 +56,61 @@ class ExcelTagRepository:
     def __init__(self, indice_path: str = INDICE_PATH, tags_col: str = TAGS_COL):
         self.indice_path = indice_path
         self.tags_col = tags_col
+        self.workbook = load_workbook(self.indice_path)
+        self.worksheet = self.workbook.active
+        self.tags_column = self._resolve_tags_column()
+        self.pending_images = self._build_pending_images()
+        self.current_index = 0
 
-    def get_next_pending(self) -> PendingImage | None:
-        linhas = carregar_indice_excel()
-
-        for idx, linha in enumerate(linhas, start=2):
-            if _is_pending(linha.tags):
-                return PendingImage(
-                    row_number=idx,
-                    line_number=idx - 1,
-                    indice_linha=linha,
-                )
-
-        return None
-
-    def save_tags(self, row_number: int, tags_value: str) -> None:
-        workbook = load_workbook(self.indice_path)
-        worksheet = workbook.active
+    def _resolve_tags_column(self) -> int:
         header_map = {
             str(cell.value).strip().lower(): cell.column
-            for cell in worksheet[1]
+            for cell in self.worksheet[1]
             if cell.value is not None
         }
         tags_column = header_map.get(self.tags_col)
 
         if tags_column is None:
-            tags_column = worksheet.max_column + 1
-            worksheet.cell(row=1, column=tags_column, value=self.tags_col)
+            tags_column = self.worksheet.max_column + 1
+            self.worksheet.cell(row=1, column=tags_column, value=self.tags_col)
+            self.workbook.save(self.indice_path)
 
-        worksheet.cell(row=row_number, column=tags_column, value=tags_value)
-        workbook.save(self.indice_path)
+        return tags_column
+
+    def _build_pending_images(self) -> list[PendingImage]:
+        linhas = carregar_indice_excel()
+        return [
+            PendingImage(
+                row_number=idx,
+                line_number=idx - 1,
+                indice_linha=linha,
+            )
+            for idx, linha in enumerate(linhas, start=2)
+            if _is_pending(linha.tags)
+        ]
+
+    def get_current_pending(self) -> PendingImage | None:
+        if self.current_index >= len(self.pending_images):
+            return None
+
+        return self.pending_images[self.current_index]
+
+    def save_current_and_advance(self, tags_value: str) -> PendingImage | None:
+        current_pending = self.get_current_pending()
+        if current_pending is None:
+            return None
+
+        self.worksheet.cell(
+            row=current_pending.row_number,
+            column=self.tags_column,
+            value=tags_value,
+        )
+        self.workbook.save(self.indice_path)
+        self.current_index += 1
+        return self.get_current_pending()
+
+    def close(self) -> None:
+        self.workbook.close()
 
 
 class ManualTaggerApp:
@@ -93,6 +118,7 @@ class ManualTaggerApp:
         self.master = master
         self.master.title("Tag de imagens")
         self.master.geometry("1280x920")
+        self.master.protocol("WM_DELETE_WINDOW", self.exit_app)
 
         self.repository = ExcelTagRepository()
         self.selected_tags: set[str] = set()
@@ -181,6 +207,26 @@ class ManualTaggerApp:
             sticky="ew",
         )
 
+        self.exit_button = tk.Button(
+            controls_frame,
+            text="Sair",
+            width=12,
+            padx=10,
+            pady=14,
+            bg="#57534e",
+            fg="#fafaf9",
+            activebackground="#44403c",
+            activeforeground="#fafaf9",
+            command=self.exit_app,
+        )
+        self.exit_button.grid(
+            row=0,
+            column=len(TAG_OPTIONS) + 1,
+            padx=(6, 0),
+            pady=4,
+            sticky="ew",
+        )
+
         self._refresh_buttons()
 
     def _bind_keys(self) -> None:
@@ -214,9 +260,15 @@ class ManualTaggerApp:
         if self.current_pending is None or not self.image_available:
             return
 
-        tags_value = self._build_tags_value()
-        self.repository.save_tags(self.current_pending.row_number, tags_value)
+        self._save_current_image()
         self._load_next_pending()
+
+    def exit_app(self) -> None:
+        if self.current_pending is not None and self.image_available and self.selected_tags:
+            self._save_current_image()
+
+        self.repository.close()
+        self.master.destroy()
 
     def _build_tags_value(self) -> str:
         selected = [tag for tag in TAG_OPTIONS if tag in self.selected_tags]
@@ -225,19 +277,29 @@ class ManualTaggerApp:
 
         return ", ".join(selected)
 
+    def _save_current_image(self) -> None:
+        if self.current_pending is None or not self.image_available:
+            return
+
+        tags_value = self._build_tags_value()
+        self.current_pending = self.repository.save_current_and_advance(tags_value)
+
     def _load_next_pending(self) -> None:
         self.selected_tags.clear()
         self.image_available = False
         self._refresh_buttons()
 
-        pending = self.repository.get_next_pending()
-        self.current_pending = pending
+        if self.current_pending is None:
+            self.current_pending = self.repository.get_current_pending()
+
+        pending = self.current_pending
 
         if pending is None:
             self.status_label.configure(text="Nao ha mais imagens para tag-acao.")
             self.hint_label.configure(text="Todas as linhas da coluna tags ja foram preenchidas.")
             self.image_label.configure(image="", text="Fila concluida.")
             self.finish_button.configure(state="disabled")
+            self.exit_button.configure(state="normal")
             return
 
         self.finish_button.configure(state="normal")
