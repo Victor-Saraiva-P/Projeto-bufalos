@@ -14,3 +14,7 @@ O parâmetro `post_process_mask=True` é a escolha que produz uma máscara biná
 ## Sobre o formato da saída da máscara binária
 
 A saída da máscara binária está como PNG, por ser um formato sem perda de qualidade (lossless). Isso é importante para manter a integridade dos dados da máscara.
+
+## Sobre a curadoria das imagens
+
+As tags de curadoria usadas para caracterizar as imagens foram documentadas em [image-tags.md](/home/victor/Projects/projeto-bufalos/docs/image-tags.md).
