@@ -17,6 +17,7 @@ O objetivo dessas tags é apoiar a análise dos testes de segmentação e, indir
 - `multi_bufalos`
 - `cortado`
 - `angulo_extremo`
+- `baixo_contraste`
 - `ocluido`
 
 ## Glossário
@@ -81,10 +82,35 @@ Quando usar:
 Regra prática:
 - use `ocluido` quando a informação está dentro do enquadramento, mas algo na frente a esconde
 
+### `baixo_contraste`
+
+O contorno do búfalo se mistura visualmente ao fundo por semelhança de cor, luminosidade ou textura.
+
+Quando usar:
+- búfalo escuro contra cerca, barro, sombra ou estrutura com tonalidade parecida
+- corpo visível, mas com borda pouco destacada em relação ao fundo
+- cenário reduz a separação visual entre animal e fundo, mesmo sem corte ou objeto na frente
+
+Regra prática:
+- use `baixo_contraste` quando a dificuldade está na separação figura-fundo, e não em enquadramento, ângulo ou oclusão
+
+Observação:
+- esta tag descreve um problema de contraste com o fundo; se houver grade, cerca ou outro elemento na frente do corpo, use `ocluido`
+
 ## Diferença Entre `cortado` e `ocluido`
 
 - `cortado`: a parte do corpo ficou fora da imagem
 - `ocluido`: a parte do corpo está dentro da imagem, mas algo a tampou
+
+## Diferença Entre `ocluido` e `baixo_contraste`
+
+- `ocluido`: existe um elemento na frente do búfalo escondendo parte do corpo
+- `baixo_contraste`: o corpo está visível, mas se confunde com o fundo atrás dele
+
+Exemplos:
+- perna atrás da cerca: `ocluido`
+- corpo inteiro visível, mas com cor muito parecida à da cerca ao fundo: `baixo_contraste`
+- grade na frente do corpo e fundo parecido com a pelagem: `ocluido` e `baixo_contraste`
 
 Exemplos:
 - cabeça fora do frame: `cortado`

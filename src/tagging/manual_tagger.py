@@ -17,6 +17,7 @@ TAG_OPTIONS = [
     "multi_bufalos",
     "cortado",
     "angulo_extremo",
+    "baixo_contraste",
     "ocluido",
 ]
 MAX_IMAGE_SIZE = (1100, 700)
