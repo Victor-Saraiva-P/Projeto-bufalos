@@ -1,7 +1,7 @@
 import os
 
 from src.config import (
-    GROUND_TRUTH_DIR,
+    GROUND_TRUTH_RAW_DIR,
     GROUND_TRUTH_BINARY,
     IMAGES_TYPE,
     IMAGES_DIR,
@@ -16,7 +16,7 @@ def caminho_foto_original(nome_arquivo: str) -> str:
 
 
 def caminho_ground_truth(nome_arquivo: str) -> str:
-    return os.path.join(GROUND_TRUTH_DIR, f"{nome_arquivo}{IMAGES_TYPE}")
+    return os.path.join(GROUND_TRUTH_RAW_DIR, f"{nome_arquivo}{IMAGES_TYPE}")
 
 
 def caminho_ground_truth_binaria(nome_arquivo: str) -> str:

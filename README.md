@@ -8,7 +8,7 @@ Estrutura minima na pasta `data`:
 
 ```text
 data/
-  ground_truth/     # mascaras de referencia (segmentacao manual)
+  ground_truth_raw/ # mascaras de referencia (segmentacao manual)
   images/           # imagens originais de entrada
   Indice.xlsx       # planilha com indice das imagens
 ```
