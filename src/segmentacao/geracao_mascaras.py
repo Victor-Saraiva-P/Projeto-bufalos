@@ -3,7 +3,6 @@ from collections.abc import Iterable, Mapping
 import time
 
 from PIL import Image
-from rembg import new_session, remove
 
 from src.config import PREDICTED_MASKS_DIR
 from src.io.path_utils import (
@@ -18,6 +17,12 @@ from src.segmentacao.logs import (
 )
 from src.models.indice_linha import IndiceLinha
 from src.runtime.runtime_config import resolver_providers
+
+
+def _obter_api_rembg():
+    from rembg import new_session, remove
+
+    return new_session, remove
 
 
 def executar_segmentacao(
@@ -55,6 +60,8 @@ def executar_segmentacao(
 
 
 def _criar_sessao_segmentacao(nome_modelo: str, providers: list[str]):
+    new_session, _ = _obter_api_rembg()
+
     try:
         return new_session(nome_modelo, providers=providers)
     except Exception as erro:
@@ -70,6 +77,7 @@ def _segmentar_linha(
     stats_geral: EstatisticasProcessamento,
     stats_modelo: EstatisticasProcessamento,
 ) -> None:
+    _, remove = _obter_api_rembg()
     original_path = caminho_foto_original(linha.nome_arquivo)
     mascara_path = caminho_ground_truth(linha.nome_arquivo)
     output_path = caminho_mascara_predita(nome_modelo, linha.nome_arquivo)

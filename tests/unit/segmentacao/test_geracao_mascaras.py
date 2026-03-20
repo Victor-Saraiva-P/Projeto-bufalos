@@ -23,8 +23,8 @@ def test_criar_sessao_segmentacao_faz_fallback_para_cpu(
         return {"modelo": nome_modelo, "providers": providers}
 
     monkeypatch.setattr(
-        "src.segmentacao.geracao_mascaras.new_session",
-        fake_new_session,
+        "src.segmentacao.geracao_mascaras._obter_api_rembg",
+        lambda: (fake_new_session, object()),
     )
 
     sessao = _criar_sessao_segmentacao("u2net", ["CUDAExecutionProvider"])
@@ -101,8 +101,11 @@ def test_segmentar_linha_salva_mascara_quando_inferencia_funciona(
         lambda *_: str(output),
     )
     monkeypatch.setattr(
-        "src.segmentacao.geracao_mascaras.remove",
-        lambda *_args, **_kwargs: Image.new("L", (3, 3), color=255),
+        "src.segmentacao.geracao_mascaras._obter_api_rembg",
+        lambda: (
+            object(),
+            lambda *_args, **_kwargs: Image.new("L", (3, 3), color=255),
+        ),
     )
 
     stats_geral = EstatisticasProcessamento(total=1)

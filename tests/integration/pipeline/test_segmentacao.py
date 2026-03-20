@@ -48,8 +48,11 @@ def test_executar_segmentacao_processa_modelo_e_gera_arquivo(
         },
     )
     monkeypatch.setattr(
-        "src.segmentacao.geracao_mascaras.remove",
-        lambda *_args, **_kwargs: Image.new("L", (4, 4), color=255),
+        "src.segmentacao.geracao_mascaras._obter_api_rembg",
+        lambda: (
+            object(),
+            lambda *_args, **_kwargs: Image.new("L", (4, 4), color=255),
+        ),
     )
 
     linhas = carregar_indice_excel()
