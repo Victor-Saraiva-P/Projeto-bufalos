@@ -25,10 +25,10 @@ GENERATED_DIR = _resolver_caminho(BASE_DIR, _PATHS["generated_dir"])
 
 # Diretorios especificos
 IMAGES_DIR = _resolver_caminho(BASE_DIR, _PATHS["data_dir"], _PATHS["images_dir"])
-GROUND_TRUTH_DIR = _resolver_caminho(
+GROUND_TRUTH_RAW_DIR = _resolver_caminho(
     BASE_DIR,
     _PATHS["data_dir"],
-    _PATHS["ground_truth_dir"],
+    _PATHS["ground_truth_raw_dir"],
 )
 PREDICTED_MASKS_DIR = _resolver_caminho(
     BASE_DIR,

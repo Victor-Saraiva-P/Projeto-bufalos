@@ -1,6 +1,6 @@
 from src.config import (
     GROUND_TRUTH_BINARY,
-    GROUND_TRUTH_DIR,
+    GROUND_TRUTH_RAW_DIR,
     IMAGES_DIR,
     IMAGES_TYPE,
     PREDICTED_MASKS_BINARY,
@@ -28,7 +28,7 @@ def test_caminho_ground_truth_monta_path_esperado() -> None:
     nome_arquivo = "bufalo_001"
 
     assert caminho_ground_truth(nome_arquivo) == (
-        f"{GROUND_TRUTH_DIR}/{nome_arquivo}{IMAGES_TYPE}"
+        f"{GROUND_TRUTH_RAW_DIR}/{nome_arquivo}{IMAGES_TYPE}"
     )
 
 
