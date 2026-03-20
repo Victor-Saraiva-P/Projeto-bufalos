@@ -8,3 +8,4 @@ matplotlib
 scikit-image
 scipy
 opencv-python
+pytest
