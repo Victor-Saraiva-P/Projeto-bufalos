@@ -27,29 +27,48 @@ generated/
 
 ### Requisitos
 
-- Python 3.12 (o `rembg` requer Python < 3.14)
-- `tkinter` disponivel no Python para rodar o anotador manual
-- (opcional) GPU NVIDIA com CUDA; o projeto tambem pode rodar em CPU
+- Python 3.13 recomendado (o projeto requer Python >= 3.12 e < 3.14)
+- Para evitar problemas no uso de `src/tagging/manual_tagger.py`, prefira Python 3.13
+- `tkinter` disponivel no Python para rodar os anotadores manuais
+- GPU NVIDIA com CUDA e opcional; o projeto tambem pode rodar em CPU
 
 ### Instalacao
 
 1. Crie o ambiente virtual:
 
 ```bash
-python3.12 -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate
 ```
 
-2. Instale as dependencias:
+2. Instale o projeto:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
-Observacao:
+Essa instalacao ja cobre o runtime principal do projeto, incluindo segmentacao com `rembg`, suporte a providers de GPU e visualizacao.
 
-- a instalacao acima permite rodar o projeto em CPU
-- para acelerar a execucao com GPU, siga a secao de configuracao de CUDA abaixo
+Essa instalacao tambem cobre o ambiente de desenvolvimento e a suite de testes.
+
+### Instalacao com mise
+
+Se voce usa `mise`, este e o caminho recomendado para criar o `.venv` com Python 3.13:
+
+```bash
+mise exec python@3.13 -- python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+Como alternativa, voce pode fixar o Python 3.13 no projeto antes de criar o venv:
+
+```bash
+mise use python@3.13
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
 
 ## Como rodar o projeto
 
@@ -75,12 +94,6 @@ Comando equivalente:
 python src/tagging/manual_tagger.py
 ```
 
-Se aparecer erro como `ModuleNotFoundError`, confirme antes que o ambiente virtual do projeto esta ativado:
-
-```bash
-source .venv/bin/activate
-```
-
 Pre-requisitos:
 
 - `data/Indice.xlsx` precisa existir
@@ -95,6 +108,33 @@ Comportamento do fluxo:
 - `Enter` salva a imagem atual e avanca
 - `Enter` sem nenhuma tag marcada grava `ok`
 - ao fechar a janela, o app salva a selecao atual se houver tags marcadas
+
+Se o app abortar no Linux/Wayland com erro `xcb`, o problema pode estar no runtime `Python + Tk` usado para criar o `.venv`, e nao no codigo do projeto. Se isso acontecer, recrie o ambiente com outra instalacao de Python compativel e teste primeiro um exemplo minimo de `tkinter`.
+
+### Rodar o anotador por foco
+
+O script `src/tagging/focused_tagger.py` permite revisar uma tag por vez, mantendo as tags ja existentes da imagem.
+
+Comando recomendado:
+
+```bash
+python -m src.tagging.focused_tagger
+```
+
+Comando equivalente:
+
+```bash
+python src/tagging/focused_tagger.py
+```
+
+Comportamento do fluxo:
+
+- na tela inicial, use `1` a `5` para escolher a tag-foco e `Enter` para confirmar
+- o app revisa apenas imagens que ainda nao possuem a tag-foco selecionada
+- durante a revisao, a tecla `1` alterna a marcacao da tag-foco para a imagem atual
+- `Enter` salva e avanca para a proxima imagem
+- se a celula ainda estiver vazia e nenhuma marcacao for feita, o fluxo grava `ok`
+- se a imagem ja tiver outras tags, elas sao preservadas
 
 As tags de curadoria estao definidas em `docs/image-tags.md`.
 
@@ -142,11 +182,9 @@ Instale o cuDNN compativel com CUDA 12.5:
 yay -S cudnn9.3-cuda12.5
 ```
 
-### Passo 3: Instalar rembg com suporte a GPU
+### Passo 3: Garantir bibliotecas do sistema para GPU
 
-```bash
-pip install "rembg[gpu,cli]"
-```
+As dependencias Python de GPU ja sao instaladas com `pip install -e .`. Nesta etapa, falta apenas garantir que CUDA e cuDNN estejam disponiveis no sistema.
 
 ### Passo 4: Configurar kernel do Jupyter (opcional)
 
@@ -219,13 +257,13 @@ projeto-bufalos/
   src/
     config.py
     io/
-    logs/
     metrics/
     models/
     runtime/
+    segmentacao/
     tagging/            # Anotacao manual das tags de curadoria
     visualization/
-  requirements.txt
+  pyproject.toml
 ```
 
 ## Documentacao adicional
@@ -234,5 +272,39 @@ projeto-bufalos/
 - `docs/evaluation-system.md`: visao geral do sistema de avaliacao
 - `docs/image-tags.md`: taxonomia das tags de curadoria
 - `docs/CHOICES.md`: decisoes registradas do projeto
-- `docs/rembg/rembg-readme.md`: README original do rembg
-- `docs/rembg/rembg-usage.md`: exemplos de uso do rembg em Python
+- `docs/testing.md`: convencoes e infraestrutura da suite de testes
+
+## Suite de Testes
+
+A suite automatizada fica em `tests/`.
+
+### Estrutura
+
+```text
+tests/
+  conftest.py
+  config.toml
+  mock_config.py
+  mock_data/
+  fixtures/
+  unit/
+    io/
+  integration/
+    io/
+```
+
+### Executar os testes
+
+Na raiz do projeto:
+
+```bash
+pytest
+```
+
+Os imports `from src...` dependem da instalacao editavel do projeto, nao de ajustes manuais de `sys.path`.
+
+### Convencoes
+
+- Arquivos de teste devem seguir o padrao `test_*.py`
+- Testes unitarios devem ficar em `tests/unit/` e espelhar `src/`
+- Testes de integracao devem ficar em `tests/integration/`

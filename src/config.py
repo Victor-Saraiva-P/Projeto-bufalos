@@ -1,80 +1,87 @@
-import os
+from pathlib import Path
+import tomllib
 
 
-# Diretorio base do projeto (diretorio pai de src)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parent.parent
+_CONFIG_PATH = Path(__file__).with_name("config.toml")
+
+with _CONFIG_PATH.open("rb") as config_file:
+    _CONFIG = tomllib.load(config_file)
+
+
+def _resolver_caminho(base_dir: Path, *parts: str) -> str:
+    return str(base_dir.joinpath(*parts))
+
+
+_PATHS = _CONFIG["paths"]
+_COLUMNS = _CONFIG["columns"]
+_FILE_TYPES = _CONFIG["file_types"]
+_BINARIZATION = _CONFIG["binarization"]
+_EVALUATION = _CONFIG["evaluation"]
 
 # Diretorios mais gerais
-DATA_DIR = os.path.join(BASE_DIR, "data")
-GENERATED_DIR = os.path.join(BASE_DIR, "generated")
+DATA_DIR = _resolver_caminho(BASE_DIR, _PATHS["data_dir"])
+GENERATED_DIR = _resolver_caminho(BASE_DIR, _PATHS["generated_dir"])
 
 # Diretorios especificos
-IMAGES_DIR = os.path.join(DATA_DIR, "images")
-GROUND_TRUTH_RAW_DIR = os.path.join(DATA_DIR, "ground_truth_raw")
-
-PREDICTED_MASKS_DIR = os.path.join(GENERATED_DIR, "predicted_masks")
-PREDICTED_MASKS_BINARY = os.path.join(GENERATED_DIR, "predicted_masks_binary")
-
-GROUND_TRUTH_BINARY = os.path.join(GENERATED_DIR, "ground_truth_binary")
+IMAGES_DIR = _resolver_caminho(BASE_DIR, _PATHS["data_dir"], _PATHS["images_dir"])
+GROUND_TRUTH_RAW_DIR = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["data_dir"],
+    _PATHS["ground_truth_raw_dir"],
+)
+PREDICTED_MASKS_DIR = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["generated_dir"],
+    _PATHS["predicted_masks_dir"],
+)
+PREDICTED_MASKS_BINARY = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["generated_dir"],
+    _PATHS["predicted_masks_binary_dir"],
+)
+GROUND_TRUTH_BINARY = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["generated_dir"],
+    _PATHS["ground_truth_binary_dir"],
+)
+EVALUATION_DIR = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["generated_dir"],
+    _PATHS["evaluation_dir"],
+)
 
 # Caminhos de arquivos
-INDICE_PATH = os.path.join(DATA_DIR, "Indice.xlsx")
+INDICE_PATH = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["data_dir"],
+    _PATHS["indice_file"],
+)
+METRICS_CACHE_PATH = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["generated_dir"],
+    _PATHS["evaluation_dir"],
+    _EVALUATION["metrics_cache_file"],
+)
 
 # Nomes das colunas do excel
-NOME_COL = "nome do arquivo"
-FAZENDA_COL = "fazenda"
-PESO_COL = "peso"
-TAGS_COL = "tags"
+NOME_COL = _COLUMNS["nome"]
+FAZENDA_COL = _COLUMNS["fazenda"]
+PESO_COL = _COLUMNS["peso"]
+TAGS_COL = _COLUMNS["tags"]
 
 # Configuracao do tipo de arquivo
-IMAGES_TYPE = ".jpg"
-REMBG_IMAGE_TYPE = ".png"
+IMAGES_TYPE = _FILE_TYPES["images"]
+REMBG_IMAGE_TYPE = _FILE_TYPES["rembg"]
 
 # Configuracao de binarizacao
-# Metodo: Gaussian Blur + Morphological Opening
-# 1. Gaussian Blur: suaviza artefatos de compressao JPG
-# 2. Threshold: separa foreground (>127) de background (<=127)
-# 3. Morphological Opening: erosao seguida de dilatacao - remove pixels isolados e suaviza bordas
-BINARIZATION_SIGMA = 1.0  # Intensidade do blur gaussiano
-BINARIZATION_THRESHOLD = 127  # Limiar de binarizacao (0-255)
-BINARIZATION_KERNEL_SIZE = 3  # Tamanho do elemento estruturante para opening
+BINARIZATION_SIGMA = _BINARIZATION["sigma"]
+BINARIZATION_THRESHOLD = _BINARIZATION["threshold"]
+BINARIZATION_KERNEL_SIZE = _BINARIZATION["kernel_size"]
 
 # Deprecated - usar BINARIZATION_THRESHOLD
-LIMIAR_BINARIZACAO = 127
+LIMIAR_BINARIZACAO = BINARIZATION_THRESHOLD
 
-# Modelos para avaliacao (modelo: provider)
-# provider: "gpu" = usa GPU se disponivel, senao CPU | "cpu" = sempre CPU
-MODELOS_PARA_AVALIACAO = {
-    "u2net": "gpu",
-    "u2netp": "gpu",
-    "u2net_human_seg": "gpu",
-    # "u2net_cloth_seg": "gpu",  # especifico para roupas e altera resolucao da imagem
-    "silueta": "gpu",
-    "isnet-general-use": "gpu",
-    "isnet-anime": "gpu",
-    "sam": "gpu",
-    "birefnet-general": "cpu",
-    "birefnet-general-lite": "cpu",
-    "birefnet-portrait": "cpu",
-    "birefnet-dis": "cpu",
-    "birefnet-hrsod": "cpu",
-    "birefnet-cod": "cpu",
-    "birefnet-massive": "cpu",
-}
-
-# ==============================================================================
-# EVALUATION SYSTEM CONFIGURATION
-# ==============================================================================
-
-# Diretorio de avaliacao
-EVALUATION_DIR = os.path.join(GENERATED_DIR, "evaluation")
-
-# Cache de metricas
-METRICS_CACHE_PATH = os.path.join(EVALUATION_DIR, "metrics_cache.csv")
-
-# Pesos para ranking (devem somar 1.0)
-RANKING_WEIGHTS = {
-    "iou": 0.34,  # 40% - Sobreposicao (Intersection over Union)
-    "area_similarity": 0.33,  # 30% - Similaridade de area
-    "perimetro_similarity": 0.33,  # 30% - Similaridade de perimetro
-}
+# Configuracoes declarativas
+MODELOS_PARA_AVALIACAO = _CONFIG["models"]
+RANKING_WEIGHTS = _EVALUATION["ranking_weights"]

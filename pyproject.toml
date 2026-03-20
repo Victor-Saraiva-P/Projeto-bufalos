@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bufalos-testes"
+version = "0.1.0"
+description = "Projeto Bufalos para avaliacao de remocao de fundo."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "coverage>=7.13.5",
+    "matplotlib",
+    "numpy",
+    "opencv-python",
+    "onnxruntime",
+    "onnxruntime-gpu",
+    "openpyxl",
+    "pandas",
+    "pillow",
+    "pytest",
+    "pytest-cov",
+    "rembg",
+    "rembg[gpu]",
+    "scikit-image",
+    "scipy",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src", "src.*"]
+
+[tool.setuptools.package-data]
+src = ["config.toml"]
