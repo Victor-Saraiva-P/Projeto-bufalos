@@ -75,7 +75,6 @@ def _segmentar_linha(
     stats_geral: EstatisticasProcessamento,
     stats_modelo: EstatisticasProcessamento,
 ) -> None:
-    _, remove = obter_api_rembg()
     original_path = caminho_foto_original(linha.nome_arquivo)
     mascara_path = caminho_ground_truth(linha.nome_arquivo)
     output_path = caminho_mascara_predita(nome_modelo, linha.nome_arquivo)
@@ -101,6 +100,7 @@ def _segmentar_linha(
         return
 
     try:
+        _, remove = obter_api_rembg()
         inicio_inferencia = time.perf_counter()
         with Image.open(original_path) as input_rembg:
             output_rembg = remove(
