@@ -10,7 +10,7 @@ GENERATED_DIR = os.path.join(BASE_DIR, "generated")
 
 # Diretorios especificos
 IMAGES_DIR = os.path.join(DATA_DIR, "images")
-GROUND_TRUTH_DIR = os.path.join(DATA_DIR, "ground_truth")
+GROUND_TRUTH_RAW_DIR = os.path.join(DATA_DIR, "ground_truth_raw")
 
 PREDICTED_MASKS_DIR = os.path.join(GENERATED_DIR, "predicted_masks")
 PREDICTED_MASKS_BINARY = os.path.join(GENERATED_DIR, "predicted_masks_binary")
@@ -24,6 +24,7 @@ INDICE_PATH = os.path.join(DATA_DIR, "Indice.xlsx")
 NOME_COL = "nome do arquivo"
 FAZENDA_COL = "fazenda"
 PESO_COL = "peso"
+TAGS_COL = "tags"
 
 # Configuracao do tipo de arquivo
 IMAGES_TYPE = ".jpg"

@@ -9,6 +9,7 @@ Este repositório visa avaliar modelos de remoção de fundo em imagens utilizan
 > A pasta `docs/` contém arquivos .md para detalhar aspectos específicos do projeto. Consulte:
 
 - `eval-types.md`: critérios de avaliação dos modelos.
+- `image-tags.md`: taxonomia fechada das tags de curadoria de imagem; inclui `baixo_contraste` para casos em que o búfalo se confunde com o fundo por semelhança de cor, luminosidade ou textura.
 - `docs/rembg/rembg-readme.md`: referência original do rembg cobrindo requisitos, instalação, subcomandos CLI, uso via
   docker e catálogo de modelos.
 - `docs/rembg/rembg-usage.md`: exemplos práticos de uso da função `remove` (sessões, alpha matting, somente máscara, bg
