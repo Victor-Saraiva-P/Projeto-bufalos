@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install CI dependencies
+        run: python -m pip install -r requirements-ci.txt
+
+      - name: Install project
+        run: python -m pip install . --no-deps
+
+      - name: Smoke check package imports
+        run: |
+          python -c "from src.config import INDICE_PATH, MODELOS_PARA_AVALIACAO; from src.metrics.iou import IoU; print(INDICE_PATH); print(sorted(MODELOS_PARA_AVALIACAO)[:3]); print(IoU.__name__)"
+
+      - name: Smoke check test configuration
+        run: |
+          python -c "from tests.mock_config import MockDataConfig; config = MockDataConfig(); assert config.config_path.is_file(); assert config.indice_path.is_file(); assert config.images_dir.is_dir(); assert config.ground_truth_raw_dir.is_dir(); print(config.mock_data_dir)"
