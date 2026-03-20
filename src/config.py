@@ -68,6 +68,7 @@ METRICS_CACHE_PATH = _resolver_caminho(
 NOME_COL = _COLUMNS["nome"]
 FAZENDA_COL = _COLUMNS["fazenda"]
 PESO_COL = _COLUMNS["peso"]
+TAGS_COL = _COLUMNS["tags"]
 
 # Configuracao do tipo de arquivo
 IMAGES_TYPE = _FILE_TYPES["images"]

@@ -13,6 +13,7 @@ indice_file = "Indice.xlsx"
 nome = "nome do arquivo"
 fazenda = "fazenda"
 peso = "peso"
+tags = "tags"
 
 [file_types]
 images = ".jpg"
