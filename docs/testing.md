@@ -4,8 +4,8 @@
 
 A pasta `testes/tests/` concentra a infraestrutura da suite automatizada do projeto.
 Ela usa um dataset reduzido para validar comportamento sem depender do volume completo de `data/`.
-A organizacao da suite deve espelhar a estrutura de `testes/src/`.
 O pacote `src` deve ser resolvido pela instalacao editavel do projeto, e nao por insercoes manuais em `sys.path`.
+A organizacao da suite deve separar os testes por tipo, e nao usar um espelho unico de `testes/src/`.
 
 Estrutura base esperada:
 
@@ -15,17 +15,46 @@ testes/tests/
   conftest.py
   mock_config.py
   mock_data/
-  analysis/
-  io/
-  logs/
-  metrics/
-  models/
-  runtime/
-  visualization/
+  fixtures/
+  unit/
+    analysis/
+    io/
+    logs/
+    metrics/
+    models/
+    runtime/
+    visualization/
+  integration/
+    analysis/
+    io/
+    pipeline/
 ```
 
-Cada diretório de teste deve corresponder ao diretório equivalente em `testes/src/`.
-Exemplo: testes para `src.metrics` ficam em `testes/tests/metrics/`, e testes para `src.models` ficam em `testes/tests/models/`.
+## Organizacao da suite
+
+### Testes unitarios
+
+`testes/tests/unit/` deve espelhar a estrutura de `testes/src/`.
+
+Exemplos:
+
+- testes para `src.metrics` ficam em `testes/tests/unit/metrics/`
+- testes para `src.models` ficam em `testes/tests/unit/models/`
+- testes para `src.io` ficam em `testes/tests/unit/io/`
+
+### Testes de integracao
+
+`testes/tests/integration/` deve agrupar cenarios que atravessam mais de um modulo, usam arquivos reais do dataset reduzido ou validam fluxos completos.
+
+Por enquanto, a estrutura base fica em:
+
+- `testes/tests/integration/analysis/`
+- `testes/tests/integration/io/`
+- `testes/tests/integration/pipeline/`
+
+### Fixtures compartilhadas
+
+`testes/tests/fixtures/` fica reservado para builders, helpers e fixtures reutilizaveis entre `unit/` e `integration/`.
 
 ## Dataset reduzido
 
@@ -54,7 +83,7 @@ Esse diretório serve para:
 
 - testar leitura do índice Excel com um conjunto pequeno;
 - validar fluxos que dependem de nomes de arquivos reais;
-- preparar futuros testes de IO e modelos sem usar o dataset completo.
+- preparar futuros testes, principalmente de integracao, sem usar o dataset completo.
 
 ## Configuracao fake da suite
 
@@ -86,6 +115,7 @@ lock_file = ".~lock.Indice.xlsx#"
 
 - O diretório de teste usa `ground_truth_raw/`, não `ground_truth/`.
 - O arquivo `.~lock.Indice.xlsx#` é temporário, gerado por editor de planilha, e não faz parte do dataset de teste.
+- `testes/tests/unit/` espelha `testes/src/`; `testes/tests/integration/` nao precisa espelhar `src/`.
 - O fluxo esperado para desenvolvimento local e execucao da suite e:
 
 ```bash
