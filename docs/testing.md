@@ -136,10 +136,12 @@ lock_file = ".~lock.Indice.xlsx#"
 - O diretório de teste usa `ground_truth_raw/`, não `ground_truth/`.
 - O arquivo `.~lock.Indice.xlsx#` é temporário, gerado por editor de planilha, e não faz parte do dataset de teste.
 - `tests/unit/` espelha `src/`; `tests/integration/` nao precisa espelhar `src/`.
+- `tests/e2e/` concentra os testes ponta a ponta com dependencias reais.
 - O fluxo esperado para desenvolvimento local e execucao da suite e:
 
 ```bash
 pip install -e .[test]
+pip install -e .[e2e]
 pytest
 ```
 

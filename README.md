@@ -41,6 +41,12 @@ Para desenvolvimento e execucao da suite de testes, instale tambem o extra de te
 pip install -e .[test]
 ```
 
+Para executar tambem os testes end-to-end com `rembg` real em CPU:
+
+```bash
+pip install -e .[e2e]
+```
+
 Para executar o sistema com o conjunto completo de dependencias de runtime:
 
 ```bash
@@ -55,12 +61,14 @@ Se voce usa `mise`, pode criar o ambiente com Python 3.12 explicitamente assim:
 mise exec python@3.12 -- python -m venv .venv
 source .venv/bin/activate
 pip install -e .[test]
+pip install -e .[e2e]
 pip install -e .[runtime]
 ```
 
 Esse fluxo cria um ambiente de desenvolvimento completo:
 
 - `.[test]` instala as dependencias da suite de testes
+- `.[e2e]` instala o necessario para rodar os testes end-to-end em CPU
 - `.[runtime]` instala as dependencias completas de execucao do sistema
 
 Como alternativa, voce pode fixar o Python 3.12 no projeto com `mise` antes de criar o venv:
@@ -70,6 +78,7 @@ mise use python@3.12
 python -m venv .venv
 source .venv/bin/activate
 pip install -e .[test]
+pip install -e .[e2e]
 pip install -e .[runtime]
 ```
 
