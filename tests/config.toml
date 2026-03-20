@@ -1,0 +1,5 @@
+[paths]
+mock_data_dir = "mock_data"
+indice_file = "Indice.xlsx"
+images_dir = "images"
+ground_truth_raw_dir = "ground_truth_raw"
