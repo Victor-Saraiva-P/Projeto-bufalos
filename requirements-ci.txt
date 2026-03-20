@@ -1,4 +1,5 @@
 numpy
+opencv-python
 openpyxl
 pandas
 pillow
