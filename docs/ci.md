@@ -4,7 +4,7 @@
 
 O projeto possui um workflow inicial de GitHub Actions em `.github/workflows/ci.yml`.
 
-Nesta fase, o CI instala os extras `test` e `e2e` e executa toda a suite de testes.
+Nesta fase, o CI instala apenas o extra `test` e executa somente os testes mais leves.
 Tambem gera o relatorio HTML de coverage como artifact da execucao.
 
 ## Gatilhos
@@ -23,12 +23,12 @@ O job usa:
 
 ## Dependencias
 
-O CI usa os extras `test` e `e2e` definidos no `pyproject.toml`.
+O CI usa apenas o extra `test` definido no `pyproject.toml`.
 
 O workflow instala o projeto com:
 
 ```bash
-pip install .[test,e2e]
+pip install .[test]
 ```
 
 Esse caminho aproxima o ambiente do CI do mesmo ambiente usado localmente para rodar os testes.
@@ -37,7 +37,7 @@ Esse caminho aproxima o ambiente do CI do mesmo ambiente usado localmente para r
 
 O workflow executa:
 
-- `pytest` para toda a suite, incluindo os testes marcados como `e2e`
+- `pytest -m "not e2e"` para excluir os testes end-to-end mais custosos
 - generation de `htmlcov/` com `pytest-cov`
 - upload do relatorio HTML como artifact
 
