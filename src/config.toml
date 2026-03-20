@@ -1,0 +1,48 @@
+[paths]
+data_dir = "data"
+generated_dir = "generated"
+images_dir = "images"
+ground_truth_dir = "ground_truth"
+predicted_masks_dir = "predicted_masks"
+predicted_masks_binary_dir = "predicted_masks_binary"
+ground_truth_binary_dir = "ground_truth_binary"
+evaluation_dir = "evaluation"
+indice_file = "Indice.xlsx"
+
+[columns]
+nome = "nome do arquivo"
+fazenda = "fazenda"
+peso = "peso"
+
+[file_types]
+images = ".jpg"
+rembg = ".png"
+
+[binarization]
+sigma = 1.0
+threshold = 127
+kernel_size = 3
+
+[models]
+u2net = "gpu"
+u2netp = "gpu"
+u2net_human_seg = "gpu"
+silueta = "gpu"
+isnet-general-use = "gpu"
+isnet-anime = "gpu"
+sam = "gpu"
+birefnet-general = "cpu"
+birefnet-general-lite = "cpu"
+birefnet-portrait = "cpu"
+birefnet-dis = "cpu"
+birefnet-hrsod = "cpu"
+birefnet-cod = "cpu"
+birefnet-massive = "cpu"
+
+[evaluation]
+metrics_cache_file = "metrics_cache.csv"
+
+[evaluation.ranking_weights]
+iou = 0.34
+area_similarity = 0.33
+perimetro_similarity = 0.33
