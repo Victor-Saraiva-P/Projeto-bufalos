@@ -140,8 +140,7 @@ lock_file = ".~lock.Indice.xlsx#"
 - O fluxo esperado para desenvolvimento local e execucao da suite e:
 
 ```bash
-pip install -e .[test]
-pip install -e .[e2e]
+pip install -e .
 pytest
 ```
 

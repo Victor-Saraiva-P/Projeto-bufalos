@@ -27,7 +27,8 @@ generated/
 
 ### Requisitos
 
-- Python 3.12 (o `rembg` requer Python < 3.14)
+- Python 3.13 recomendado (o projeto requer Python >= 3.12 e < 3.14)
+- Para evitar problemas no uso de `src/tagging/manual_tagger.py`, prefira Python 3.13
 - `tkinter` disponivel no Python para rodar os anotadores manuais
 - GPU NVIDIA com CUDA e opcional; o projeto tambem pode rodar em CPU
 
@@ -36,7 +37,7 @@ generated/
 1. Crie o ambiente virtual:
 
 ```bash
-python3.12 -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -46,37 +47,27 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-3. Para desenvolvimento e execucao da suite de testes:
+Essa instalacao ja cobre o runtime principal do projeto, incluindo segmentacao com `rembg`, suporte a providers de GPU e visualizacao.
 
-```bash
-pip install -e .[test]
-```
-
-4. Para rodar os testes end-to-end com `rembg` real em CPU:
-
-```bash
-pip install -e .[e2e]
-```
+Essa instalacao tambem cobre o ambiente de desenvolvimento e a suite de testes.
 
 ### Instalacao com mise
 
-Se voce usa `mise`, pode criar o ambiente com Python 3.12 assim:
+Se voce usa `mise`, este e o caminho recomendado para criar o `.venv` com Python 3.13:
 
 ```bash
-mise exec python@3.12 -- python -m venv .venv
+mise exec python@3.13 -- python -m venv .venv
 source .venv/bin/activate
-pip install -e .[test]
-pip install -e .[e2e]
+pip install -e .
 ```
 
-Como alternativa, voce pode fixar o Python 3.12 no projeto antes de criar o venv:
+Como alternativa, voce pode fixar o Python 3.13 no projeto antes de criar o venv:
 
 ```bash
-mise use python@3.12
+mise use python@3.13
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[test]
-pip install -e .[e2e]
+pip install -e .
 ```
 
 ## Como rodar o projeto
@@ -191,11 +182,9 @@ Instale o cuDNN compativel com CUDA 12.5:
 yay -S cudnn9.3-cuda12.5
 ```
 
-### Passo 3: Instalar rembg com suporte a GPU
+### Passo 3: Garantir bibliotecas do sistema para GPU
 
-```bash
-pip install "rembg[gpu,cli]"
-```
+As dependencias Python de GPU ja sao instaladas com `pip install -e .`. Nesta etapa, falta apenas garantir que CUDA e cuDNN estejam disponiveis no sistema.
 
 ### Passo 4: Configurar kernel do Jupyter (opcional)
 
