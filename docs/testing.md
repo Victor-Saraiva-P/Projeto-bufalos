@@ -142,3 +142,37 @@ lock_file = ".~lock.Indice.xlsx#"
 pip install -e .[test]
 pytest
 ```
+
+## Coverage
+
+Para medir coverage localmente, use `pytest-cov`.
+
+Resumo no terminal:
+
+```bash
+pytest --cov=src --cov-report=term-missing
+```
+
+Relatorio HTML:
+
+```bash
+pytest --cov=src --cov-report=html
+```
+
+O relatorio HTML e gerado em `htmlcov/`.
+
+### Fluxo recomendado
+
+Se o runner da IDE nao mostrar bem o resumo textual no console, prefira gerar o coverage em HTML:
+
+```bash
+pytest --cov=src --cov-report=html
+```
+
+Depois, abra o arquivo principal do relatorio:
+
+```text
+htmlcov/index.html
+```
+
+Esse relatorio permite navegar por arquivo e ver exatamente quais linhas foram cobertas e quais nao foram.

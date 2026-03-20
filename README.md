@@ -29,16 +29,22 @@ python3.12 -m venv .venv
 source .venv/bin/activate
 ```
 
-2. Instale as dependencias:
+2. Instale o projeto:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
-Para desenvolvimento e execucao da suite de testes, instale tambem o projeto em modo editavel:
+Para desenvolvimento e execucao da suite de testes, instale tambem o extra de testes:
 
 ```bash
 pip install -e .[test]
+```
+
+Para executar o sistema com o conjunto completo de dependencias de runtime:
+
+```bash
+pip install -e .[runtime]
 ```
 
 ## Configuracao de GPU (NVIDIA/CUDA)
@@ -167,7 +173,7 @@ projeto-bufalos/
     models/
     runtime/
   rembg/                # Repositorio do rembg clonado (referencia)
-  requirements.txt      # Dependencias Python
+  pyproject.toml        # Configuracao do projeto e extras de dependencia
 ```
 
 ## Documentacao Adicional

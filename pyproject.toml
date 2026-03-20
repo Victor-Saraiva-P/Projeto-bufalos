@@ -9,21 +9,25 @@ description = "Projeto Bufalos para avaliacao de remocao de fundo."
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [
-    "matplotlib",
     "numpy",
-    "onnxruntime-gpu",
     "opencv-python",
     "openpyxl",
     "pandas",
     "pillow",
-    "rembg[gpu]",
-    "scikit-image",
-    "scipy",
 ]
 
 [project.optional-dependencies]
 test = [
+    "coverage>=7.13.5",
     "pytest",
+    "pytest-cov",
+]
+runtime = [
+    "matplotlib",
+    "onnxruntime-gpu",
+    "rembg[gpu]",
+    "scikit-image",
+    "scipy",
 ]
 
 [tool.setuptools]
