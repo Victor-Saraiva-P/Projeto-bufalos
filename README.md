@@ -47,6 +47,32 @@ Para executar o sistema com o conjunto completo de dependencias de runtime:
 pip install -e .[runtime]
 ```
 
+### Instalacao com mise
+
+Se voce usa `mise`, pode criar o ambiente com Python 3.12 explicitamente assim:
+
+```bash
+mise exec python@3.12 -- python -m venv .venv
+source .venv/bin/activate
+pip install -e .[test]
+pip install -e .[runtime]
+```
+
+Esse fluxo cria um ambiente de desenvolvimento completo:
+
+- `.[test]` instala as dependencias da suite de testes
+- `.[runtime]` instala as dependencias completas de execucao do sistema
+
+Como alternativa, voce pode fixar o Python 3.12 no projeto com `mise` antes de criar o venv:
+
+```bash
+mise use python@3.12
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[test]
+pip install -e .[runtime]
+```
+
 ## Configuracao de GPU (NVIDIA/CUDA)
 
 Para utilizar a GPU com o rembg, e necessario configurar CUDA e cuDNN corretamente.
