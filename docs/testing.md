@@ -2,15 +2,15 @@
 
 ## Objetivo
 
-A pasta `testes/tests/` concentra a infraestrutura da suite automatizada do projeto.
+A pasta `tests/` concentra a infraestrutura da suite automatizada do projeto.
 Ela usa um dataset reduzido para validar comportamento sem depender do volume completo de `data/`.
 O pacote `src` deve ser resolvido pela instalacao editavel do projeto, e nao por insercoes manuais em `sys.path`.
-A organizacao da suite deve separar os testes por tipo, e nao usar um espelho unico de `testes/src/`.
+A organizacao da suite deve separar os testes por tipo, e nao usar um espelho unico de `src/`.
 
 Estrutura base esperada:
 
 ```text
-testes/tests/
+tests/
   config.toml
   conftest.py
   mock_config.py
@@ -34,36 +34,56 @@ testes/tests/
 
 ### Testes unitarios
 
-`testes/tests/unit/` deve espelhar a estrutura de `testes/src/`.
+`tests/unit/` deve espelhar a estrutura de `src/`.
 
 Exemplos:
 
-- testes para `src.metrics` ficam em `testes/tests/unit/metrics/`
-- testes para `src.models` ficam em `testes/tests/unit/models/`
-- testes para `src.io` ficam em `testes/tests/unit/io/`
+- testes para `src.metrics` ficam em `tests/unit/metrics/`
+- testes para `src.models` ficam em `tests/unit/models/`
+- testes para `src.io` ficam em `tests/unit/io/`
 
 ### Testes de integracao
 
-`testes/tests/integration/` deve agrupar cenarios que atravessam mais de um modulo, usam arquivos reais do dataset reduzido ou validam fluxos completos.
+`tests/integration/` deve agrupar cenarios que atravessam mais de um modulo, usam arquivos reais do dataset reduzido ou validam fluxos completos.
 
 Por enquanto, a estrutura base fica em:
 
-- `testes/tests/integration/analysis/`
-- `testes/tests/integration/io/`
-- `testes/tests/integration/pipeline/`
+- `tests/integration/analysis/`
+- `tests/integration/io/`
+- `tests/integration/pipeline/`
 
 ### Fixtures compartilhadas
 
-`testes/tests/fixtures/` fica reservado para builders, helpers e fixtures reutilizaveis entre `unit/` e `integration/`.
+`tests/fixtures/` fica reservado para builders, helpers e fixtures reutilizaveis entre `unit/` e `integration/`.
+
+### Imports dentro da suite
+
+`tests/` nao deve ser tratado como um pacote Python instalado.
+
+Por isso, arquivos da propria suite nao devem usar imports com prefixo `tests.`.
+
+Exemplo correto:
+
+```python
+from mock_config import MockDataConfig
+```
+
+Exemplo a evitar:
+
+```python
+from tests.mock_config import MockDataConfig
+```
+
+Os imports com prefixo `src.` continuam corretos, porque o pacote `src` e instalado pelo projeto.
 
 ## Dataset reduzido
 
-O conjunto de teste fica em `testes/tests/mock_data/` e replica a estrutura essencial do dataset real com poucos arquivos.
+O conjunto de teste fica em `tests/mock_data/` e replica a estrutura essencial do dataset real com poucos arquivos.
 
 Estrutura atual:
 
 ```text
-testes/tests/mock_data/
+tests/mock_data/
   Indice.xlsx
   images/
     1166_Calcula_506.jpg
@@ -87,9 +107,9 @@ Esse diretório serve para:
 
 ## Configuracao fake da suite
 
-A configuracao declarativa exclusiva da suite fica em `testes/tests/config.toml`.
+A configuracao declarativa exclusiva da suite fica em `tests/config.toml`.
 
-O arquivo `testes/tests/mock_config.py` continua existindo apenas como loader fino para ler esse TOML e expor caminhos resolvidos para os testes.
+O arquivo `tests/mock_config.py` continua existindo apenas como loader fino para ler esse TOML e expor caminhos resolvidos para os testes.
 
 Ela expõe caminhos dedicados para os testes:
 
@@ -115,7 +135,7 @@ lock_file = ".~lock.Indice.xlsx#"
 
 - O diretório de teste usa `ground_truth_raw/`, não `ground_truth/`.
 - O arquivo `.~lock.Indice.xlsx#` é temporário, gerado por editor de planilha, e não faz parte do dataset de teste.
-- `testes/tests/unit/` espelha `testes/src/`; `testes/tests/integration/` nao precisa espelhar `src/`.
+- `tests/unit/` espelha `src/`; `tests/integration/` nao precisa espelhar `src/`.
 - O fluxo esperado para desenvolvimento local e execucao da suite e:
 
 ```bash

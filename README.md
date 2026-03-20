@@ -185,14 +185,19 @@ A suite automatizada fica em `tests/`.
 ```text
 tests/
   conftest.py
-  test_smoke_imports.py
-  metrics/
-  models/
+  config.toml
+  mock_config.py
+  mock_data/
+  fixtures/
+  unit/
+    io/
+  integration/
+    io/
 ```
 
 ### Executar os testes
 
-Dentro da pasta `testes/`:
+Na raiz do projeto:
 
 ```bash
 pytest
@@ -203,5 +208,5 @@ Os imports `from src...` dependem da instalacao editavel do projeto, nao de ajus
 ### Convencoes
 
 - Arquivos de teste devem seguir o padrao `test_*.py`
-- Novos testes de `src.metrics` devem ficar em `tests/metrics/`
-- Novos testes de `src.models` devem ficar em `tests/models/`
+- Testes unitarios devem ficar em `tests/unit/` e espelhar `src/`
+- Testes de integracao devem ficar em `tests/integration/`
