@@ -1,3 +1,4 @@
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -23,7 +24,7 @@ def test_criar_sessao_segmentacao_faz_fallback_para_cpu(
         return {"modelo": nome_modelo, "providers": providers}
 
     monkeypatch.setattr(
-        "src.segmentacao.geracao_mascaras._obter_api_rembg",
+        "src.segmentacao.geracao_mascaras.obter_api_rembg",
         lambda: (fake_new_session, object()),
     )
 
@@ -43,7 +44,7 @@ def test_segmentar_linha_registra_skip_quando_saida_ja_existe(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    linha = IndiceLinha(nome_arquivo="bufalo_001", fazenda="A", peso=1)
+    linha = IndiceLinha(nome_arquivo="bufalo_001", fazenda="A", peso=Decimal("1"))
     original = tmp_path / "original.jpg"
     ground_truth = tmp_path / "ground_truth.jpg"
     output = tmp_path / "saida.png"
@@ -80,7 +81,7 @@ def test_segmentar_linha_salva_mascara_quando_inferencia_funciona(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    linha = IndiceLinha(nome_arquivo="bufalo_001", fazenda="A", peso=1)
+    linha = IndiceLinha(nome_arquivo="bufalo_001", fazenda="A", peso=Decimal("1"))
     original = tmp_path / "original.jpg"
     ground_truth = tmp_path / "ground_truth.jpg"
     output = tmp_path / "saida.png"
@@ -101,7 +102,7 @@ def test_segmentar_linha_salva_mascara_quando_inferencia_funciona(
         lambda *_: str(output),
     )
     monkeypatch.setattr(
-        "src.segmentacao.geracao_mascaras._obter_api_rembg",
+        "src.segmentacao.geracao_mascaras.obter_api_rembg",
         lambda: (
             object(),
             lambda *_args, **_kwargs: Image.new("L", (3, 3), color=255),

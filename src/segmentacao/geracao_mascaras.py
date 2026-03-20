@@ -10,19 +10,16 @@ from src.io.path_utils import (
     caminho_ground_truth,
     caminho_mascara_predita,
 )
+from src.segmentacao.integracoes import (
+    obter_api_rembg,
+    obter_resolvedor_providers,
+)
 from src.segmentacao.logs import (
     EstatisticasProcessamento,
     imprimir_resumo_modelo,
     imprimir_status,
 )
 from src.models.indice_linha import IndiceLinha
-from src.runtime.runtime_config import resolver_providers
-
-
-def _obter_api_rembg():
-    from rembg import new_session, remove
-
-    return new_session, remove
 
 
 def executar_segmentacao(
@@ -33,6 +30,7 @@ def executar_segmentacao(
     total_previsto = len(modelos_para_avaliacao) * len(linhas_indice)
     stats_geral = EstatisticasProcessamento(total=total_previsto)
     resumos_modelo: dict[str, EstatisticasProcessamento] = {}
+    resolver_providers = obter_resolvedor_providers()
 
     for nome_modelo, provider_config in modelos_para_avaliacao.items():
         providers = resolver_providers(provider_config, nome_modelo)
@@ -60,7 +58,7 @@ def executar_segmentacao(
 
 
 def _criar_sessao_segmentacao(nome_modelo: str, providers: list[str]):
-    new_session, _ = _obter_api_rembg()
+    new_session, _ = obter_api_rembg()
 
     try:
         return new_session(nome_modelo, providers=providers)
@@ -77,7 +75,7 @@ def _segmentar_linha(
     stats_geral: EstatisticasProcessamento,
     stats_modelo: EstatisticasProcessamento,
 ) -> None:
-    _, remove = _obter_api_rembg()
+    _, remove = obter_api_rembg()
     original_path = caminho_foto_original(linha.nome_arquivo)
     mascara_path = caminho_ground_truth(linha.nome_arquivo)
     output_path = caminho_mascara_predita(nome_modelo, linha.nome_arquivo)

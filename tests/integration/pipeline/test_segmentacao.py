@@ -42,13 +42,13 @@ def test_executar_segmentacao_processa_modelo_e_gera_arquivo(
     )
     monkeypatch.setattr(
         "src.segmentacao.geracao_mascaras._criar_sessao_segmentacao",
-        lambda nome_modelo, providers: {
-            "modelo": nome_modelo,
+        lambda modelo, providers: {
+            "modelo": modelo,
             "providers": providers,
         },
     )
     monkeypatch.setattr(
-        "src.segmentacao.geracao_mascaras._obter_api_rembg",
+        "src.segmentacao.geracao_mascaras.obter_api_rembg",
         lambda: (
             object(),
             lambda *_args, **_kwargs: Image.new("L", (4, 4), color=255),
