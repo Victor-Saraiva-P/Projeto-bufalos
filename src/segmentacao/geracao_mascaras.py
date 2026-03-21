@@ -103,6 +103,7 @@ def _segmentar_linha(
         _, remove = obter_api_rembg()
         inicio_inferencia = time.perf_counter()
         with Image.open(original_path) as input_rembg:
+            # Docs: decisoes-tecnicas/mascaras-do-rembg.md
             output_rembg = remove(
                 input_rembg,
                 only_mask=True,

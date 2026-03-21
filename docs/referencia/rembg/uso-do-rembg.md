@@ -1,6 +1,6 @@
 # How to use the remove function
 
-## Load the Image
+## Load the Im
 
 ```python
 from PIL import Image

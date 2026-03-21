@@ -17,6 +17,7 @@ tags = "tags"
 
 [file_types]
 images = ".jpg"
+# Docs: decisoes-tecnicas/formato-das-mascaras.md
 rembg = ".png"
 
 [binarization]
@@ -28,6 +29,8 @@ kernel_size = 3
 u2net = "gpu"
 u2netp = "gpu"
 u2net_human_seg = "gpu"
+# Docs: decisoes-tecnicas/u2net-cloth-seg.md
+# u2net_cloth_seg = "gpu"
 silueta = "gpu"
 isnet-general-use = "gpu"
 isnet-anime = "gpu"
