@@ -199,3 +199,6 @@ pyrightconfig.json
 data/
 generated/
 rembg
+!docs/referencia/
+!docs/referencia/rembg/
+!docs/referencia/rembg/*.md
