@@ -55,6 +55,7 @@ Se a decisao estiver refletida em mais de um lugar, referencie a documentacao em
 - `avaliacao/sistema-de-avaliacao.md`: visao geral do fluxo de avaliacao dos modelos.
 - `avaliacao/tags-de-imagem.md`: taxonomia fechada das tags de curadoria de imagem; inclui `baixo_contraste` para casos em que o bufalo se confunde com o fundo por semelhanca de cor, luminosidade ou textura.
 - `decisoes-tecnicas/`: pasta com as decisoes tecnicas que afetam o pipeline.
+- `decisoes-tecnicas/u2net-cloth-seg.md`: decisao de manter o `u2net_cloth_seg` fora da configuracao ativa.
 - `referencia/rembg/leia-me-do-rembg.md`: referência original do rembg cobrindo requisitos, instalação, subcomandos CLI, uso via
   docker e catálogo de modelos.
 - `referencia/rembg/uso-do-rembg.md`: exemplos práticos de uso da função `remove` (sessões, alpha matting, somente máscara, bg

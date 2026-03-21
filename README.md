@@ -73,6 +73,7 @@ docs/
   decisoes-tecnicas/
     mascaras-do-rembg.md
     formato-das-mascaras.md
+    u2net-cloth-seg.md
   referencia/
     rembg/
       leia-me-do-rembg.md
