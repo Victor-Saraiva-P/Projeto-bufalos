@@ -1,0 +1,260 @@
+# Guia do Projeto
+
+Este documento concentra as instrucoes operacionais do projeto: ambiente, execucao, notebooks, GPU e convencoes gerais.
+
+## Estrutura esperada dos dados
+
+Estrutura minima na pasta `data`:
+
+```text
+data/
+  ground_truth_raw/ # mascaras de referencia (segmentacao manual)
+  images/           # imagens originais de entrada
+  Indice.xlsx       # planilha com indice das imagens
+```
+
+Saidas geradas pelo projeto:
+
+```text
+generated/
+  predicted_masks/         # mascaras geradas pelos modelos
+  predicted_masks_binary/  # mascaras previstas apos binarizacao
+  ground_truth_binary/     # mascaras manuais apos binarizacao
+  evaluation/              # caches e artefatos de avaliacao
+```
+
+## Configuracao do ambiente
+
+### Requisitos
+
+- Python 3.13 recomendado;
+- o projeto requer Python `>= 3.12` e `< 3.14`;
+- `tkinter` disponivel para rodar os anotadores manuais;
+- GPU NVIDIA com CUDA e opcional.
+
+Para evitar problemas no uso de `src/tagging/manual_tagger.py`, prefira Python 3.13.
+
+### Instalacao
+
+Crie o ambiente virtual:
+
+```bash
+python3.13 -m venv .venv
+source .venv/bin/activate
+```
+
+Instale o projeto:
+
+```bash
+pip install -e .
+```
+
+Essa instalacao cobre o runtime principal, o ambiente de desenvolvimento e a suite de testes.
+
+### Instalacao com `mise`
+
+Caminho recomendado:
+
+```bash
+mise exec python@3.13 -- python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+Alternativa:
+
+```bash
+mise use python@3.13
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+## Como rodar o projeto
+
+Todos os comandos abaixo assumem que voce esta na raiz do repositorio e com o ambiente ativado:
+
+```bash
+source .venv/bin/activate
+```
+
+### Anotador manual de tags
+
+O script `src/tagging/manual_tagger.py` abre uma interface grafica para revisar as imagens pendentes e preencher a coluna `tags` de `data/Indice.xlsx`.
+
+Comando recomendado:
+
+```bash
+python -m src.tagging.manual_tagger
+```
+
+Comando equivalente:
+
+```bash
+python src/tagging/manual_tagger.py
+```
+
+Pre-requisitos:
+
+- `data/Indice.xlsx` precisa existir;
+- a planilha precisa ter a coluna `nome do arquivo`;
+- as imagens precisam estar em `data/images/`;
+- o ambiente precisa ter suporte grafico e `tkinter`.
+
+Comportamento do fluxo:
+
+- o app carrega apenas linhas ainda sem valor na coluna `tags`;
+- `1` a `5` alternam as tags disponiveis;
+- `Enter` salva a imagem atual e avanca;
+- `Enter` sem nenhuma tag marcada grava `ok`;
+- ao fechar a janela, o app salva a selecao atual se houver tags marcadas.
+
+Se o app abortar no Linux ou Wayland com erro `xcb`, o problema pode estar no runtime `Python + Tk`, e nao no codigo do projeto.
+
+### Anotador por foco
+
+O script `src/tagging/focused_tagger.py` permite revisar uma tag por vez, mantendo as tags ja existentes da imagem.
+
+Comando recomendado:
+
+```bash
+python -m src.tagging.focused_tagger
+```
+
+Comando equivalente:
+
+```bash
+python src/tagging/focused_tagger.py
+```
+
+Comportamento do fluxo:
+
+- na tela inicial, use `1` a `5` para escolher a tag-foco e `Enter` para confirmar;
+- o app revisa apenas imagens que ainda nao possuem a tag-foco selecionada;
+- durante a revisao, a tecla `1` alterna a marcacao da tag-foco para a imagem atual;
+- `Enter` salva e avanca para a proxima imagem;
+- se a celula ainda estiver vazia e nenhuma marcacao for feita, o fluxo grava `ok`;
+- se a imagem ja tiver outras tags, elas sao preservadas.
+
+As tags de curadoria estao definidas em `../avaliacao/tags-de-imagem.md`.
+
+### Notebooks principais
+
+O fluxo de execucao do projeto esta organizado em tres notebooks:
+
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia;
+- `notebooks/03_avaliacao_das_segmentacoes.ipynb`: calcula metricas e compara os modelos.
+
+Para abrir o ambiente de notebooks:
+
+```bash
+jupyter notebook
+```
+
+Execute os notebooks na ordem acima.
+
+## Configuracao de GPU
+
+Esta secao e opcional. Ela so e necessaria se voce quiser executar os modelos com aceleracao em GPU.
+
+Sem GPU, o projeto continua funcionando em CPU, mas a segmentacao tende a ser mais lenta.
+
+### Passo 1: instalar CUDA 12.5
+
+O `onnxruntime-gpu` requer CUDA 12.x. No Arch Linux:
+
+```bash
+yay -S cuda-12.5
+```
+
+Verifique:
+
+```bash
+/opt/cuda/bin/nvcc --version
+```
+
+### Passo 2: instalar cuDNN
+
+```bash
+yay -S cudnn9.3-cuda12.5
+```
+
+### Passo 3: garantir bibliotecas do sistema
+
+As dependencias Python de GPU ja sao instaladas com `pip install -e .`. Nesta etapa, falta apenas garantir que CUDA e cuDNN estejam disponiveis no sistema.
+
+### Passo 4: configurar kernel do Jupyter
+
+```bash
+pip install ipykernel
+python -m ipykernel install --user --name=projeto-bufalos --display-name="Python 3.12 (projeto-bufalos)"
+```
+
+Edite `~/.local/share/jupyter/kernels/projeto-bufalos/kernel.json` para incluir:
+
+```json
+{
+  "argv": [
+    "/home/SEU_USUARIO/Projects/projeto-bufalos/.venv/bin/python",
+    "-m",
+    "ipykernel_launcher",
+    "-f",
+    "{connection_file}"
+  ],
+  "display_name": "Python 3.12 (projeto-bufalos)",
+  "language": "python",
+  "env": {
+    "LD_LIBRARY_PATH": "/opt/cuda/lib64"
+  }
+}
+```
+
+### Verificar se a GPU esta funcionando
+
+No Python ou Jupyter:
+
+```python
+import onnxruntime as ort
+print(ort.get_available_providers())
+```
+
+Deve incluir `CUDAExecutionProvider`.
+
+Ou via CLI:
+
+```bash
+rembg p data/images generated/test -m u2net
+```
+
+## Modelos disponiveis para avaliacao
+
+Os modelos configurados ficam em `src/config.py`, no dicionario `MODELOS_PARA_AVALIACAO`.
+
+Observacoes:
+
+- o projeto pode ser executado sem GPU;
+- os providers configurados em `src/config.py` definem quais modelos tentam usar `gpu` e quais usam `cpu`;
+- modelos `birefnet-*` consomem muita VRAM;
+- em GPUs com 4 GB podem ocorrer erros de memoria com imagens grandes;
+- alguns modelos estao configurados para `cpu` por esse motivo.
+
+## Estrutura do projeto
+
+```text
+data/
+docs/
+generated/
+notebooks/
+src/
+tests/
+pyproject.toml
+```
+
+## Documentacao relacionada
+
+- `../guias/testes.md`
+- `../guias/ci.md`
+- `../avaliacao/sistema-de-avaliacao.md`
+- `../avaliacao/tags-de-imagem.md`
+- `../decisoes-tecnicas/`

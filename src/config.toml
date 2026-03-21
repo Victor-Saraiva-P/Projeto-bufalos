@@ -17,6 +17,7 @@ tags = "tags"
 
 [file_types]
 images = ".jpg"
+# Docs: decisoes-tecnicas/formato-das-mascaras.md
 rembg = ".png"
 
 [binarization]
