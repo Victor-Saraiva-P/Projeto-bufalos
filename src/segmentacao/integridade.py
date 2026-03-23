@@ -3,9 +3,7 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from src.segmentacao.logs import (
-    imprimir_resumo_verificacao_png as imprimir_logs_verificacao_png,
-)
+from src.segmentacao.logging.integridade import imprimir_resumo_verificacao_png
 
 
 @dataclass(frozen=True)
@@ -60,14 +58,5 @@ def verificar_e_limpar_pngs_corrompidos(
         arquivos_removidos=arquivos_removidos,
         falhas_remocao=falhas_remocao,
     )
-    _imprimir_resumo_verificacao_png(resumo)
+    imprimir_resumo_verificacao_png(resumo)
     return resumo
-
-
-def _imprimir_resumo_verificacao_png(resumo: ResumoVerificacaoPng) -> None:
-    imprimir_logs_verificacao_png(
-        total_png=resumo.total_png,
-        arquivos_integros=resumo.arquivos_integros,
-        arquivos_removidos=resumo.arquivos_removidos,
-        falhas_remocao=resumo.falhas_remocao,
-    )
