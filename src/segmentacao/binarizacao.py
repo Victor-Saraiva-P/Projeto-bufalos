@@ -10,7 +10,7 @@ from src.io.path_utils import (
 )
 from src.models.indice_linha import IndiceLinha
 from src.segmentacao.binarizacoes import BinarizationStrategy
-from src.segmentacao.logging.binarizacao import (
+from src.segmentacao.logging.logs_binarizacao import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
     imprimir_resumo_binarizacao_modelo,

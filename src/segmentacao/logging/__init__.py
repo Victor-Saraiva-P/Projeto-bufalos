@@ -1,16 +1,16 @@
-from src.segmentacao.logging.binarizacao import (
+from src.segmentacao.logging.logs_binarizacao import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
     imprimir_resumo_binarizacao_modelo,
     imprimir_status_binarizacao,
 )
-from src.segmentacao.logging.integridade import imprimir_resumo_verificacao_png
-from src.segmentacao.logging.segmentacao import (
+from src.segmentacao.logging.logs_integridade import imprimir_resumo_verificacao_png
+from src.segmentacao.logging.logs_segmentacao import (
     EstatisticasProcessamentoComEta,
     imprimir_resumo_modelo,
     imprimir_status,
 )
-from src.segmentacao.logging.shared import (
+from src.segmentacao.logging.logs_base import (
     EstatisticasLogGeral,
     formatar_duracao,
 )

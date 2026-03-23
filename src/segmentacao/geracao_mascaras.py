@@ -14,7 +14,7 @@ from src.segmentacao.integracoes import (
     obter_api_rembg,
     obter_resolvedor_providers,
 )
-from src.segmentacao.logging.segmentacao import (
+from src.segmentacao.logging.logs_segmentacao import (
     EstatisticasProcessamentoComEta,
     imprimir_resumo_modelo,
     imprimir_status,

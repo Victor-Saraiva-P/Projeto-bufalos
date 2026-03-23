@@ -56,6 +56,24 @@ Exemplos:
 - testes de `src.models` ficam em `tests/unit/models/`;
 - testes de `src.segmentacao` ficam em `tests/unit/segmentacao/`.
 
+## Convencao de nomes dos arquivos
+
+Os arquivos de teste devem comecar pelo tipo do teste.
+
+Regra:
+
+- testes unitarios usam o prefixo `unit_test_`;
+- testes de integracao usam o prefixo `integration_test_`;
+- testes end-to-end usam o prefixo `e2e_test_`.
+
+Exemplos:
+
+- `tests/unit/io/unit_test_path_utils.py`
+- `tests/integration/pipeline/integration_test_segmentacao.py`
+- `tests/e2e/e2e_test_segmentacao.py`
+
+Essa convencao deve ser seguida em novos arquivos para manter o espelhamento da suite e evitar ambiguidade sobre o tipo do teste ja no nome do arquivo.
+
 ### `tests/integration/`
 
 Contem cenarios que atravessam mais de um modulo ou dependem de arquivos reais do dataset reduzido.

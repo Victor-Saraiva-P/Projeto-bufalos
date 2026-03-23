@@ -1,4 +1,4 @@
-from src.segmentacao.logging.shared import EstatisticasLogGeral
+from src.segmentacao.logging.logs_base import EstatisticasLogGeral
 
 
 class EstatisticasBinarizacao(EstatisticasLogGeral):

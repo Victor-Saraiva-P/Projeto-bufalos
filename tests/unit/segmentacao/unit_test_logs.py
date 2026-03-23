@@ -1,7 +1,7 @@
 import time
 
-from src.segmentacao.logging.segmentacao import EstatisticasProcessamentoComEta
-from src.segmentacao.logging.shared import formatar_duracao
+from src.segmentacao.logging.logs_segmentacao import EstatisticasProcessamentoComEta
+from src.segmentacao.logging.logs_base import formatar_duracao
 
 
 def test_estatisticas_processamento_atualiza_contadores() -> None:

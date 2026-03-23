@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from src.segmentacao.logging.integridade import imprimir_resumo_verificacao_png
+from src.segmentacao.logging.logs_integridade import imprimir_resumo_verificacao_png
 
 
 @dataclass(frozen=True)

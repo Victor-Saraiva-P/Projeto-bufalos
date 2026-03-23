@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import time
 
-from src.segmentacao.logging.shared import (
+from src.segmentacao.logging.logs_base import (
     EstatisticasLogGeral,
     formatar_duracao,
 )
