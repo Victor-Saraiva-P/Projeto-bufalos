@@ -23,6 +23,7 @@ tests/
   conftest.py
   mock_config.py
   mock_data/
+  mock_generated/
   fixtures/
   unit/
     analysis/
@@ -134,6 +135,32 @@ Objetivos desse dataset:
 - testar leitura do indice Excel;
 - validar fluxos baseados em nomes de arquivo reais;
 - permitir testes de integracao sem depender de `data/`.
+
+## Artefatos gerados versionados
+
+O conjunto `tests/mock_generated/` guarda artefatos intermediarios e finais ja gerados, versionados para uso em testes de integracao futuros.
+
+Ele complementa `tests/mock_data/`:
+
+- `mock_data` contem insumos brutos, como o indice e imagens de entrada;
+- `mock_generated` contem saidas produzidas pelo pipeline, prontas para consumo por testes.
+
+Estrutura atual:
+
+```text
+tests/mock_generated/
+  ground_truth_binary/
+  predicted_masks/
+    u2netp/
+  predicted_masks_binary/
+    u2netp/
+```
+
+Objetivos desse conjunto:
+
+- disponibilizar mascaras geradas estaveis para cenarios de integracao;
+- evitar depender da execucao previa dos notebooks ou do `rembg` em testes futuros da avaliacao;
+- permitir testes sobre artefatos binarios versionados.
 
 ## Configuracao da suite
 
