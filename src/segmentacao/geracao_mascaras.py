@@ -14,8 +14,8 @@ from src.segmentacao.integracoes import (
     obter_api_rembg,
     obter_resolvedor_providers,
 )
-from src.segmentacao.logs import (
-    EstatisticasProcessamento,
+from src.segmentacao.logging.logs_segmentacao import (
+    EstatisticasProcessamentoComEta,
     imprimir_resumo_modelo,
     imprimir_status,
 )
@@ -25,18 +25,18 @@ from src.models.indice_linha import IndiceLinha
 def executar_segmentacao(
     indice_excel: Iterable[IndiceLinha],
     modelos_para_avaliacao: Mapping[str, str],
-) -> dict[str, EstatisticasProcessamento]:
+) -> dict[str, EstatisticasProcessamentoComEta]:
     linhas_indice = list(indice_excel)
     total_previsto = len(modelos_para_avaliacao) * len(linhas_indice)
-    stats_geral = EstatisticasProcessamento(total=total_previsto)
-    resumos_modelo: dict[str, EstatisticasProcessamento] = {}
+    stats_geral = EstatisticasProcessamentoComEta(total=total_previsto)
+    resumos_modelo: dict[str, EstatisticasProcessamentoComEta] = {}
     resolver_providers = obter_resolvedor_providers()
 
     for nome_modelo, provider_config in modelos_para_avaliacao.items():
         providers = resolver_providers(provider_config, nome_modelo)
         print(f"Iniciando modelo: {nome_modelo} (provider: {provider_config})")
 
-        stats_modelo = EstatisticasProcessamento(total=len(linhas_indice))
+        stats_modelo = EstatisticasProcessamentoComEta(total=len(linhas_indice))
         resumos_modelo[nome_modelo] = stats_modelo
 
         rembg_session = _criar_sessao_segmentacao(nome_modelo, providers)
@@ -72,8 +72,8 @@ def _segmentar_linha(
     linha: IndiceLinha,
     nome_modelo: str,
     rembg_session,
-    stats_geral: EstatisticasProcessamento,
-    stats_modelo: EstatisticasProcessamento,
+    stats_geral: EstatisticasProcessamentoComEta,
+    stats_modelo: EstatisticasProcessamentoComEta,
 ) -> None:
     original_path = caminho_foto_original(linha.nome_arquivo)
     mascara_path = caminho_ground_truth(linha.nome_arquivo)
@@ -112,8 +112,8 @@ def _segmentar_linha(
         output_rembg.save(output_path)
 
         duracao_inferencia = time.perf_counter() - inicio_inferencia
-        stats_geral.registrar_ok(duracao_inferencia)
-        stats_modelo.registrar_ok(duracao_inferencia)
+        stats_geral.registrar_ok_com_duracao(duracao_inferencia)
+        stats_modelo.registrar_ok_com_duracao(duracao_inferencia)
     except Exception as erro:
         print(
             f"[ERRO ] Falha ao segmentar {linha.nome_arquivo} "
@@ -126,8 +126,8 @@ def _segmentar_linha(
 
 
 def _imprimir_progresso(
-    stats_geral: EstatisticasProcessamento,
-    stats_modelo: EstatisticasProcessamento,
+    stats_geral: EstatisticasProcessamentoComEta,
+    stats_modelo: EstatisticasProcessamentoComEta,
     nome_modelo: str,
 ) -> None:
     imprimir_status(stats_geral, stats_modelo, nome_modelo)

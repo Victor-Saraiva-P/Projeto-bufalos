@@ -1,54 +1,29 @@
 from dataclasses import dataclass, field
 import time
 
+from src.segmentacao.logging.logs_base import (
+    EstatisticasLogGeral,
+    formatar_duracao,
+)
+
 
 @dataclass
-class EstatisticasProcessamento:
-    total: int
-    processadas: int = 0
-    ok: int = 0
-    skip: int = 0
-    erro: int = 0
+class EstatisticasProcessamentoComEta(EstatisticasLogGeral):
     tempo_inferencia: float = 0.0
     inicio: float = field(default_factory=time.perf_counter)
 
-    def registrar_ok(self, duracao_inferencia: float) -> None:
-        self.processadas += 1
-        self.ok += 1
+    def registrar_ok_com_duracao(self, duracao_inferencia: float) -> None:
+        super().registrar_ok()
         self.tempo_inferencia += duracao_inferencia
-
-    def registrar_skip(self) -> None:
-        self.processadas += 1
-        self.skip += 1
-
-    def registrar_erro(self) -> None:
-        self.processadas += 1
-        self.erro += 1
 
     @property
     def tempo_execucao(self) -> float:
         return time.perf_counter() - self.inicio
 
 
-def formatar_duracao(segundos):
-    if segundos is None:
-        return "--"
-
-    total = int(max(0, segundos))
-    horas = total // 3600
-    minutos = (total % 3600) // 60
-    seg = total % 60
-
-    if horas > 0:
-        return f"{horas}h{minutos:02d}m{seg:02d}s"
-    if minutos > 0:
-        return f"{minutos}m{seg:02d}s"
-    return f"{seg}s"
-
-
 def imprimir_status(
-    geral: EstatisticasProcessamento,
-    modelo: EstatisticasProcessamento,
+    geral: EstatisticasProcessamentoComEta,
+    modelo: EstatisticasProcessamentoComEta,
     nome_modelo: str,
 ) -> None:
     tempo_geral_segundos = geral.tempo_execucao
@@ -89,7 +64,7 @@ def imprimir_status(
 
 def imprimir_resumo_modelo(
     nome_modelo: str,
-    stats_modelo: EstatisticasProcessamento,
+    stats_modelo: EstatisticasProcessamentoComEta,
 ) -> None:
     tempo_modelo = stats_modelo.tempo_execucao
     taxa_modelo = (
@@ -108,16 +83,3 @@ def imprimir_resumo_modelo(
     )
     print(f"tempo_medio={media_modelo:.2f}s/img | throughput={taxa_modelo:.2f} img/s")
     print("-" * 100)
-
-
-def imprimir_resumo_verificacao_png(
-    total_png: int,
-    arquivos_integros: int,
-    arquivos_removidos: int,
-    falhas_remocao: int,
-) -> None:
-    print("\nVerificacao de integridade concluida.")
-    print(f" - Total de PNGs verificados: {total_png}")
-    print(f" - Arquivos integros: {arquivos_integros}")
-    print(f" - Arquivos removidos por corrupcao: {arquivos_removidos}")
-    print(f" - Falhas ao remover: {falhas_remocao}")

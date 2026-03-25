@@ -1,71 +1,33 @@
 # Repository Guidelines
 
-## Objetivo do projeto
+## Estrutura do Projeto e Organizacao dos Modulos
 
-Este repositório visa avaliar modelos de remoção de fundo em imagens utilizando a biblioteca `rembg`.
+O codigo principal fica em `src/`. O pipeline de segmentacao esta em `src/segmentacao/`, incluindo orquestracao em lote, estrategias de binarizacao, verificacao de integridade e helpers de logging. A configuracao compartilhada fica em `src/config.py` e `src/config.toml`. A documentacao fica em `docs/`, com destaque para `docs/guias/` e `docs/decisoes-tecnicas/`. Os notebooks de apoio ficam em `notebooks/`. Os testes automatizados ficam em `tests/` e devem espelhar `src/` sempre que fizer sentido.
 
-## Como se orientar na documentacao
+## Comandos de Build, Teste e Desenvolvimento
 
-Em caso de duvida sobre onde encontrar contexto do projeto, consulte primeiro `README.md`.
+- `mise exec python@3.13 -- python -m venv .venv && source .venv/bin/activate`: cria e ativa um ambiente virtual local, conforme `docs/guias/guia-do-projeto.md`.
+- `pip install -e .`: instala o projeto em modo editavel.
+- `pytest`: executa toda a suite de testes.
+- `pytest -m "not e2e"`: executa a suite rapida sem testes end-to-end.
+- `pytest --cov=src --cov-report=term-missing`: executa os testes com coverage.
 
-O `README.md` da raiz funciona como guia rapido da documentacao e indica em que parte procurar:
+## Estilo de Codigo e Convencoes de Nomes
 
-- instrucoes de instalacao e execucao local;
-- organizacao da suite de testes;
-- fluxo de avaliacao;
-- tags de curadoria;
-- decisoes tecnicas;
-- material de referencia.
+Use Python com indentacao de 4 espacos e imports explicitos. Prefira modulos pequenos e coesos, e mantenha notebooks finos, movendo logica reutilizavel para `src/`. Arquivos e funcoes usam `snake_case`; classes usam `PascalCase`. Em `src/segmentacao/logging/`, os modulos de logging devem comecar com `logs_`. Em `src/segmentacao/binarizacoes/`, abstracoes base devem usar nomes de dominio claros, como `binarizacao_base.py`.
 
-Antes de sair procurando arquivos de forma ad hoc, use o `README.md` para localizar a secao ou o documento mais adequado ao contexto da tarefa.
-
-## Regra para decisoes tecnicas
-
-Sempre que uma decisao tecnica for tomada ou alterada, registre essa decisao em `docs/decisoes-tecnicas/`.
-
-Essa regra vale para decisoes como:
-
-- parametros de processamento;
-- formatos de entrada ou saida;
-- convencoes que afetem o pipeline;
-- escolhas de implementacao que precisem ser preservadas para manutencao futura.
-
-Tambem adicione um comentario no trecho de codigo ou configuracao onde essa decisao estiver materializada.
-
-Esse comentario deve:
-
-- apontar para o arquivo da documentacao correspondente;
-- citar o caminho tomando `docs/` como raiz.
-
-Exemplo de formato esperado no codigo:
+Quando uma decisao tecnica impactar o pipeline, registre-a em `docs/decisoes-tecnicas/` e referencie no codigo com comentarios como:
 
 ```python
 # Docs: decisoes-tecnicas/mascaras-do-rembg.md
 ```
 
-Se a decisao estiver refletida em mais de um lugar, referencie a documentacao em todos os pontos relevantes.
+## Diretrizes de Testes
 
-## Docs
+O framework de testes e `pytest`. Os arquivos de teste devem comecar com a camada a que pertencem: `unit_test_`, `integration_test_` ou `e2e_test_`. Mantenha as pastas de teste alinhadas com `src/` quando pratico, por exemplo `tests/unit/segmentacao/` para `src/segmentacao/`. Use `tests/mock_data/` e `tests/mock_config.py` para cenarios deterministas, evitando dependencia dos dados reais do projeto.
 
-> A pasta `docs/` contém arquivos .md para detalhar aspectos específicos do projeto. Consulte:
+## Diretrizes de Commit e Pull Request
 
-- `guias/guia-do-projeto.md`: guia operacional do projeto.
-- `guias/testes.md`: convencoes da suite automatizada.
-- `guias/ci.md`: o que o workflow de CI executa hoje.
-- `avaliacao/sistema-de-avaliacao.md`: visao geral do fluxo de avaliacao dos modelos.
-- `avaliacao/tags-de-imagem.md`: taxonomia fechada das tags de curadoria de imagem; inclui `baixo_contraste` para casos em que o bufalo se confunde com o fundo por semelhanca de cor, luminosidade ou textura.
-- `decisoes-tecnicas/`: pasta com as decisoes tecnicas que afetam o pipeline.
-- `decisoes-tecnicas/u2net-cloth-seg.md`: decisao de manter o `u2net_cloth_seg` fora da configuracao ativa.
-- `referencia/rembg/leia-me-do-rembg.md`: referência original do rembg cobrindo requisitos, instalação, subcomandos CLI, uso via
-  docker e catálogo de modelos.
-- `referencia/rembg/uso-do-rembg.md`: exemplos práticos de uso da função `remove` (sessões, alpha matting, somente máscara, bg
-  customizado) para scripts Python.
+O historico recente usa mensagens curtas no imperativo, como `Refatora pipeline de binarizacao e logging` e `Remove modulo legado de logs de segmentacao`. Siga esse padrao: um objetivo claro por commit, com descricao direta.
 
-## Rembg
-
-> A pasta `rembg/` contém o repositório oficial do rembg clonado para referência.
-
-> Caso a pasta não exista, clone o repositório oficial do rembg usando o github cli:
-> ```bash
-> gh repo clone danielgatis/rembg
-> ```
+Pull requests devem resumir a mudanca de comportamento, listar os modulos afetados, mencionar atualizacoes de documentacao e incluir evidencia de teste (`pytest ...`). Se notebooks ou artefatos gerados forem alterados, explique o motivo.

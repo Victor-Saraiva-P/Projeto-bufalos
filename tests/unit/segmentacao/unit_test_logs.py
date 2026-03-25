@@ -1,12 +1,13 @@
 import time
 
-from src.segmentacao.logs import EstatisticasProcessamento, formatar_duracao
+from src.segmentacao.logging.logs_segmentacao import EstatisticasProcessamentoComEta
+from src.segmentacao.logging.logs_base import formatar_duracao
 
 
 def test_estatisticas_processamento_atualiza_contadores() -> None:
-    stats = EstatisticasProcessamento(total=3)
+    stats = EstatisticasProcessamentoComEta(total=3)
 
-    stats.registrar_ok(0.5)
+    stats.registrar_ok_com_duracao(0.5)
     stats.registrar_skip()
     stats.registrar_erro()
 
@@ -18,7 +19,7 @@ def test_estatisticas_processamento_atualiza_contadores() -> None:
 
 
 def test_tempo_execucao_retorna_duracao_nao_negativa() -> None:
-    stats = EstatisticasProcessamento(total=1)
+    stats = EstatisticasProcessamentoComEta(total=1)
 
     time.sleep(0.01)
 

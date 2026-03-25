@@ -53,7 +53,7 @@ Se voce quer:
 ## Onde encontrar cada coisa
 
 - `src/`: codigo principal do projeto;
-- `tests/`: suite automatizada;
+- `tests/`: suite automatizada, incluindo `mock_data/` para insumos reduzidos e `mock_generated/` para artefatos gerados versionados;
 - `notebooks/`: fluxo exploratorio e analitico;
 - `docs/`: documentacao organizada por tema;
 - `data/`: dados de entrada esperados pelo pipeline;
