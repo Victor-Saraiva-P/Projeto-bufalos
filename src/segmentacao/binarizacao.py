@@ -43,6 +43,18 @@ def processar_arquivo_binarizacao(
     return "ok"
 
 
+def _caminho_diretorio_mascara_predita_modelo(
+    nome_modelo: str,
+    linhas_indice: list[IndiceLinha],
+) -> str:
+    if linhas_indice:
+        return os.path.dirname(
+            caminho_mascara_predita(nome_modelo, linhas_indice[0].nome_arquivo),
+        )
+
+    return os.path.dirname(caminho_mascara_predita(nome_modelo, ""))
+
+
 def binarizar_ground_truth(
     indice_excel: Iterable[IndiceLinha],
     strategy: BinarizationStrategy,
@@ -82,6 +94,21 @@ def binarizar_mascaras_preditas(
     for nome_modelo in modelos_para_avaliacao:
         stats = EstatisticasBinarizacao(total=len(linhas_indice))
         resumos[nome_modelo] = stats
+        diretorio_modelo = _caminho_diretorio_mascara_predita_modelo(
+            nome_modelo,
+            linhas_indice,
+        )
+
+        if not os.path.isdir(diretorio_modelo):
+            print(
+                "[AVISO BINARIZACAO] "
+                f"Diretorio de mascaras nao encontrado para o modelo "
+                f"{nome_modelo}: {diretorio_modelo}. Pulando modelo."
+            )
+            for _ in linhas_indice:
+                stats.registrar_skip()
+            imprimir_resumo_binarizacao_modelo(nome_modelo, stats)
+            continue
 
         for idx, linha in enumerate(linhas_indice, start=1):
             resultado = processar_arquivo_binarizacao(
