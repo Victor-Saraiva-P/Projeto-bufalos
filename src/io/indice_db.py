@@ -8,14 +8,7 @@ from typing import Any
 from sqlalchemy import Column, Integer, MetaData, String, Table, create_engine, func, select, update
 from sqlalchemy.engine import Engine
 
-from src.config import (
-    FAZENDA_COL,
-    INDICE_DB_PATH,
-    LEGACY_INDICE_PATH,
-    NOME_COL,
-    PESO_COL,
-    TAGS_COL,
-)
+from src.config import FAZENDA_COL, INDICE_DB_PATH, LEGACY_INDICE_PATH, NOME_COL, PESO_COL, TAGS_COL
 from src.models.indice_linha import IndiceLinha, normalizar_tags
 
 
@@ -34,6 +27,14 @@ indice_table = Table(
 
 def _engine(db_path: str) -> Engine:
     return create_engine(f"sqlite+pysqlite:///{db_path}")
+
+
+def _resolver_db_path(db_path: str | None) -> str:
+    return db_path or INDICE_DB_PATH
+
+
+def _resolver_legacy_path(legacy_path: str | None) -> str:
+    return legacy_path or LEGACY_INDICE_PATH
 
 
 def _criar_schema(engine: Engine) -> None:
@@ -94,9 +95,10 @@ def _carregar_planilha_legada(legacy_path: str) -> list[IndiceLinha]:
 
 def inicializar_banco_indice(
     linhas: Iterable[IndiceLinha],
-    db_path: str = INDICE_DB_PATH,
+    db_path: str | None = None,
 ) -> None:
-    db_file = Path(db_path)
+    db_path_resolvido = _resolver_db_path(db_path)
+    db_file = Path(db_path_resolvido)
     db_file.parent.mkdir(parents=True, exist_ok=True)
     engine = _engine(str(db_file))
     _criar_schema(engine)
@@ -122,10 +124,12 @@ def inicializar_banco_indice(
 
 
 def garantir_banco_indice(
-    db_path: str = INDICE_DB_PATH,
-    legacy_path: str = LEGACY_INDICE_PATH,
+    db_path: str | None = None,
+    legacy_path: str | None = None,
 ) -> None:
-    db_file = Path(db_path)
+    db_path_resolvido = _resolver_db_path(db_path)
+    legacy_path_resolvido = _resolver_legacy_path(legacy_path)
+    db_file = Path(db_path_resolvido)
     db_file.parent.mkdir(parents=True, exist_ok=True)
     engine = _engine(str(db_file))
     _criar_schema(engine)
@@ -134,7 +138,7 @@ def garantir_banco_indice(
     if possui_registros:
         return
 
-    legacy_file = Path(legacy_path)
+    legacy_file = Path(legacy_path_resolvido)
     if not legacy_file.exists():
         return
 
@@ -143,8 +147,9 @@ def garantir_banco_indice(
 
 
 def carregar_indice(db_path: str = INDICE_DB_PATH) -> list[IndiceLinha]:
-    garantir_banco_indice(db_path=db_path)
-    engine = _engine(db_path)
+    db_path_resolvido = _resolver_db_path(db_path)
+    garantir_banco_indice(db_path=db_path_resolvido)
+    engine = _engine(db_path_resolvido)
 
     with engine.connect() as conn:
         rows = conn.execute(
@@ -167,9 +172,10 @@ def carregar_indice(db_path: str = INDICE_DB_PATH) -> list[IndiceLinha]:
     ]
 
 
-def atualizar_tags(nome_arquivo: str, tags: str, db_path: str = INDICE_DB_PATH) -> None:
-    garantir_banco_indice(db_path=db_path)
-    engine = _engine(db_path)
+def atualizar_tags(nome_arquivo: str, tags: str, db_path: str | None = None) -> None:
+    db_path_resolvido = _resolver_db_path(db_path)
+    garantir_banco_indice(db_path=db_path_resolvido)
+    engine = _engine(db_path_resolvido)
 
     with engine.begin() as conn:
         result = conn.execute(

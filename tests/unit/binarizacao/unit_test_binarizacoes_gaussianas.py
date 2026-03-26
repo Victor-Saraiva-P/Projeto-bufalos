@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 
-from src.segmentacao.binarizacoes import GaussianOpeningBinarizationStrategy
+from src.binarizacao.estrategias import GaussianOpeningBinarizationStrategy
 
 
 def test_gaussian_opening_strategy_retorna_apenas_valores_binarios() -> None:

@@ -5,11 +5,11 @@ import numpy as np
 from PIL import Image
 import pytest
 
-from src.models.indice_linha import IndiceLinha
-from src.segmentacao.binarizacao import (
+from src.binarizacao import (
     binarizar_ground_truth,
     processar_arquivo_binarizacao,
 )
+from src.models.indice_linha import IndiceLinha
 
 
 class FakeBinarizationStrategy:
