@@ -35,3 +35,13 @@ Ao editar a documentacao, confirme sempre:
 - use `README.md` para onboarding rapido e comandos basicos;
 - use `docs/` para explicacoes detalhadas, decisoes tecnicas, guias e referencias;
 - use `AGENTS.md` quando um agente precisar ler o contexto inteiro do repositorio sem navegar por varios arquivos.
+
+## Regra de worktree
+
+Durante o desenvolvimento, o trabalho deve acontecer em apenas um unico worktree por vez.
+
+Regras operacionais:
+
+- nunca mexer em mais de um worktree ao mesmo tempo;
+- se o usuario nao especificar em qual worktree a mudanca deve ser feita, e preciso perguntar antes de editar qualquer arquivo;
+- so depois de o worktree estar explicitamente definido o desenvolvimento deve comecar.

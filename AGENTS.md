@@ -10,6 +10,9 @@ Regra do projeto:
 - Nenhum conhecimento operacional, conceitual ou normativo deve existir apenas em um dos lados.
 - Se um tema for adicionado, alterado ou removido em `README.md` ou em `docs/`, a mesma informacao deve ser refletida em `AGENTS.md`.
 - Se um tema for adicionado, alterado ou removido em `AGENTS.md`, a mesma informacao deve existir em `README.md` ou em algum arquivo de `docs/`.
+- Durante o desenvolvimento, o trabalho deve acontecer em apenas um unico worktree por vez.
+- Nunca mexer em mais de um worktree ao mesmo tempo.
+- Se o usuario nao especificar qual worktree deve ser usado, e preciso perguntar antes de editar qualquer arquivo.
 
 ## Visao Geral
 
