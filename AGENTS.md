@@ -173,6 +173,8 @@ Metricas principais:
 - `area_diff_rel`: mede o erro relativo de area;
 - `perimetro_diff_rel`: mede o erro relativo de contorno.
 
+Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tambem passa a considerar `AUPRC` (`Area Under the Precision-Recall Curve`).
+
 Arquivos relevantes:
 
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
@@ -209,6 +211,25 @@ Interpretação das metricas:
 - `iou`: varia entre `0` e `1`; quanto maior, melhor;
 - `area_diff_rel`: quanto menor, melhor; ajuda a detectar excesso ou falta de area segmentada;
 - `perimetro_diff_rel`: quanto menor, melhor; ajuda a medir a qualidade do contorno.
+
+Interpretacao da `AUPRC`:
+
+- mede quao bem um mapa de score da mascara separa pixels de bufalo dos pixels de fundo ao longo de varios limiares;
+- valor proximo de `1.0`: os pixels positivos aparecem consistentemente com scores mais altos;
+- valor proximo de `0.0`: o modelo nao ordena bem os pixels de bufalo acima do fundo;
+- quanto maior a `AUPRC`, melhor a separacao entre bufalo e fundo.
+
+Quando usar `AUPRC`:
+
+- quando a classe positiva e rara;
+- quando o fundo domina a maior parte da imagem;
+- quando a analise precisa considerar o score bruto da mascara, sem depender de um unico threshold.
+
+Implementacao no projeto:
+
+- o calculo fica em `src/binarizacao/metricas/auprc.py`;
+- a interface recebe `score_mask` continuo e `ground_truth_mask` binario;
+- a metrica foi adicionada para o estagio de binarizacao, e nao como substituta direta das metricas agregadas finais do ranking de segmentacao.
 
 Formulas:
 
@@ -309,6 +330,31 @@ Relacao entre formatos:
 - imagens originais de entrada continuam em `.jpg`;
 - mascaras de saida sao salvas em `.png`;
 - essa diferenca e intencional: fotografia de entrada pode ficar em `.jpg`, mascara deve preservar valores exatos.
+
+### Escolha da metrica AUPRC
+
+Decisao:
+
+- adotar `AUPRC` como uma das metricas de avaliacao para o estagio de binarizacao e para a analise de mascaras com score continuo.
+
+Contexto:
+
+- no projeto, os pixels de bufalo ocupam uma parcela pequena da imagem;
+- o fundo ocupa a maior parte do espaco;
+- esse desbalanceamento pode tornar metricas menos sensiveis a classe positiva rara excessivamente otimistas;
+- na binarizacao, tambem ha interesse em avaliar a qualidade do score da mascara antes de fixar um threshold.
+
+Motivo:
+
+- `AUPRC` e especialmente util quando a classe positiva e rara;
+- ela mede quao bem o modelo separa bufalo vs fundo usando o score continuo da mascara;
+- isso evita depender de um threshold unico e arbitrario logo no inicio da avaliacao.
+
+Consequencias:
+
+- a avaliacao fica mais alinhada ao desbalanceamento real entre bufalo e fundo;
+- o score continuo da mascara passa a ser aproveitado diretamente;
+- comparacoes entre estrategias de binarizacao podem considerar a qualidade da ordenacao dos pixels, e nao apenas a saida final apos threshold.
 
 ### Mascaras do `rembg`
 
@@ -645,4 +691,5 @@ Leitura recomendada:
 5. `docs/guias/testes.md`
 6. `docs/guias/ci.md`
 7. `docs/decisoes-tecnicas/`
-8. `docs/referencia/rembg/`
+8. `docs/metricas/`
+9. `docs/referencia/rembg/`

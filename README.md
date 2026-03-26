@@ -62,6 +62,7 @@ Se voce quer:
 - entender a suite automatizada: veja `docs/guias/testes.md`;
 - entender o CI: veja `docs/guias/ci.md`;
 - entender o sistema de avaliacao: veja `docs/avaliacao/sistema-de-avaliacao.md`;
+- entender a metrica AUPRC usada na binarizacao: veja `docs/metricas/auprc.md`;
 - consultar as tags de curadoria: veja `docs/avaliacao/tags-de-imagem.md`;
 - consultar decisoes tecnicas do pipeline: veja `docs/decisoes-tecnicas/`;
 - consultar material de referencia do `rembg`: veja `docs/referencia/rembg/`.
@@ -90,7 +91,10 @@ docs/
   avaliacao/
     sistema-de-avaliacao.md
     tags-de-imagem.md
+  metricas/
+    auprc.md
   decisoes-tecnicas/
+    escolha-da-metrica-auprc.md
     mascaras-do-rembg.md
     formato-das-mascaras.md
     u2net-cloth-seg.md
@@ -105,6 +109,7 @@ docs/
 1. comece por `docs/guias/guia-do-projeto.md`;
 2. leia `docs/guias/documentacao-do-repositorio.md` para entender a regra de sincronizacao documental;
 3. use `docs/avaliacao/sistema-de-avaliacao.md` para entender o pipeline de avaliacao;
-4. consulte `docs/avaliacao/tags-de-imagem.md` ao revisar ou interpretar imagens;
-5. use `docs/guias/testes.md` e `docs/guias/ci.md` ao mexer na suite;
-6. consulte `AGENTS.md` quando precisar do contexto consolidado em um unico arquivo.
+4. use `docs/metricas/auprc.md` e `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md` ao mexer na avaliacao de binarizacao;
+5. consulte `docs/avaliacao/tags-de-imagem.md` ao revisar ou interpretar imagens;
+6. use `docs/guias/testes.md` e `docs/guias/ci.md` ao mexer na suite;
+7. consulte `AGENTS.md` quando precisar do contexto consolidado em um unico arquivo.
