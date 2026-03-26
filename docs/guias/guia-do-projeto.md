@@ -85,6 +85,17 @@ Todos os comandos abaixo assumem que voce esta na raiz do repositorio e com o am
 source .venv/bin/activate
 ```
 
+## Abordagem de desenvolvimento
+
+O projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao.
+
+Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
+
+1. escrever primeiro o teste que descreve o comportamento desejado;
+2. observar a falha inicial do teste;
+3. implementar a menor mudanca necessaria para fazer o teste passar;
+4. refatorar com a suite em estado verde.
+
 ### Anotador manual de tags
 
 O script `src/tagging/manual_tagger.py` abre uma interface grafica para revisar as imagens pendentes e preencher a coluna `tags` de `data/Indice.xlsx`.

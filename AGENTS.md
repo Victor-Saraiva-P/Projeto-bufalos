@@ -364,9 +364,16 @@ A suite automatizada existe para validar comportamento sem depender do dataset c
 Principios:
 
 - usar dataset reduzido e controlado;
+- desenvolver novas funcionalidades e correcoes usando TDD sempre que pratico;
 - separar testes por tipo;
 - manter imports do pacote `src` via instalacao do projeto;
 - evitar acoplamento desnecessario com caminhos do ambiente real.
+
+Abordagem de desenvolvimento:
+
+- o projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao;
+- o fluxo esperado e escrever primeiro o teste, confirmar a falha inicial, implementar a menor mudanca necessaria e refatorar com a suite verde;
+- essa diretriz vale para novas funcionalidades e correcoes de bug quando o comportamento puder ser coberto por teste automatizado.
 
 Estrutura principal:
 
