@@ -38,7 +38,7 @@ Arquivos relevantes:
 
 Saida gerada:
 
-- `generated/evaluation/metrics_cache.csv`: cache das metricas calculadas.
+- `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
 
 ## Como usar
 
@@ -137,9 +137,9 @@ Regra importante:
 
 - a soma dos pesos deve ser `1.0`.
 
-## Recalculo e cache
+## Persistencia
 
-Por padrao, a coleta usa cache para evitar recomputar tudo a cada execucao.
+Por padrao, a coleta usa o SQLite do projeto como fonte de verdade para as metricas.
 
 Para forcar recalcucao:
 
@@ -148,9 +148,9 @@ collector = MetricsCollector(force_recalculate=True)
 df_metrics = collector.collect_all_metrics()
 ```
 
-Isso atualiza o arquivo:
+Isso sobrescreve os registros de avaliacao no banco:
 
-- `generated/evaluation/metrics_cache.csv`
+- `generated/bufalos.sqlite3`
 
 ## Leitura dos resultados
 

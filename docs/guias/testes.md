@@ -44,7 +44,8 @@ tests/
     binarizacao/
     io/
     logs/
-    metrics/
+    avaliacao/
+    metricas/
     models/
     runtime/
     segmentacao/
@@ -68,7 +69,7 @@ Regra:
 
 Exemplos:
 
-- testes de `src.metrics` ficam em `tests/unit/metrics/`;
+- testes de `src.metricas` e `src.avaliacao.metricas` ficam em `tests/unit/metricas/`;
 - testes de `src.models` ficam em `tests/unit/models/`;
 - testes de `src.binarizacao` ficam em `tests/unit/binarizacao/`;
 - testes de `src.segmentacao` ficam em `tests/unit/segmentacao/`.
@@ -148,7 +149,8 @@ tests/mock_data/
 
 Objetivos desse dataset:
 
-- testar leitura do indice Excel;
+- testar bootstrap do indice Excel para SQLite;
+- testar leitura do indice a partir do SQLite;
 - validar fluxos baseados em nomes de arquivo reais;
 - permitir testes de integracao sem depender de `data/`.
 
@@ -188,6 +190,7 @@ Caminhos esperados:
 
 - `mock_data_dir`
 - `indice_path`
+- `sqlite_path`
 - `images_dir`
 - `ground_truth_raw_dir`
 

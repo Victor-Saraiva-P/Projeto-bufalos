@@ -8,33 +8,16 @@ from src.io import indice_loader
 from src.models.indice_linha import IndiceLinha
 
 
-def test_carregar_indice_excel_com_mock_data(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_inicializar_e_carregar_indice_sqlite_com_mock_data() -> None:
     config = MockDataConfig()
-    monkeypatch.setattr(indice_loader, "INDICE_PATH", str(config.indice_path))
+    sqlite_path = str(config.sqlite_path)
 
-    indice_df = pd.read_excel(config.indice_path)
-    linhas = indice_loader.carregar_indice_excel()
+    indice_loader.inicializar_indice_sqlite(
+        indice_path=str(config.indice_path),
+        sqlite_path=sqlite_path,
+    )
+    linhas = indice_loader.carregar_indice(sqlite_path=sqlite_path)
     linhas_esperadas = [
-        IndiceLinha(
-            nome_arquivo="493098e5-da4e-47dc-80cc-eddd2c703a24",
-            fazenda="Manezinho",
-            peso=Decimal("55"),
-            tags=["ok"],
-        ),
-        IndiceLinha(
-            nome_arquivo="e2b294f6-387c-49ce-8fd8-8e80e80cdc46",
-            fazenda="Faco",
-            peso=Decimal("188"),
-            tags=["angulo_extremo", "baixo_contraste"],
-        ),
-        IndiceLinha(
-            nome_arquivo="67_Laje-Nova_453",
-            fazenda="Laje Nova",
-            peso=Decimal("453"),
-            tags=["ok"],
-        ),
         IndiceLinha(
             nome_arquivo="1166_Calcula_506",
             fazenda="Calcula",
@@ -47,17 +30,30 @@ def test_carregar_indice_excel_com_mock_data(
             peso=Decimal("350"),
             tags=["baixo_contraste"],
         ),
+        IndiceLinha(
+            nome_arquivo="493098e5-da4e-47dc-80cc-eddd2c703a24",
+            fazenda="Manezinho",
+            peso=Decimal("55"),
+            tags=["ok"],
+        ),
+        IndiceLinha(
+            nome_arquivo="67_Laje-Nova_453",
+            fazenda="Laje Nova",
+            peso=Decimal("453"),
+            tags=["ok"],
+        ),
+        IndiceLinha(
+            nome_arquivo="e2b294f6-387c-49ce-8fd8-8e80e80cdc46",
+            fazenda="Faco",
+            peso=Decimal("188"),
+            tags=["angulo_extremo", "baixo_contraste"],
+        ),
     ]
 
-    assert list(indice_df.columns) == ["Nome do arquivo", "Fazenda", "Peso", "Tags"]
-    assert len(indice_df) == 5
     assert linhas == linhas_esperadas
 
 
-def test_carregar_indice_excel_falha_quando_faltam_colunas(
-    tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_inicializar_indice_sqlite_falha_quando_faltam_colunas(tmp_path) -> None:
     indice_invalido = tmp_path / "Indice.xlsx"
     df = pd.DataFrame(
         {
@@ -67,10 +63,11 @@ def test_carregar_indice_excel_falha_quando_faltam_colunas(
     )
     df.to_excel(indice_invalido, index=False)
 
-    monkeypatch.setattr(indice_loader, "INDICE_PATH", str(indice_invalido))
-
     with pytest.raises(
         ValueError,
         match="Alguma das colunas esperadas nao foi encontrada no arquivo Excel.",
     ):
-        indice_loader.carregar_indice_excel()
+        indice_loader.inicializar_indice_sqlite(
+            indice_path=str(indice_invalido),
+            sqlite_path=str(tmp_path / "bufalos.sqlite3"),
+        )

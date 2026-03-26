@@ -10,7 +10,7 @@ Estrutura minima na pasta `data`:
 data/
   ground_truth_raw/ # mascaras de referencia (segmentacao manual)
   images/           # imagens originais de entrada
-  Indice.xlsx       # planilha com indice das imagens
+  Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
 
 Saidas geradas pelo projeto:
@@ -20,14 +20,17 @@ generated/
   predicted_masks/         # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
-  evaluation/              # caches e artefatos de avaliacao
+  evaluation/              # artefatos de avaliacao
+  bufalos.sqlite3          # fonte de verdade do pipeline
 ```
 
 Organizacao do codigo em `src/`:
 
 - `src/segmentacao/`: gera mascaras previstas e faz verificacoes de integridade;
 - `src/binarizacao/`: binariza mascaras previstas e mascaras de referencia;
-- `src/metrics/`, `src/analysis/` e `src/visualization/`: avaliam e apresentam os resultados;
+- `src/metricas/`: contratos compartilhados de metricas;
+- `src/avaliacao/metricas/`: metricas concretas de avaliacao de segmentacao;
+- `src/analysis/` e `src/visualization/`: agregam, ranqueiam e apresentam os resultados;
 - `src/tagging/`: concentra os anotadores manuais de curadoria.
 
 ## Configuracao do ambiente
@@ -99,6 +102,8 @@ Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
 ### Anotador manual de tags
 
 O script `src/tagging/manual_tagger.py` abre uma interface grafica para revisar as imagens pendentes e preencher a coluna `tags` de `data/Indice.xlsx`.
+
+Fora o tagging, o pipeline usa o SQLite em `generated/` como fonte de verdade. O notebook 01 inicializa esse banco a partir do Excel.
 
 Comando recomendado:
 

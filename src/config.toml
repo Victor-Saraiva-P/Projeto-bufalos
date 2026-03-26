@@ -8,6 +8,7 @@ predicted_masks_binary_dir = "predicted_masks_binary"
 ground_truth_binary_dir = "ground_truth_binary"
 evaluation_dir = "evaluation"
 indice_file = "Indice.xlsx"
+sqlite_file = "bufalos.sqlite3"
 
 [columns]
 nome = "nome do arquivo"
@@ -42,9 +43,6 @@ birefnet-dis = "cpu"
 birefnet-hrsod = "cpu"
 birefnet-cod = "cpu"
 birefnet-massive = "cpu"
-
-[evaluation]
-metrics_cache_file = "metrics_cache.csv"
 
 [evaluation.ranking_weights]
 iou = 0.34

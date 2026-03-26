@@ -39,7 +39,9 @@ Pastas principais:
 - `src/`: codigo principal do projeto;
 - `src/segmentacao/`: geracao de máscaras previstas, integracao com `rembg`, verificacoes de integridade e logging;
 - `src/binarizacao/`: estrategias, pipeline e logs da binarizacao;
-- `src/metrics/`, `src/analysis/` e `src/visualization/`: calculo de metricas, agregacao, ranking e apresentacao;
+- `src/metricas/`: contratos compartilhados de metricas;
+- `src/avaliacao/metricas/`: metricas concretas de avaliacao de segmentacao;
+- `src/analysis/` e `src/visualization/`: agregacao, ranking e apresentacao;
 - `src/tagging/`: anotadores manuais de tags de curadoria;
 - `tests/`: suite automatizada;
 - `notebooks/`: fluxo exploratorio e analitico do projeto;
@@ -53,7 +55,7 @@ Estrutura minima esperada em `data/`:
 data/
   ground_truth_raw/ # mascaras de referencia
   images/           # imagens originais de entrada
-  Indice.xlsx       # planilha com indice das imagens
+  Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
 
 Saidas esperadas em `generated/`:
@@ -63,7 +65,8 @@ generated/
   predicted_masks/         # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
-  evaluation/              # caches e artefatos de avaliacao
+  evaluation/              # artefatos de avaliacao
+  bufalos.sqlite3          # fonte de verdade do pipeline
 ```
 
 ## Setup E Execucao Local
@@ -180,6 +183,8 @@ Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tamb
 
 Arquivos relevantes:
 
+- `src/metricas/metrica.py`: contrato base das metricas reutilizaveis na pipeline;
+- `src/avaliacao/metricas/`: metricas concretas usadas na avaliacao das mascaras;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
 - `src/analysis/ranker.py`: transforma as metricas agregadas em ranking;
 - `src/visualization/metric_plots.py`: gera graficos para inspecao das metricas;
@@ -188,7 +193,7 @@ Arquivos relevantes:
 
 Saida gerada:
 
-- `generated/evaluation/metrics_cache.csv`: cache das metricas calculadas.
+- `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
 
 Exemplo minimo para coletar metricas:
 
@@ -256,11 +261,11 @@ Regra importante:
 
 - a soma dos pesos deve ser `1.0`.
 
-Recalculo e cache:
+Persistencia:
 
-- por padrao, a coleta usa cache;
+- por padrao, a coleta usa o SQLite do projeto como fonte de verdade;
 - para forcar recalcucao, use `MetricsCollector(force_recalculate=True)`;
-- isso atualiza `generated/evaluation/metrics_cache.csv`.
+- isso sobrescreve os registros de avaliacao no banco.
 
 Ao analisar resultados, normalmente vale olhar:
 
@@ -436,10 +441,11 @@ tests/
   fixtures/
   unit/
     analysis/
+    avaliacao/
     binarizacao/
     io/
     logs/
-    metrics/
+    metricas/
     models/
     runtime/
     segmentacao/

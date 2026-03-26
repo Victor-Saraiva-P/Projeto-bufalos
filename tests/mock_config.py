@@ -48,6 +48,13 @@ class MockDataConfig:
         )
 
     @property
+    def sqlite_path(self) -> Path:
+        return self._resolver_caminho(
+            self.generated_dir,
+            self._config["paths"]["sqlite_file"],
+        )
+
+    @property
     def images_dir(self) -> Path:
         return self._resolver_caminho(
             self.data_dir,

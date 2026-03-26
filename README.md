@@ -40,6 +40,12 @@ Depois, rode os notebooks principais nesta ordem:
 2. `notebooks/02_binarizacao_mascaras.ipynb`
 3. `notebooks/03_avaliacao_das_segmentacoes.ipynb`
 
+Observacoes sobre persistencia:
+
+- o notebook 01 inicializa o SQLite em `generated/` a partir do `data/Indice.xlsx`;
+- depois disso, o pipeline usa o SQLite como fonte de verdade;
+- o Excel continua sendo usado apenas no processo de tagging.
+
 Para executar a suite automatizada:
 
 ```bash
@@ -76,8 +82,8 @@ Se voce quer:
 - `tests/`: suite automatizada, incluindo `mock_data/` para insumos reduzidos e `mock_generated/` para artefatos gerados versionados;
 - `notebooks/`: fluxo exploratorio e analitico;
 - `docs/`: documentacao organizada por tema;
-- `data/`: dados de entrada esperados pelo pipeline;
-- `generated/`: artefatos gerados durante segmentacao, binarizacao e avaliacao.
+- `data/`: dados de entrada esperados pelo pipeline; o `Indice.xlsx` permanece como insumo do tagging e bootstrap inicial;
+- `generated/`: artefatos gerados durante segmentacao, binarizacao e avaliacao, incluindo o SQLite do projeto.
 
 ## Estrutura Da Documentacao
 

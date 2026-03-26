@@ -5,7 +5,7 @@ from PIL import Image
 
 from mock_config import MockDataConfig
 from src.io import indice_loader, path_utils
-from src.io.indice_loader import carregar_indice_excel
+from src.io.indice_loader import carregar_indice
 from src.segmentacao import executar_segmentacao
 
 
@@ -19,11 +19,6 @@ def test_executar_segmentacao_processa_modelo_e_gera_arquivo(
     monkeypatch.setattr(
         "src.segmentacao.geracao_mascaras.PREDICTED_MASKS_DIR",
         str(saida_modelo_dir),
-    )
-    monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
     )
     monkeypatch.setattr(
         path_utils,
@@ -55,7 +50,12 @@ def test_executar_segmentacao_processa_modelo_e_gera_arquivo(
         ),
     )
 
-    linhas = carregar_indice_excel()
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    indice_loader.inicializar_indice_sqlite(
+        indice_path=str(mock_data_config.indice_path),
+        sqlite_path=sqlite_path,
+    )
+    linhas = carregar_indice(sqlite_path=sqlite_path)
     resumos = executar_segmentacao(
         indice_excel=linhas,
         modelos_para_avaliacao=mock_data_config.modelos_para_avaliacao,

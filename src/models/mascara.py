@@ -1,12 +1,11 @@
 import numpy as np
 from PIL import Image
 
+from src.avaliacao.metricas import Area, Perimetro
 from src.io.path_utils import (
     caminho_ground_truth_binaria,
     caminho_mascara_predita,
 )
-from src.metrics.area import Area
-from src.metrics.perimetro import Perimetro
 
 
 class Mascara:

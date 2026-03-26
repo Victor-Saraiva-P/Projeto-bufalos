@@ -10,7 +10,7 @@ from src.binarizacao import (
     binarizar_mascaras_preditas,
 )
 from src.io import indice_loader, path_utils
-from src.io.indice_loader import carregar_indice_excel
+from src.io.indice_loader import carregar_indice
 
 
 def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
@@ -20,11 +20,6 @@ def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
 ) -> None:
     saida_ground_truth = tmp_path / "ground_truth_binary"
 
-    monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
     monkeypatch.setattr(
         path_utils,
         "GROUND_TRUTH_RAW_DIR",
@@ -36,7 +31,12 @@ def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
         str(saida_ground_truth),
     )
 
-    linhas = carregar_indice_excel()
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    indice_loader.inicializar_indice_sqlite(
+        indice_path=str(mock_data_config.indice_path),
+        sqlite_path=sqlite_path,
+    )
+    linhas = carregar_indice(sqlite_path=sqlite_path)
     stats = binarizar_ground_truth(linhas, GaussianOpeningBinarizationStrategy())
 
     saidas_geradas = sorted(saida_ground_truth.glob("*.png"))
@@ -60,11 +60,6 @@ def test_binarizar_mascaras_preditas_processa_modelo_e_gera_pngs(
     nome_modelo = next(iter(mock_data_config.modelos_para_avaliacao))
 
     monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
-    monkeypatch.setattr(
         path_utils,
         "PREDICTED_MASKS_DIR",
         str(entrada_modelos),
@@ -75,7 +70,12 @@ def test_binarizar_mascaras_preditas_processa_modelo_e_gera_pngs(
         str(saida_modelos),
     )
 
-    linhas = carregar_indice_excel()
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    indice_loader.inicializar_indice_sqlite(
+        indice_path=str(mock_data_config.indice_path),
+        sqlite_path=sqlite_path,
+    )
+    linhas = carregar_indice(sqlite_path=sqlite_path)
     diretorio_modelo = entrada_modelos / nome_modelo
     diretorio_modelo.mkdir(parents=True)
 

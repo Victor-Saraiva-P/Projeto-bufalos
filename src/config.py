@@ -57,11 +57,10 @@ INDICE_PATH = _resolver_caminho(
     _PATHS["data_dir"],
     _PATHS["indice_file"],
 )
-METRICS_CACHE_PATH = _resolver_caminho(
+SQLITE_PATH = _resolver_caminho(
     BASE_DIR,
     _PATHS["generated_dir"],
-    _PATHS["evaluation_dir"],
-    _EVALUATION["metrics_cache_file"],
+    _PATHS["sqlite_file"],
 )
 
 # Nomes das colunas do excel

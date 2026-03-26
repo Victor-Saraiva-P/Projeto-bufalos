@@ -23,6 +23,19 @@ def caminho_ground_truth_binaria(nome_arquivo: str) -> str:
     return os.path.join(GROUND_TRUTH_BINARY, f"{nome_arquivo}{REMBG_IMAGE_TYPE}")
 
 
+def caminho_mascara_avaliacao(nome_modelo: str, nome_arquivo: str) -> str:
+    """
+    Retorna o caminho da máscara binária usada na etapa de avaliação.
+
+    Para ``ground_truth``, usa a máscara binária de referência.
+    Para qualquer outro modelo, usa a máscara predita binarizada.
+    """
+    if nome_modelo == "ground_truth":
+        return caminho_ground_truth_binaria(nome_arquivo)
+
+    return caminho_mascara_predita_binaria(nome_modelo, nome_arquivo)
+
+
 def caminho_mascara_predita(nome_modelo: str, nome_arquivo: str) -> str:
     """Retorna caminho para máscara raw do modelo (gerada pelo notebook 01)."""
     return os.path.join(

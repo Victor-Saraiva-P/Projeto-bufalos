@@ -1,5 +1,5 @@
+from src.avaliacao.metricas import IoU
 from src.models.mascara import Mascara
-from src.metrics.iou import IoU
 
 
 class MascaraSegmentada(Mascara):
