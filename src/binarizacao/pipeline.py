@@ -1,7 +1,15 @@
 from collections.abc import Iterable, Mapping
 import os
+
 from PIL import Image
 
+from src.binarizacao.estrategias import BinarizationStrategy
+from src.binarizacao.logging import (
+    EstatisticasBinarizacao,
+    imprimir_resumo_binarizacao,
+    imprimir_resumo_binarizacao_modelo,
+    imprimir_status_binarizacao,
+)
 from src.io.path_utils import (
     caminho_ground_truth,
     caminho_ground_truth_binaria,
@@ -9,13 +17,6 @@ from src.io.path_utils import (
     caminho_mascara_predita_binaria,
 )
 from src.models.indice_linha import IndiceLinha
-from src.segmentacao.binarizacoes import BinarizationStrategy
-from src.segmentacao.logging.logs_binarizacao import (
-    EstatisticasBinarizacao,
-    imprimir_resumo_binarizacao,
-    imprimir_resumo_binarizacao_modelo,
-    imprimir_status_binarizacao,
-)
 
 
 def processar_arquivo_binarizacao(

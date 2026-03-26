@@ -4,13 +4,13 @@ import pytest
 from PIL import Image
 
 from mock_config import MockDataConfig
-from src.io import indice_loader, path_utils
-from src.io.indice_loader import carregar_indice_excel
-from src.segmentacao import (
+from src.binarizacao import (
     GaussianOpeningBinarizationStrategy,
     binarizar_ground_truth,
     binarizar_mascaras_preditas,
 )
+from src.io import indice_loader, path_utils
+from src.io.indice_loader import carregar_indice_excel
 
 
 def test_binarizar_ground_truth_processa_indice_e_gera_pngs(

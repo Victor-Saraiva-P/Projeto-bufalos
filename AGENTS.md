@@ -2,7 +2,7 @@
 
 ## Estrutura do Projeto e Organizacao dos Modulos
 
-O codigo principal fica em `src/`. O pipeline de segmentacao esta em `src/segmentacao/`, incluindo orquestracao em lote, estrategias de binarizacao, verificacao de integridade e helpers de logging. A configuracao compartilhada fica em `src/config.py` e `src/config.toml`. A documentacao fica em `docs/`, com destaque para `docs/guias/` e `docs/decisoes-tecnicas/`. Os notebooks de apoio ficam em `notebooks/`. Os testes automatizados ficam em `tests/` e devem espelhar `src/` sempre que fizer sentido.
+O codigo principal fica em `src/`. O pipeline de segmentacao esta em `src/segmentacao/`, cobrindo geracao de mascaras, integracoes com o `rembg`, verificacao de integridade e logging compartilhado. O pipeline de binarizacao fica em `src/binarizacao/`, com estrategias, orquestracao e logs proprios. A configuracao compartilhada fica em `src/config.py` e `src/config.toml`. A documentacao fica em `docs/`, com destaque para `docs/guias/` e `docs/decisoes-tecnicas/`. Os notebooks de apoio ficam em `notebooks/`. Os testes automatizados ficam em `tests/` e devem espelhar `src/` sempre que fizer sentido.
 
 ## Comandos de Build, Teste e Desenvolvimento
 
@@ -14,7 +14,7 @@ O codigo principal fica em `src/`. O pipeline de segmentacao esta em `src/segmen
 
 ## Estilo de Codigo e Convencoes de Nomes
 
-Use Python com indentacao de 4 espacos e imports explicitos. Prefira modulos pequenos e coesos, e mantenha notebooks finos, movendo logica reutilizavel para `src/`. Arquivos e funcoes usam `snake_case`; classes usam `PascalCase`. Em `src/segmentacao/logging/`, os modulos de logging devem comecar com `logs_`. Em `src/segmentacao/binarizacoes/`, abstracoes base devem usar nomes de dominio claros, como `binarizacao_base.py`.
+Use Python com indentacao de 4 espacos e imports explicitos. Prefira modulos pequenos e coesos, e mantenha notebooks finos, movendo logica reutilizavel para `src/`. Arquivos e funcoes usam `snake_case`; classes usam `PascalCase`. Em `src/segmentacao/logging/` e `src/binarizacao/logging/`, os modulos de logging devem comecar com `logs_`. Em `src/binarizacao/estrategias/`, abstracoes base devem usar nomes de dominio claros, como `binarizacao_base.py`.
 
 Quando uma decisao tecnica impactar o pipeline, registre-a em `docs/decisoes-tecnicas/` e referencie no codigo com comentarios como:
 
@@ -24,7 +24,7 @@ Quando uma decisao tecnica impactar o pipeline, registre-a em `docs/decisoes-tec
 
 ## Diretrizes de Testes
 
-O framework de testes e `pytest`. Os arquivos de teste devem comecar com a camada a que pertencem: `unit_test_`, `integration_test_` ou `e2e_test_`. Mantenha as pastas de teste alinhadas com `src/` quando pratico, por exemplo `tests/unit/segmentacao/` para `src/segmentacao/`. Use `tests/mock_data/` e `tests/mock_config.py` para cenarios deterministas, evitando dependencia dos dados reais do projeto.
+O framework de testes e `pytest`. Os arquivos de teste devem comecar com a camada a que pertencem: `unit_test_`, `integration_test_` ou `e2e_test_`. Mantenha as pastas de teste alinhadas com `src/` quando pratico, por exemplo `tests/unit/segmentacao/` para `src/segmentacao/` e `tests/unit/binarizacao/` para `src/binarizacao/`. Use `tests/mock_data/` e `tests/mock_config.py` para cenarios deterministas, evitando dependencia dos dados reais do projeto.
 
 ## Diretrizes de Commit e Pull Request
 

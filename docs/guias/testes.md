@@ -27,6 +27,7 @@ tests/
   fixtures/
   unit/
     analysis/
+    binarizacao/
     io/
     logs/
     metrics/
@@ -55,6 +56,7 @@ Exemplos:
 
 - testes de `src.metrics` ficam em `tests/unit/metrics/`;
 - testes de `src.models` ficam em `tests/unit/models/`;
+- testes de `src.binarizacao` ficam em `tests/unit/binarizacao/`;
 - testes de `src.segmentacao` ficam em `tests/unit/segmentacao/`.
 
 ## Convencao de nomes dos arquivos

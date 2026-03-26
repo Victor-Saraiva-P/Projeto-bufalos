@@ -53,6 +53,8 @@ Se voce quer:
 ## Onde encontrar cada coisa
 
 - `src/`: codigo principal do projeto;
+- `src/segmentacao/`: geracao de mascaras, integracoes com o `rembg` e verificacoes de integridade;
+- `src/binarizacao/`: estrategias, pipeline e logs especificos da binarizacao;
 - `tests/`: suite automatizada, incluindo `mock_data/` para insumos reduzidos e `mock_generated/` para artefatos gerados versionados;
 - `notebooks/`: fluxo exploratorio e analitico;
 - `docs/`: documentacao organizada por tema;

@@ -23,6 +23,12 @@ generated/
   evaluation/              # caches e artefatos de avaliacao
 ```
 
+Organizacao do codigo em `src/`:
+
+- `src/segmentacao/`: gera mascaras previstas e faz verificacoes de integridade;
+- `src/binarizacao/`: binariza mascaras previstas e mascaras de referencia;
+- `src/metrics/`, `src/analysis/` e `src/visualization/`: avaliam e apresentam os resultados.
+
 ## Configuracao do ambiente
 
 ### Requisitos
