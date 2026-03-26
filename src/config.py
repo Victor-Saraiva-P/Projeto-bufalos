@@ -52,10 +52,15 @@ EVALUATION_DIR = _resolver_caminho(
 )
 
 # Caminhos de arquivos
-INDICE_PATH = _resolver_caminho(
+INDICE_DB_PATH = _resolver_caminho(
+    BASE_DIR,
+    _PATHS["generated_dir"],
+    _PATHS["indice_db_file"],
+)
+LEGACY_INDICE_PATH = _resolver_caminho(
     BASE_DIR,
     _PATHS["data_dir"],
-    _PATHS["indice_file"],
+    _PATHS["legacy_indice_file"],
 )
 METRICS_CACHE_PATH = _resolver_caminho(
     BASE_DIR,

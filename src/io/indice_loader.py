@@ -1,31 +1,10 @@
-from decimal import Decimal
+from src.io.indice_db import carregar_indice
+from src.models.indice_linha import IndiceLinha
 
-import pandas as pd
 
-from src.config import FAZENDA_COL, INDICE_PATH, NOME_COL, PESO_COL, TAGS_COL
-from src.models.indice_linha import IndiceLinha, normalizar_tags
+def carregar_indice_sqlite() -> list[IndiceLinha]:
+    return carregar_indice()
 
 
 def carregar_indice_excel() -> list[IndiceLinha]:
-    indice_df = pd.read_excel(INDICE_PATH)
-    colunas = {c.strip().lower(): c for c in indice_df.columns}
-
-    nome_col = colunas.get(NOME_COL)
-    fazenda_col = colunas.get(FAZENDA_COL)
-    peso_col = colunas.get(PESO_COL)
-    tags_col = colunas.get(TAGS_COL)
-
-    if not nome_col or not fazenda_col or not peso_col:
-        raise ValueError(
-            "Alguma das colunas esperadas nao foi encontrada no arquivo Excel."
-        )
-
-    return [
-        IndiceLinha(
-            nome_arquivo=str(row[nome_col]),
-            fazenda=str(row[fazenda_col]),
-            peso=Decimal(str(row[peso_col])),
-            tags=normalizar_tags(row[tags_col]) if tags_col else [],
-        )
-        for _, row in indice_df.iterrows()
-    ]
+    return carregar_indice()

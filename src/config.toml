@@ -7,7 +7,8 @@ predicted_masks_dir = "predicted_masks"
 predicted_masks_binary_dir = "predicted_masks_binary"
 ground_truth_binary_dir = "ground_truth_binary"
 evaluation_dir = "evaluation"
-indice_file = "Indice.xlsx"
+indice_db_file = "indice.sqlite"
+legacy_indice_file = "Indice.xlsx"
 
 [columns]
 nome = "nome do arquivo"

@@ -10,11 +10,11 @@ if __package__ is None or __package__ == "":
     if PROJECT_ROOT not in sys.path:
         sys.path.insert(0, PROJECT_ROOT)
 
-from openpyxl import load_workbook
 from PIL import Image, ImageTk
 
-from src.config import IMAGES_DIR, INDICE_PATH, TAGS_COL
-from src.io.indice_loader import carregar_indice_excel
+from src.config import IMAGES_DIR, INDICE_DB_PATH
+from src.io.indice_db import atualizar_tags
+from src.io.indice_loader import carregar_indice_sqlite
 from src.io.path_utils import caminho_foto_original
 from src.models.indice_linha import IndiceLinha
 
@@ -35,7 +35,6 @@ BUTTON_SELECTED_FG = "#f5f5f4"
 
 @dataclass(frozen=True)
 class PendingImage:
-    row_number: int
     line_number: int
     indice_linha: IndiceLinha
 
@@ -59,36 +58,16 @@ def _is_pending(tags: list[str]) -> bool:
     return len(tags) == 0
 
 
-class ExcelTagRepository:
-    def __init__(self, indice_path: str = INDICE_PATH, tags_col: str = TAGS_COL):
+class SqliteTagRepository:
+    def __init__(self, indice_path: str = INDICE_DB_PATH):
         self.indice_path = indice_path
-        self.tags_col = tags_col
-        self.workbook = load_workbook(self.indice_path)
-        self.worksheet = self.workbook.active
-        self.tags_column = self._resolve_tags_column()
         self.pending_images = self._build_pending_images()
         self.current_index = 0
 
-    def _resolve_tags_column(self) -> int:
-        header_map = {
-            str(cell.value).strip().lower(): cell.column
-            for cell in self.worksheet[1]
-            if cell.value is not None
-        }
-        tags_column = header_map.get(self.tags_col)
-
-        if tags_column is None:
-            tags_column = self.worksheet.max_column + 1
-            self.worksheet.cell(row=1, column=tags_column, value=self.tags_col)
-            self.workbook.save(self.indice_path)
-
-        return tags_column
-
     def _build_pending_images(self) -> list[PendingImage]:
-        linhas = carregar_indice_excel()
+        linhas = carregar_indice_sqlite()
         return [
             PendingImage(
-                row_number=idx,
                 line_number=idx - 1,
                 indice_linha=linha,
             )
@@ -107,17 +86,16 @@ class ExcelTagRepository:
         if current_pending is None:
             return None
 
-        self.worksheet.cell(
-            row=current_pending.row_number,
-            column=self.tags_column,
-            value=tags_value,
+        atualizar_tags(
+            nome_arquivo=current_pending.indice_linha.nome_arquivo,
+            tags=tags_value,
+            db_path=self.indice_path,
         )
-        self.workbook.save(self.indice_path)
         self.current_index += 1
         return self.get_current_pending()
 
     def close(self) -> None:
-        self.workbook.close()
+        return None
 
 
 class ManualTaggerApp:
@@ -127,7 +105,7 @@ class ManualTaggerApp:
         self.master.geometry("1280x920")
         self.master.protocol("WM_DELETE_WINDOW", self.exit_app)
 
-        self.repository = ExcelTagRepository()
+        self.repository = SqliteTagRepository()
         self.selected_tags: set[str] = set()
         self.current_pending: PendingImage | None = None
         self.button_by_tag: dict[str, tk.Button] = {}

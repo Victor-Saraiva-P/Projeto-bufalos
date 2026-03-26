@@ -43,8 +43,8 @@ class MockDataConfig:
     @property
     def indice_path(self) -> Path:
         return self._resolver_caminho(
-            self.data_dir,
-            self._config["paths"]["indice_file"],
+            self.generated_dir,
+            self._config["paths"]["indice_db_file"],
         )
 
     @property

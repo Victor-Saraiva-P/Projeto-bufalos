@@ -24,6 +24,7 @@ dependencies = [
     "rembg[gpu]",
     "scikit-image",
     "scipy",
+    "sqlalchemy",
 ]
 
 [tool.setuptools]

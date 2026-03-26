@@ -3,8 +3,8 @@ from pathlib import Path
 import pytest
 
 from mock_config import MockDataConfig
-from src.io import indice_loader, path_utils
-from src.io.indice_loader import carregar_indice_excel
+from src.io import path_utils
+from src.io.indice_loader import carregar_indice_sqlite
 from src.segmentacao import executar_segmentacao
 
 
@@ -19,11 +19,6 @@ def test_segmentacao_e2e_com_rembg_real(
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
     monkeypatch.setattr(
         path_utils,
         "IMAGES_DIR",
@@ -44,7 +39,7 @@ def test_segmentacao_e2e_com_rembg_real(
         str(tmp_path / "predicted_masks"),
     )
 
-    linhas = carregar_indice_excel()
+    linhas = carregar_indice_sqlite()
     linha_teste = [linhas[0]]
     nome_modelo = next(iter(mock_data_config.modelos_para_avaliacao))
     modelos = mock_data_config.modelos_para_avaliacao

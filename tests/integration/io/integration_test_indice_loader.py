@@ -1,20 +1,16 @@
 from decimal import Decimal
 
-import pandas as pd
 import pytest
 
 from mock_config import MockDataConfig
 from src.io import indice_loader
+from src.io.indice_db import inicializar_banco_indice
 from src.models.indice_linha import IndiceLinha
 
 
 def test_carregar_indice_excel_com_mock_data(
-    monkeypatch: pytest.MonkeyPatch,
+    mock_data_config: MockDataConfig,
 ) -> None:
-    config = MockDataConfig()
-    monkeypatch.setattr(indice_loader, "INDICE_PATH", str(config.indice_path))
-
-    indice_df = pd.read_excel(config.indice_path)
     linhas = indice_loader.carregar_indice_excel()
     linhas_esperadas = [
         IndiceLinha(
@@ -49,28 +45,16 @@ def test_carregar_indice_excel_com_mock_data(
         ),
     ]
 
-    assert list(indice_df.columns) == ["Nome do arquivo", "Fazenda", "Peso", "Tags"]
-    assert len(indice_df) == 5
+    assert mock_data_config.indice_path.exists()
     assert linhas == linhas_esperadas
 
 
-def test_carregar_indice_excel_falha_quando_faltam_colunas(
+def test_carregar_indice_excel_retorna_vazio_quando_banco_esta_vazio(
     tmp_path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    indice_invalido = tmp_path / "Indice.xlsx"
-    df = pd.DataFrame(
-        {
-            "nome do arquivo": ["bufalo_001"],
-            "fazenda": ["Mamucaba"],
-        }
-    )
-    df.to_excel(indice_invalido, index=False)
+    indice_vazio = tmp_path / "indice.sqlite"
+    inicializar_banco_indice([], db_path=str(indice_vazio))
 
-    monkeypatch.setattr(indice_loader, "INDICE_PATH", str(indice_invalido))
+    linhas = indice_loader.carregar_indice(db_path=str(indice_vazio))
 
-    with pytest.raises(
-        ValueError,
-        match="Alguma das colunas esperadas nao foi encontrada no arquivo Excel.",
-    ):
-        indice_loader.carregar_indice_excel()
+    assert linhas == []

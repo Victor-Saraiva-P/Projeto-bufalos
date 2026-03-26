@@ -1,7 +1,7 @@
 [paths]
 data_dir = "mock_data"
-generated_dir = "generated"
-indice_file = "Indice.xlsx"
+generated_dir = "mock_generated"
+indice_db_file = "indice.sqlite"
 images_dir = "images"
 ground_truth_raw_dir = "ground_truth_raw"
 predicted_masks_dir = "predicted_masks"

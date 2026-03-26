@@ -17,7 +17,7 @@ from src.config import (
     METRICS_CACHE_PATH,
 )
 from src.models.avaliacao import Avaliacao
-from src.io.indice_loader import carregar_indice_excel
+from src.io.indice_loader import carregar_indice_sqlite
 
 
 class MetricsCollector:
@@ -76,7 +76,7 @@ class MetricsCollector:
 
         # Processar todas as imagens
         print("Coletando métricas de todas as imagens...")
-        indice_excel = carregar_indice_excel()
+        indice_excel = carregar_indice_sqlite()
 
         all_metrics = []
         modelos_com_erro = set()

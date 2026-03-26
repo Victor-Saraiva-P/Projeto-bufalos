@@ -4,8 +4,8 @@ import pytest
 from PIL import Image
 
 from mock_config import MockDataConfig
-from src.io import indice_loader, path_utils
-from src.io.indice_loader import carregar_indice_excel
+from src.io import path_utils
+from src.io.indice_loader import carregar_indice_sqlite
 from src.segmentacao import (
     GaussianOpeningBinarizationStrategy,
     binarizar_ground_truth,
@@ -21,11 +21,6 @@ def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
     saida_ground_truth = tmp_path / "ground_truth_binary"
 
     monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
-    monkeypatch.setattr(
         path_utils,
         "GROUND_TRUTH_RAW_DIR",
         str(mock_data_config.ground_truth_raw_dir),
@@ -36,7 +31,7 @@ def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
         str(saida_ground_truth),
     )
 
-    linhas = carregar_indice_excel()
+    linhas = carregar_indice_sqlite()
     stats = binarizar_ground_truth(linhas, GaussianOpeningBinarizationStrategy())
 
     saidas_geradas = sorted(saida_ground_truth.glob("*.png"))
@@ -60,11 +55,6 @@ def test_binarizar_mascaras_preditas_processa_modelo_e_gera_pngs(
     nome_modelo = next(iter(mock_data_config.modelos_para_avaliacao))
 
     monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
-    monkeypatch.setattr(
         path_utils,
         "PREDICTED_MASKS_DIR",
         str(entrada_modelos),
@@ -75,7 +65,7 @@ def test_binarizar_mascaras_preditas_processa_modelo_e_gera_pngs(
         str(saida_modelos),
     )
 
-    linhas = carregar_indice_excel()
+    linhas = carregar_indice_sqlite()
     diretorio_modelo = entrada_modelos / nome_modelo
     diretorio_modelo.mkdir(parents=True)
 

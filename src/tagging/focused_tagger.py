@@ -10,11 +10,11 @@ if __package__ is None or __package__ == "":
     if PROJECT_ROOT not in sys.path:
         sys.path.insert(0, PROJECT_ROOT)
 
-from openpyxl import load_workbook
 from PIL import Image, ImageTk
 
-from src.config import IMAGES_DIR, INDICE_PATH, TAGS_COL
-from src.io.indice_loader import carregar_indice_excel
+from src.config import IMAGES_DIR, INDICE_DB_PATH
+from src.io.indice_db import atualizar_tags
+from src.io.indice_loader import carregar_indice_sqlite
 from src.io.path_utils import caminho_foto_original
 from src.models.indice_linha import IndiceLinha
 
@@ -35,7 +35,6 @@ BUTTON_SELECTED_FG = "#f5f5f4"
 
 @dataclass(frozen=True)
 class PendingImage:
-    row_number: int
     line_number: int
     indice_linha: IndiceLinha
 
@@ -70,36 +69,16 @@ def _sanitize_problem_tags(tags: list[str]) -> list[str]:
 
 
 class FocusedTagRepository:
-    def __init__(self, focus_tag: str, indice_path: str = INDICE_PATH, tags_col: str = TAGS_COL):
+    def __init__(self, focus_tag: str, indice_path: str = INDICE_DB_PATH):
         self.focus_tag = focus_tag
         self.indice_path = indice_path
-        self.tags_col = tags_col
-        self.workbook = load_workbook(self.indice_path)
-        self.worksheet = self.workbook.active
-        self.tags_column = self._resolve_tags_column()
         self.pending_images = self._build_pending_images()
         self.current_index = 0
 
-    def _resolve_tags_column(self) -> int:
-        header_map = {
-            str(cell.value).strip().lower(): cell.column
-            for cell in self.worksheet[1]
-            if cell.value is not None
-        }
-        tags_column = header_map.get(self.tags_col)
-
-        if tags_column is None:
-            tags_column = self.worksheet.max_column + 1
-            self.worksheet.cell(row=1, column=tags_column, value=self.tags_col)
-            self.workbook.save(self.indice_path)
-
-        return tags_column
-
     def _build_pending_images(self) -> list[PendingImage]:
-        linhas = carregar_indice_excel()
+        linhas = carregar_indice_sqlite()
         return [
             PendingImage(
-                row_number=idx,
                 line_number=idx - 1,
                 indice_linha=linha,
             )
@@ -120,12 +99,11 @@ class FocusedTagRepository:
         current_tags = current_pending.indice_linha.tags
         next_value = self._build_next_tags_value(current_tags, mark_focus_tag)
 
-        self.worksheet.cell(
-            row=current_pending.row_number,
-            column=self.tags_column,
-            value=next_value,
+        atualizar_tags(
+            nome_arquivo=current_pending.indice_linha.nome_arquivo,
+            tags=next_value,
+            db_path=self.indice_path,
         )
-        self.workbook.save(self.indice_path)
         self.current_index += 1
         return self.get_current_pending()
 
@@ -142,7 +120,7 @@ class FocusedTagRepository:
         return ", ".join(current_tags)
 
     def close(self) -> None:
-        self.workbook.close()
+        return None
 
 
 class FocusedTaggerApp:
