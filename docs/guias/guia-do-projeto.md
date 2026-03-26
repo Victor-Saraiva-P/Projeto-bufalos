@@ -27,7 +27,8 @@ Organizacao do codigo em `src/`:
 
 - `src/segmentacao/`: gera mascaras previstas e faz verificacoes de integridade;
 - `src/binarizacao/`: binariza mascaras previstas e mascaras de referencia;
-- `src/metrics/`, `src/analysis/` e `src/visualization/`: avaliam e apresentam os resultados.
+- `src/metrics/`, `src/analysis/` e `src/visualization/`: avaliam e apresentam os resultados;
+- `src/tagging/`: concentra os anotadores manuais de curadoria.
 
 ## Configuracao do ambiente
 
@@ -142,7 +143,7 @@ Comportamento do fluxo:
 - se a celula ainda estiver vazia e nenhuma marcacao for feita, o fluxo grava `ok`;
 - se a imagem ja tiver outras tags, elas sao preservadas.
 
-As tags de curadoria estao definidas em `../avaliacao/tags-de-imagem.md`.
+As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 ### Notebooks principais
 
@@ -218,49 +219,14 @@ Edite `~/.local/share/jupyter/kernels/projeto-bufalos/kernel.json` para incluir:
 
 ### Verificar se a GPU esta funcionando
 
-No Python ou Jupyter:
+Depois de configurar o kernel, execute o notebook de segmentacao usando esse ambiente.
 
-```python
-import onnxruntime as ort
-print(ort.get_available_providers())
-```
+Sinais esperados:
 
-Deve incluir `CUDAExecutionProvider`.
+- a inferencia deve ocorrer sem erro de biblioteca ausente;
+- o backend de GPU deve conseguir carregar `onnxruntime-gpu`;
+- se houver falha de carregamento, revise o `LD_LIBRARY_PATH` e as versoes de CUDA/cuDNN.
 
-Ou via CLI:
+## Convencao documental
 
-```bash
-rembg p data/images generated/test -m u2net
-```
-
-## Modelos disponiveis para avaliacao
-
-Os modelos configurados ficam em `src/config.py`, no dicionario `MODELOS_PARA_AVALIACAO`.
-
-Observacoes:
-
-- o projeto pode ser executado sem GPU;
-- os providers configurados em `src/config.py` definem quais modelos tentam usar `gpu` e quais usam `cpu`;
-- modelos `birefnet-*` consomem muita VRAM;
-- em GPUs com 4 GB podem ocorrer erros de memoria com imagens grandes;
-- alguns modelos estao configurados para `cpu` por esse motivo.
-
-## Estrutura do projeto
-
-```text
-data/
-docs/
-generated/
-notebooks/
-src/
-tests/
-pyproject.toml
-```
-
-## Documentacao relacionada
-
-- `../guias/testes.md`
-- `../guias/ci.md`
-- `../avaliacao/sistema-de-avaliacao.md`
-- `../avaliacao/tags-de-imagem.md`
-- `../decisoes-tecnicas/`
+As regras de sincronizacao entre `README.md`, `docs/` e `AGENTS.md` estao definidas em `docs/guias/documentacao-do-repositorio.md`.

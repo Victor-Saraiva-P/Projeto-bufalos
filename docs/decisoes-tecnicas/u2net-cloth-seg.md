@@ -28,5 +28,3 @@ O `u2net_cloth_seg` foi treinado para segmentacao de roupas em pessoas, e nao pa
 Por isso, ao receber imagens de bufalos, o modelo opera fora do dominio para o qual foi treinado e tende a falhar.
 
 Na pratica, isso produz mascaras inadequadas para o pipeline de avaliacao do projeto e torna a comparacao com os demais modelos pouco util.
-
-r

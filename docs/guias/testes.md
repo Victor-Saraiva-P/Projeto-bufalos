@@ -59,24 +59,6 @@ Exemplos:
 - testes de `src.binarizacao` ficam em `tests/unit/binarizacao/`;
 - testes de `src.segmentacao` ficam em `tests/unit/segmentacao/`.
 
-## Convencao de nomes dos arquivos
-
-Os arquivos de teste devem comecar pelo tipo do teste.
-
-Regra:
-
-- testes unitarios usam o prefixo `unit_test_`;
-- testes de integracao usam o prefixo `integration_test_`;
-- testes end-to-end usam o prefixo `e2e_test_`.
-
-Exemplos:
-
-- `tests/unit/io/unit_test_path_utils.py`
-- `tests/integration/pipeline/integration_test_segmentacao.py`
-- `tests/e2e/e2e_test_segmentacao.py`
-
-Essa convencao deve ser seguida em novos arquivos para manter o espelhamento da suite e evitar ambiguidade sobre o tipo do teste ja no nome do arquivo.
-
 ### `tests/integration/`
 
 Contem cenarios que atravessam mais de um modulo ou dependem de arquivos reais do dataset reduzido.
@@ -94,6 +76,24 @@ Reserva os testes ponta a ponta, normalmente mais caros e menos adequados para e
 ### `tests/fixtures/`
 
 Contem helpers, builders e fixtures compartilhadas entre diferentes camadas da suite.
+
+## Convencao de nomes dos arquivos
+
+Os arquivos de teste devem comecar pelo tipo do teste.
+
+Regra:
+
+- testes unitarios usam o prefixo `unit_test_`;
+- testes de integracao usam o prefixo `integration_test_`;
+- testes end-to-end usam o prefixo `e2e_test_`.
+
+Exemplos:
+
+- `tests/unit/io/unit_test_path_utils.py`
+- `tests/integration/pipeline/integration_test_segmentacao.py`
+- `tests/e2e/e2e_test_segmentacao.py`
+
+Essa convencao deve ser seguida em novos arquivos para manter o espelhamento da suite e evitar ambiguidade sobre o tipo do teste ja no nome do arquivo.
 
 ## Convencoes de import
 
@@ -222,11 +222,4 @@ Relatorio HTML:
 pytest --cov=src --cov-report=html
 ```
 
-O relatorio e gerado em `htmlcov/index.html`.
-
-## Observacoes
-
-- o dataset de teste usa `ground_truth_raw/`, nao `ground_truth/`;
-- `.~lock.Indice.xlsx#` e arquivo temporario de editor e nao faz parte do dataset;
-- `tests/unit/` tende a acompanhar `src/`, enquanto `tests/integration/` e orientado a fluxo;
-- o CI rapido exclui os testes marcados como `e2e`; veja [`ci.md`](./ci.md).
+O relatorio fica em `htmlcov/`.
