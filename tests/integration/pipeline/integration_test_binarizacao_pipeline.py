@@ -12,6 +12,7 @@ from src.repositories import ImagemRepository
 
 def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     saida_ground_truth = tmp_path / "ground_truth_binary"
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
@@ -20,9 +21,18 @@ def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
         sqlite_path=sqlite_path,
     )
 
-    ImagemController(path_resolver=resolver).sincronizar_indice_excel()
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+
+    ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
-    stats = BinarizacaoController(path_resolver=resolver).processar_ground_truth(
+    stats = BinarizacaoController().processar_ground_truth(
         GaussianOpeningBinarizationStrategy(),
         imagens=linhas,
     )
@@ -43,6 +53,7 @@ def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
 
 def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     entrada_modelos = tmp_path / "predicted_masks"
     saida_modelos = tmp_path / "predicted_masks_binary"
@@ -54,7 +65,20 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
         sqlite_path=sqlite_path,
     )
 
-    ImagemController(path_resolver=resolver).sincronizar_indice_excel()
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
+        {nome_modelo: MODELOS_PARA_AVALIACAO[nome_modelo]},
+    )
+
+    ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
     diretorio_modelo = entrada_modelos / nome_modelo
     diretorio_modelo.mkdir(parents=True)
@@ -64,10 +88,9 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
             Path(GROUND_TRUTH_RAW_DIR) / f"{linha.nome_arquivo}.jpg"
         ).save(diretorio_modelo / f"{linha.nome_arquivo}.png")
 
-    resumos = BinarizacaoController(path_resolver=resolver).processar_segmentacoes(
+    resumos = BinarizacaoController().processar_segmentacoes(
         GaussianOpeningBinarizationStrategy(),
         imagens=linhas,
-        modelos_para_avaliacao={nome_modelo: MODELOS_PARA_AVALIACAO[nome_modelo]},
     )
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 

@@ -19,21 +19,14 @@ from src.services.avaliacao_service import AvaliacaoService
 class AvaliacaoController:
     def __init__(
         self,
-        sqlite_path: str | None = None,
-        path_resolver: PathResolver | None = None,
         imagem_repository: ImagemRepository | None = None,
         avaliacao_service: AvaliacaoService | None = None,
     ):
-        self.path_resolver = (
-            path_resolver if path_resolver is not None else PathResolver.from_config()
-        )
-        sqlite_path_resolvido = (
-            sqlite_path if sqlite_path is not None else self.path_resolver.sqlite_path
-        )
+        self.path_resolver = PathResolver.from_config()
         self.imagem_repository = (
             imagem_repository
             if imagem_repository is not None
-            else ImagemRepository(sqlite_path_resolvido)
+            else ImagemRepository(self.path_resolver.sqlite_path)
         )
         self.avaliacao_service = (
             avaliacao_service if avaliacao_service is not None else AvaliacaoService()
@@ -42,9 +35,8 @@ class AvaliacaoController:
     def processar_imagem(
         self,
         imagem: Imagem,
-        modelos_para_avaliacao: Iterable[str] | None = None,
     ) -> Imagem:
-        nomes_modelo = list(modelos_para_avaliacao or MODELOS_PARA_AVALIACAO)
+        nomes_modelo = list(MODELOS_PARA_AVALIACAO)
         ground_truth_mask = carregar_mask_array_avaliacao(
             imagem.nome_arquivo,
             "ground_truth",
@@ -69,10 +61,9 @@ class AvaliacaoController:
     def processar_imagens(
         self,
         imagens: Iterable[Imagem] | None = None,
-        modelos_para_avaliacao: Iterable[str] | None = None,
     ) -> EstatisticasAvaliacao:
         linhas = list(imagens) if imagens is not None else self.imagem_repository.list()
-        nomes_modelo = list(modelos_para_avaliacao or MODELOS_PARA_AVALIACAO)
+        nomes_modelo = list(MODELOS_PARA_AVALIACAO)
         stats = EstatisticasAvaliacao(total=len(linhas))
 
         print("Calculando metricas de avaliacao")
@@ -89,7 +80,6 @@ class AvaliacaoController:
             try:
                 self.processar_imagem(
                     imagem=imagem,
-                    modelos_para_avaliacao=nomes_modelo,
                 )
             except Exception as exc:
                 stats.registrar_erro()

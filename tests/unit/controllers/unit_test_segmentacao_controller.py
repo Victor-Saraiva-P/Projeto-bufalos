@@ -76,21 +76,24 @@ def test_processar_imagens_nao_persiste_segmentacoes_parciais(
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
-    controller = SegmentacaoController(
-        path_resolver=resolver,
-        imagem_repository=repository,
-        segmentacao_service=service,
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.PathResolver.from_config",
+        lambda: resolver,
     )
-
     monkeypatch.setattr(
         "src.controllers.segmentacao_controller.obter_resolvedor_providers",
         lambda: (lambda *_args: ["CPUExecutionProvider"]),
     )
-
-    resumos = controller.processar_imagens(
-        imagens=imagens,
-        modelos_para_avaliacao={"u2net": "cpu"},
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2net": "cpu"},
     )
+    controller = SegmentacaoController(
+        imagem_repository=repository,
+        segmentacao_service=service,
+    )
+
+    resumos = controller.processar_imagens(imagens=imagens)
 
     assert isinstance(resumos["u2net"], EstatisticasProcessamentoComEta)
     assert resumos["u2net"].ok == 1
@@ -122,17 +125,23 @@ def test_processar_imagens_busca_imagens_no_repositorio_quando_nao_recebe_lista(
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
-    controller = SegmentacaoController(
-        path_resolver=resolver,
-        imagem_repository=repository,
-        segmentacao_service=service,
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.PathResolver.from_config",
+        lambda: resolver,
     )
-
     monkeypatch.setattr(
         "src.controllers.segmentacao_controller.obter_resolvedor_providers",
         lambda: (lambda *_args: ["CPUExecutionProvider"]),
     )
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2net": "cpu"},
+    )
+    controller = SegmentacaoController(
+        imagem_repository=repository,
+        segmentacao_service=service,
+    )
 
-    resumos = controller.processar_imagens(modelos_para_avaliacao={"u2net": "cpu"})
+    resumos = controller.processar_imagens()
 
     assert resumos["u2net"].erro == 1

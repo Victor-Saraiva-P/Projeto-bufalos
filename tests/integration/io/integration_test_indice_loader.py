@@ -29,9 +29,7 @@ def test_carregar_indice_excel_retorna_imagens_com_tags() -> None:
 def test_imagem_controller_sincroniza_excel_para_sqlite() -> None:
     sqlite_path = SQLITE_PATH
 
-    ImagemController(sqlite_path=sqlite_path).sincronizar_indice_excel(
-        indice_path=INDICE_PATH,
-    )
+    ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(sqlite_path).list()
     assert [linha.nome_arquivo for linha in linhas] == [
         "1166_Calcula_506",
@@ -57,7 +55,10 @@ def test_imagem_controller_sincroniza_excel_para_sqlite() -> None:
     ]
 
 
-def test_imagem_controller_falha_quando_faltam_colunas_no_excel(tmp_path) -> None:
+def test_imagem_controller_falha_quando_faltam_colunas_no_excel(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     indice_invalido = tmp_path / "Indice.xlsx"
     df = pd.DataFrame(
         {
@@ -67,12 +68,19 @@ def test_imagem_controller_falha_quando_faltam_colunas_no_excel(tmp_path) -> Non
     )
     df.to_excel(indice_invalido, index=False)
 
+    from src.io.path_resolver import PathResolver
+
+    resolver = PathResolver.from_config().with_overrides(
+        indice_path=str(indice_invalido),
+        sqlite_path=str(tmp_path / "bufalos.sqlite3"),
+    )
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+
     with pytest.raises(
         ValueError,
         match="Alguma das colunas esperadas nao foi encontrada no arquivo Excel.",
     ):
-        ImagemController(
-            sqlite_path=str(tmp_path / "bufalos.sqlite3")
-        ).sincronizar_indice_excel(
-            indice_path=str(indice_invalido),
-        )
+        ImagemController().sincronizar_indice_excel()

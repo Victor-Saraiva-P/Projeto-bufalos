@@ -65,8 +65,21 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
         indice_path="/tmp/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2netp": "cpu"},
+    )
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.carregar_mask_array_avaliacao",
+        lambda nome_arquivo, nome_modelo, path_resolver: (
+            ground_truth_mask if nome_modelo == "ground_truth" else model_mask
+        ),
+    )
     controller = AvaliacaoController(
-        path_resolver=resolver,
         imagem_repository=repository,
         avaliacao_service=service,
     )
@@ -74,17 +87,7 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     ground_truth_mask = np.zeros((2, 2), dtype=np.uint8)
     model_mask = np.ones((2, 2), dtype=np.uint8)
 
-    monkeypatch.setattr(
-        "src.controllers.avaliacao_controller.carregar_mask_array_avaliacao",
-        lambda nome_arquivo, nome_modelo, path_resolver: (
-            ground_truth_mask if nome_modelo == "ground_truth" else model_mask
-        ),
-    )
-
-    imagem_avaliada = controller.processar_imagem(
-        imagem,
-        modelos_para_avaliacao=["u2netp"],
-    )
+    imagem_avaliada = controller.processar_imagem(imagem)
 
     assert imagem_avaliada.ground_truth_binarizada is not None
     assert len(repository.salvos) == 1
@@ -120,16 +123,20 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     repository.imagens = [imagem_skip, imagem_ok]
     processadas: list[str] = []
 
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2netp": "cpu"},
+    )
+
     def fake_processar_imagem(
         imagem: Imagem,
-        modelos_para_avaliacao: list[str] | None = None,
     ) -> Imagem:
         processadas.append(imagem.nome_arquivo)
         return imagem
 
     monkeypatch.setattr(controller, "processar_imagem", fake_processar_imagem)
 
-    stats = controller.processar_imagens(modelos_para_avaliacao=["u2netp"])
+    stats = controller.processar_imagens()
 
     assert processadas == ["avaliar"]
     assert stats.total == 2

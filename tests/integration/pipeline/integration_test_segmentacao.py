@@ -30,12 +30,22 @@ def test_segmentacao_controller_processa_modelo_e_gera_arquivo(
         ),
     )
 
-    ImagemController(path_resolver=resolver).sincronizar_indice_excel()
-    linhas = ImagemRepository(resolver.sqlite_path).list()
-    resumos = SegmentacaoController(path_resolver=resolver).processar_imagens(
-        imagens=linhas,
-        modelos_para_avaliacao=MODELOS_PARA_AVALIACAO,
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
     )
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
+        MODELOS_PARA_AVALIACAO,
+    )
+
+    ImagemController().sincronizar_indice_excel()
+    linhas = ImagemRepository(resolver.sqlite_path).list()
+    resumos = SegmentacaoController().processar_imagens(imagens=linhas)
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
     nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))

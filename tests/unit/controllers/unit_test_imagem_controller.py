@@ -34,7 +34,7 @@ class FakePathResolver(PathResolver):
     pass
 
 
-def test_imagem_controller_delega_sincronizacao_para_service() -> None:
+def test_imagem_controller_delega_sincronizacao_para_service(monkeypatch) -> None:
     repository = object()
     service = FakeImagemService()
     resolver = FakePathResolver(
@@ -49,16 +49,18 @@ def test_imagem_controller_delega_sincronizacao_para_service() -> None:
         indice_path="/tmp/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
     controller = ImagemController(
-        path_resolver=resolver,
         imagem_repository=repository,
         imagem_service=service,
     )
 
-    controller.sincronizar_indice_excel("/tmp/Indice.xlsx")
+    controller.sincronizar_indice_excel()
 
     assert service.sincronizacoes == [(repository, "/tmp/Indice.xlsx")]
-
 
 def test_imagem_controller_verifica_segmentacoes_usando_diretorio_padrao(monkeypatch) -> None:
     service = FakeImagemService()
@@ -74,13 +76,16 @@ def test_imagem_controller_verifica_segmentacoes_usando_diretorio_padrao(monkeyp
         indice_path="/tmp/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
     controller = ImagemController(
-        path_resolver=resolver,
         imagem_repository=object(),
         imagem_service=service,
     )
 
-    resumo = controller.verificar_segmentacoes(extensao_arquivo=".png")
+    resumo = controller.verificar_segmentacoes()
 
     assert resumo.total_png == 1
     assert service.verificacoes == [("/tmp/predicted_masks", ".png")]

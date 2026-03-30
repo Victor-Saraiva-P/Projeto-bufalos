@@ -11,6 +11,7 @@ from src.repositories import ImagemRepository
 @pytest.mark.e2e
 def test_segmentacao_e2e_com_rembg_real(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     try:
         import rembg  # noqa: F401
@@ -22,17 +23,27 @@ def test_segmentacao_e2e_com_rembg_real(
         sqlite_path=str(tmp_path / "bufalos.sqlite3"),
     )
 
-    ImagemController(path_resolver=resolver).sincronizar_indice_excel()
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
+        MODELOS_PARA_AVALIACAO,
+    )
+
+    ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
     linha_teste = [linhas[0]]
     nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
     modelos = MODELOS_PARA_AVALIACAO
 
     try:
-        resumos = SegmentacaoController(path_resolver=resolver).processar_imagens(
-            imagens=linha_teste,
-            modelos_para_avaliacao=modelos,
-        )
+        resumos = SegmentacaoController().processar_imagens(imagens=linha_teste)
     except Exception as erro:
         pytest.skip(f"Ambiente sem suporte para executar rembg real: {erro}")
 

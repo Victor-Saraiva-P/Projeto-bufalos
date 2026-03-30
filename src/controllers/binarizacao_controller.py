@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 import os
 
 from src.binarizacao.estrategias import BinarizationStrategy
 from src.config import (
     MODELOS_PARA_AVALIACAO,
-    REMBG_IMAGE_TYPE,
 )
 from src.io.path_resolver import PathResolver
 from src.logs import (
@@ -23,21 +22,14 @@ from src.services.binarizacao_service import BinarizacaoService
 class BinarizacaoController:
     def __init__(
         self,
-        sqlite_path: str | None = None,
-        path_resolver: PathResolver | None = None,
         imagem_repository: ImagemRepository | None = None,
         binarizacao_service: BinarizacaoService | None = None,
     ):
-        self.path_resolver = (
-            path_resolver if path_resolver is not None else PathResolver.from_config()
-        )
-        sqlite_path_resolvido = (
-            sqlite_path if sqlite_path is not None else self.path_resolver.sqlite_path
-        )
+        self.path_resolver = PathResolver.from_config()
         self.imagem_repository = (
             imagem_repository
             if imagem_repository is not None
-            else ImagemRepository(sqlite_path_resolvido)
+            else ImagemRepository(self.path_resolver.sqlite_path)
         )
         self.binarizacao_service = (
             binarizacao_service
@@ -82,14 +74,13 @@ class BinarizacaoController:
         self,
         strategy: BinarizationStrategy,
         imagens: Iterable[Imagem] | None = None,
-        modelos_para_avaliacao: Mapping[str, str] | None = None,
     ) -> dict[str, EstatisticasBinarizacao]:
         linhas = (
             list(imagens)
             if imagens is not None
             else self.imagem_repository.list()
         )
-        modelos = dict(modelos_para_avaliacao or MODELOS_PARA_AVALIACAO)
+        modelos = dict(MODELOS_PARA_AVALIACAO)
         resumos: dict[str, EstatisticasBinarizacao] = {}
 
         print("Binarizando mascaras dos modelos")
@@ -139,14 +130,7 @@ class BinarizacaoController:
 
     def verificar_segmentacoes(
         self,
-        extensao_arquivo: str = REMBG_IMAGE_TYPE,
     ):
         from src.controllers.imagem_controller import ImagemController
 
-        return ImagemController(path_resolver=self.path_resolver).verificar_pngs_corrompidos(
-            diretorio_base=self._diretorio_modelo_default(),
-            extensao_arquivo=extensao_arquivo,
-        )
-
-    def _diretorio_modelo_default(self) -> str:
-        return self.path_resolver.predicted_masks_dir
+        return ImagemController(imagem_repository=self.imagem_repository).verificar_segmentacoes()

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable
 
 from src.config import MODELOS_PARA_AVALIACAO
 from src.io.path_resolver import PathResolver
@@ -18,21 +18,14 @@ from src.services.segmentacao_service import ResultadoSegmentacaoArquivo, Segmen
 class SegmentacaoController:
     def __init__(
         self,
-        sqlite_path: str | None = None,
-        path_resolver: PathResolver | None = None,
         imagem_repository: ImagemRepository | None = None,
         segmentacao_service: SegmentacaoService | None = None,
     ):
-        self.path_resolver = (
-            path_resolver if path_resolver is not None else PathResolver.from_config()
-        )
-        sqlite_path_resolvido = (
-            sqlite_path if sqlite_path is not None else self.path_resolver.sqlite_path
-        )
+        self.path_resolver = PathResolver.from_config()
         self.imagem_repository = (
             imagem_repository
             if imagem_repository is not None
-            else ImagemRepository(sqlite_path_resolvido)
+            else ImagemRepository(self.path_resolver.sqlite_path)
         )
         self.segmentacao_service = (
             segmentacao_service
@@ -43,14 +36,13 @@ class SegmentacaoController:
     def processar_imagens(
         self,
         imagens: Iterable[Imagem] | None = None,
-        modelos_para_avaliacao: Mapping[str, str] | None = None,
     ) -> dict[str, EstatisticasProcessamentoComEta]:
         linhas = (
             list(imagens)
             if imagens is not None
             else self.imagem_repository.list()
         )
-        modelos = dict(modelos_para_avaliacao or MODELOS_PARA_AVALIACAO)
+        modelos = dict(MODELOS_PARA_AVALIACAO)
         total_previsto = len(modelos) * len(linhas)
         stats_geral = EstatisticasProcessamentoComEta(total=total_previsto)
         resumos_modelo: dict[str, EstatisticasProcessamentoComEta] = {}

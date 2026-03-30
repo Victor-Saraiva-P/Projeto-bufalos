@@ -58,8 +58,11 @@ def test_processar_ground_truth_nao_persiste_registro_parcial(
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
     controller = BinarizacaoController(
-        path_resolver=resolver,
         imagem_repository=repository,
         binarizacao_service=service,
     )
@@ -94,21 +97,26 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
     )
-    controller = BinarizacaoController(
-        path_resolver=resolver,
-        imagem_repository=repository,
-        binarizacao_service=service,
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
     )
-
     monkeypatch.setattr(
         "src.controllers.binarizacao_controller.os.path.isdir",
         lambda _path: True,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2netp": "cpu"},
+    )
+    controller = BinarizacaoController(
+        imagem_repository=repository,
+        binarizacao_service=service,
     )
 
     resumos = controller.processar_segmentacoes(
         GaussianOpeningBinarizationStrategy(),
         imagens=imagens,
-        modelos_para_avaliacao={"u2netp": "cpu"},
     )
 
     stats = resumos["u2netp"]
