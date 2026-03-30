@@ -3,8 +3,22 @@ from sqlalchemy.exc import IntegrityError
 
 from src.config import INDICE_PATH
 from src.io.indice_loader import carregar_indice_excel
-from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao, Tag
-from src.repositories import ImagemRepository
+from src.models import (
+    Binarizacao,
+    GroundTruthBinarizada,
+    Imagem,
+    ImagemTag,
+    Segmentacao,
+    Tag,
+)
+from src.repositories import (
+    BinarizacaoRepository,
+    GroundTruthBinarizadaRepository,
+    ImagemRepository,
+    ImagemTagRepository,
+    SegmentacaoRepository,
+    TagRepository,
+)
 from src.sqlite import criar_sessionmaker_sqlite
 
 
@@ -25,71 +39,147 @@ def test_imagem_repository_replace_all_persiste_imagens_e_tags(tmp_path) -> None
         assert session.query(Tag).count() == 3
 
 
-def test_imagem_repository_save_persiste_ground_truth_e_segmentacoes_com_cascade(
-    tmp_path,
-) -> None:
+def test_ground_truth_repository_save_persiste_ground_truth(tmp_path) -> None:
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
-    repository = ImagemRepository(sqlite_path)
-    repository.replace_all(carregar_indice_excel(INDICE_PATH))
+    imagem_repository = ImagemRepository(sqlite_path)
+    ground_truth_repository = GroundTruthBinarizadaRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
 
-    imagem = repository.get("1166_Calcula_506")
-    assert imagem is not None
-
-    imagem.ground_truth_binarizada = GroundTruthBinarizada(
-        nome_arquivo=imagem.nome_arquivo,
-        area=10.0,
-        perimetro=20.0,
+    ground_truth_repository.save(
+        GroundTruthBinarizada(
+            nome_arquivo="1166_Calcula_506",
+            area=10.0,
+            perimetro=20.0,
+        )
     )
-    imagem.segmentacoes = [
+
+    imagem_persistida = imagem_repository.get("1166_Calcula_506")
+
+    assert imagem_persistida is not None
+    assert imagem_persistida.ground_truth_binarizada is not None
+    assert imagem_persistida.ground_truth_binarizada.area == 10.0
+    assert ground_truth_repository.get("1166_Calcula_506") is not None
+
+
+def test_segmentacao_repository_save_persiste_segmentacao(tmp_path) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    imagem_repository = ImagemRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
+
+    segmentacao_repository.save(
         Segmentacao(
-            nome_arquivo=imagem.nome_arquivo,
+            nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
             area=9.0,
             perimetro=21.0,
             iou=0.8,
         )
-    ]
+    )
 
-    repository.save(imagem)
-    imagem_persistida = repository.get("1166_Calcula_506")
+    imagem_persistida = imagem_repository.get("1166_Calcula_506")
 
     assert imagem_persistida is not None
-    assert imagem_persistida.ground_truth_binarizada is not None
-    assert imagem_persistida.ground_truth_binarizada.area == 10.0
     assert len(imagem_persistida.segmentacoes) == 1
     assert imagem_persistida.segmentacoes[0].nome_modelo == "u2netp"
     assert imagem_persistida.segmentacoes[0].iou == 0.8
-    assert imagem_persistida.segmentacoes[0].binarizacoes == []
+    assert segmentacao_repository.get("1166_Calcula_506", "u2netp") is not None
 
 
-def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
+def test_binarizacao_repository_save_persiste_binarizacao_relacionada(tmp_path) -> None:
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
-    repository = ImagemRepository(sqlite_path)
-    repository.replace_all(carregar_indice_excel(INDICE_PATH))
+    imagem_repository = ImagemRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoRepository(sqlite_path)
+    binarizacao_repository = BinarizacaoRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
 
-    imagem = repository.get("1166_Calcula_506")
-    assert imagem is not None
-    imagem.segmentacoes = [
+    segmentacao_repository.save(
         Segmentacao(
-            nome_arquivo=imagem.nome_arquivo,
+            nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
             area=9.0,
             perimetro=21.0,
             iou=0.8,
-            binarizacoes=[
-                Binarizacao(
-                    nome_arquivo=imagem.nome_arquivo,
-                    nome_modelo="u2netp",
-                    estrategia_binarizacao="GaussianOpeningBinarizationStrategy",
-                    metrica_x=1.0,
-                    metrica_y=2.0,
-                )
-            ],
-        ),
-    ]
-    repository.save(imagem)
+        )
+    )
+    binarizacao_repository.save(
+        Binarizacao(
+            nome_arquivo="1166_Calcula_506",
+            nome_modelo="u2netp",
+            estrategia_binarizacao="GaussianOpeningBinarizationStrategy",
+            metrica_x=1.0,
+            metrica_y=2.0,
+        )
+    )
 
-    imagem_persistida = repository.get("1166_Calcula_506")
+    segmentacao = segmentacao_repository.get("1166_Calcula_506", "u2netp")
+
+    assert segmentacao is not None
+    assert len(segmentacao.binarizacoes) == 1
+    assert segmentacao.binarizacoes[0].estrategia_binarizacao == (
+        "GaussianOpeningBinarizationStrategy"
+    )
+    assert segmentacao.binarizacoes[0].metrica_x == 1.0
+    assert (
+        binarizacao_repository.get(
+            "1166_Calcula_506",
+            "u2netp",
+            "GaussianOpeningBinarizationStrategy",
+        )
+        is not None
+    )
+
+
+def test_tag_repositories_persistem_tag_e_associacao(tmp_path) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    imagem_repository = ImagemRepository(sqlite_path)
+    tag_repository = TagRepository(sqlite_path)
+    imagem_tag_repository = ImagemTagRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
+
+    tag_repository.save(Tag(nome_tag="nova_tag"))
+    imagem_tag_repository.save(
+        ImagemTag(
+            nome_arquivo="1166_Calcula_506",
+            nome_tag="nova_tag",
+        )
+    )
+
+    imagem_persistida = imagem_repository.get("1166_Calcula_506")
+
+    assert imagem_persistida is not None
+    assert "nova_tag" in imagem_persistida.nomes_tags
+    assert tag_repository.get("nova_tag") is not None
+    assert imagem_tag_repository.get("1166_Calcula_506", "nova_tag") is not None
+
+
+def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    imagem_repository = ImagemRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoRepository(sqlite_path)
+    binarizacao_repository = BinarizacaoRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
+
+    segmentacao_repository.save(
+        Segmentacao(
+            nome_arquivo="1166_Calcula_506",
+            nome_modelo="u2netp",
+            area=9.0,
+            perimetro=21.0,
+            iou=0.8,
+        )
+    )
+    binarizacao_repository.save(
+        Binarizacao(
+            nome_arquivo="1166_Calcula_506",
+            nome_modelo="u2netp",
+            estrategia_binarizacao="GaussianOpeningBinarizationStrategy",
+            metrica_x=1.0,
+            metrica_y=2.0,
+        )
+    )
+
+    imagem_persistida = imagem_repository.get("1166_Calcula_506")
 
     assert imagem_persistida is not None
     assert [registro.nome_modelo for registro in imagem_persistida.segmentacoes] == ["u2netp"]
@@ -109,53 +199,51 @@ def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:
     assert not Binarizacao.__table__.c.metrica_y.nullable
 
 
-def test_imagem_repository_rejeita_segmentacao_parcial(tmp_path) -> None:
+def test_segmentacao_repository_rejeita_segmentacao_parcial(tmp_path) -> None:
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
-    repository = ImagemRepository(sqlite_path)
-    repository.replace_all(carregar_indice_excel(INDICE_PATH))
-
-    imagem = repository.get("1166_Calcula_506")
-    assert imagem is not None
-    imagem.segmentacoes = [
-        Segmentacao(
-            nome_arquivo=imagem.nome_arquivo,
-            nome_modelo="u2netp",
-            area=1.0,
-            perimetro=2.0,
-            iou=None,  # type: ignore[arg-type]
-        )
-    ]
+    imagem_repository = ImagemRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
 
     with pytest.raises(IntegrityError):
-        repository.save(imagem)
+        segmentacao_repository.save(
+            Segmentacao(
+                nome_arquivo="1166_Calcula_506",
+                nome_modelo="u2netp",
+                area=1.0,
+                perimetro=2.0,
+                iou=None,  # type: ignore[arg-type]
+            )
+        )
 
 
 def test_imagem_repository_replace_all_recria_schema_e_remove_dados_derivados(tmp_path) -> None:
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
-    repository = ImagemRepository(sqlite_path)
+    imagem_repository = ImagemRepository(sqlite_path)
+    ground_truth_repository = GroundTruthBinarizadaRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoRepository(sqlite_path)
     imagens = carregar_indice_excel(INDICE_PATH)
-    repository.replace_all(imagens)
+    imagem_repository.replace_all(imagens)
 
-    imagem = repository.get("1166_Calcula_506")
-    assert imagem is not None
-    imagem.ground_truth_binarizada = GroundTruthBinarizada(
-        nome_arquivo=imagem.nome_arquivo,
-        area=3.0,
-        perimetro=4.0,
+    ground_truth_repository.save(
+        GroundTruthBinarizada(
+            nome_arquivo="1166_Calcula_506",
+            area=3.0,
+            perimetro=4.0,
+        )
     )
-    imagem.segmentacoes = [
+    segmentacao_repository.save(
         Segmentacao(
-            nome_arquivo=imagem.nome_arquivo,
+            nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
             area=1.0,
             perimetro=2.0,
             iou=0.5,
         )
-    ]
-    repository.save(imagem)
+    )
 
-    repository.replace_all(imagens)
-    imagem_recarregada = repository.get("1166_Calcula_506")
+    imagem_repository.replace_all(imagens)
+    imagem_recarregada = imagem_repository.get("1166_Calcula_506")
 
     assert imagem_recarregada is not None
     assert imagem_recarregada.ground_truth_binarizada is None

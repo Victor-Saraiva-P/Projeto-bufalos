@@ -7,15 +7,28 @@ from src.models import GroundTruthBinarizada, Imagem, Segmentacao
 
 class FakeImagemRepository:
     def __init__(self) -> None:
-        self.salvos: list[Imagem] = []
         self.imagens: list[Imagem] = []
-
-    def save(self, imagem: Imagem) -> Imagem:
-        self.salvos.append(imagem)
-        return imagem
 
     def list(self) -> list[Imagem]:
         return list(self.imagens)
+
+
+class FakeGroundTruthBinarizadaRepository:
+    def __init__(self) -> None:
+        self.salvos: list[GroundTruthBinarizada] = []
+
+    def save(self, ground_truth_binarizada: GroundTruthBinarizada) -> GroundTruthBinarizada:
+        self.salvos.append(ground_truth_binarizada)
+        return ground_truth_binarizada
+
+
+class FakeSegmentacaoRepository:
+    def __init__(self) -> None:
+        self.salvos: list[Segmentacao] = []
+
+    def save(self, segmentacao: Segmentacao) -> Segmentacao:
+        self.salvos.append(segmentacao)
+        return segmentacao
 
 
 class FakeAvaliacaoService:
@@ -52,6 +65,8 @@ class FakePathResolver(PathResolver):
 
 def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> None:
     repository = FakeImagemRepository()
+    ground_truth_repository = FakeGroundTruthBinarizadaRepository()
+    segmentacao_repository = FakeSegmentacaoRepository()
     service = FakeAvaliacaoService()
     resolver = FakePathResolver(
         data_dir="/data",
@@ -81,6 +96,8 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     )
     controller = AvaliacaoController(
         imagem_repository=repository,
+        ground_truth_binarizada_repository=ground_truth_repository,
+        segmentacao_repository=segmentacao_repository,
         avaliacao_service=service,
     )
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
@@ -90,7 +107,8 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     imagem_avaliada = controller.processar_imagem(imagem)
 
     assert imagem_avaliada.ground_truth_binarizada is not None
-    assert len(repository.salvos) == 1
+    assert len(ground_truth_repository.salvos) == 1
+    assert len(segmentacao_repository.salvos) == 1
     assert service.chamadas[0][0] is imagem
     assert np.array_equal(service.chamadas[0][1], ground_truth_mask)
     assert list(service.chamadas[0][2]) == ["u2netp"]
@@ -102,6 +120,8 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     service = FakeAvaliacaoService()
     controller = AvaliacaoController(
         imagem_repository=repository,
+        ground_truth_binarizada_repository=FakeGroundTruthBinarizadaRepository(),
+        segmentacao_repository=FakeSegmentacaoRepository(),
         avaliacao_service=service,
     )
     imagem_skip = Imagem(nome_arquivo="ja_avaliada", fazenda="A", peso=1.0)

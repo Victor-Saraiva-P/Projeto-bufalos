@@ -49,12 +49,6 @@ class ImagemRepository:
 
             session.commit()
 
-    def save(self, imagem: Imagem) -> Imagem:
-        with self.sessionmaker() as session:
-            merged = session.merge(imagem)
-            session.commit()
-            return merged
-
     def get(self, nome_arquivo: str) -> Imagem | None:
         with self.sessionmaker() as session:
             return session.scalar(

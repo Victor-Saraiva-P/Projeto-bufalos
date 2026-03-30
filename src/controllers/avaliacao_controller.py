@@ -12,7 +12,11 @@ from src.logs import (
     imprimir_status_avaliacao,
 )
 from src.models import Imagem
-from src.repositories import ImagemRepository
+from src.repositories import (
+    GroundTruthBinarizadaRepository,
+    ImagemRepository,
+    SegmentacaoRepository,
+)
 from src.services.avaliacao_service import AvaliacaoService
 
 
@@ -20,6 +24,8 @@ class AvaliacaoController:
     def __init__(
         self,
         imagem_repository: ImagemRepository | None = None,
+        ground_truth_binarizada_repository: GroundTruthBinarizadaRepository | None = None,
+        segmentacao_repository: SegmentacaoRepository | None = None,
         avaliacao_service: AvaliacaoService | None = None,
     ):
         self.path_resolver = PathResolver.from_config()
@@ -27,6 +33,17 @@ class AvaliacaoController:
             imagem_repository
             if imagem_repository is not None
             else ImagemRepository(self.path_resolver.sqlite_path)
+        )
+        sqlite_path = getattr(self.imagem_repository, "sqlite_path", self.path_resolver.sqlite_path)
+        self.ground_truth_binarizada_repository = (
+            ground_truth_binarizada_repository
+            if ground_truth_binarizada_repository is not None
+            else GroundTruthBinarizadaRepository(sqlite_path)
+        )
+        self.segmentacao_repository = (
+            segmentacao_repository
+            if segmentacao_repository is not None
+            else SegmentacaoRepository(sqlite_path)
         )
         self.avaliacao_service = (
             avaliacao_service if avaliacao_service is not None else AvaliacaoService()
@@ -56,7 +73,15 @@ class AvaliacaoController:
             ground_truth_mask=ground_truth_mask,
             mascaras_modelo=mascaras_modelo,
         )
-        return self.imagem_repository.save(imagem_avaliada)
+        ground_truth = imagem_avaliada.ground_truth_binarizada
+        if ground_truth is not None:
+            self.ground_truth_binarizada_repository.save(ground_truth)
+
+        imagem_avaliada.segmentacoes = [
+            self.segmentacao_repository.save(segmentacao)
+            for segmentacao in imagem_avaliada.segmentacoes
+        ]
+        return imagem_avaliada
 
     def processar_imagens(
         self,
