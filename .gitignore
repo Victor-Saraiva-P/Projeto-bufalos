@@ -198,6 +198,8 @@ pyrightconfig.json
 # Custom ignores
 data/
 generated/
+tests/e2e_generated/
+tests/mock_generated/*.sqlite3
 rembg
 uv.lock
 !docs/referencia/

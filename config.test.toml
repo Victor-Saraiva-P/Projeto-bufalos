@@ -8,7 +8,7 @@ predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
 ground_truth_binary_dir = "tests/generated/ground_truth_binary"
 evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
-sqlite_file = "tests/generated/bufalos-testes.sqlite3"
+sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
 [models]
 u2netp = "cpu"
