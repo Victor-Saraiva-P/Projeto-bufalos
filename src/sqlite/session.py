@@ -19,7 +19,7 @@ def criar_engine_sqlite(sqlite_path: str = SQLITE_PATH):
 
 def criar_tabelas_sqlite(sqlite_path: str = SQLITE_PATH) -> None:
     from src import models as _models  # noqa: F401
-    from src.sqlite.base import Base
+    from src.sqlite.sqlite_base import Base
 
     engine = criar_engine_sqlite(sqlite_path)
     Base.metadata.create_all(engine)
@@ -27,7 +27,7 @@ def criar_tabelas_sqlite(sqlite_path: str = SQLITE_PATH) -> None:
 
 def recriar_tabelas_sqlite(sqlite_path: str = SQLITE_PATH) -> None:
     from src import models as _models  # noqa: F401
-    from src.sqlite.base import Base
+    from src.sqlite.sqlite_base import Base
 
     engine = criar_engine_sqlite(sqlite_path)
     Base.metadata.drop_all(engine)

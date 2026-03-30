@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Float, ForeignKeyConstraint, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.sqlite.base import Base
+from src.sqlite.sqlite_base import Base
 
 if TYPE_CHECKING:
-    from src.models.segmentacao import Segmentacao
+    from src.models.segmentacao_model import Segmentacao
 
 
 class Binarizacao(Base):

@@ -1,4 +1,4 @@
-from src.logs.base import EstatisticasLogGeral
+from src.logs.logs_base import EstatisticasLogGeral
 
 
 class EstatisticasBinarizacao(EstatisticasLogGeral):

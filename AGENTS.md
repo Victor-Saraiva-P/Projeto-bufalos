@@ -189,7 +189,7 @@ Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tamb
 
 Arquivos relevantes:
 
-- `src/metricas/metrica.py`: contrato base das metricas reutilizaveis na pipeline;
+- `src/metricas/metrica_base.py`: contrato base das metricas reutilizaveis na pipeline;
 - `src/metricas/segmentacao_binarizada/`: metricas concretas usadas na avaliacao das mascaras binarizadas;
 - `src/models/`: entidades persistidas do SQLite e do dominio analitico (`Imagem`, `Segmentacao`, `Binarizacao`, `GroundTruthBinarizada`, `Tag`);
 - `src/repositories/`: leitura e gravacao de entidades no banco;

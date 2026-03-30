@@ -5,12 +5,12 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Float, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.sqlite.base import Base
+from src.sqlite.sqlite_base import Base
 
 if TYPE_CHECKING:
-    from src.models.segmentacao import Segmentacao
-    from src.models.ground_truth_binarizada import GroundTruthBinarizada
-    from src.models.tag import Tag
+    from src.models.segmentacao_model import Segmentacao
+    from src.models.ground_truth_binarizada_model import GroundTruthBinarizada
+    from src.models.tag_model import Tag
 
 
 class Imagem(Base):

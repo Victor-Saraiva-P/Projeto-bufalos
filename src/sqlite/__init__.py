@@ -1,4 +1,4 @@
-from src.sqlite.base import Base
+from src.sqlite.sqlite_base import Base
 from src.sqlite.session import (
     criar_engine_sqlite,
     criar_sessionmaker_sqlite,

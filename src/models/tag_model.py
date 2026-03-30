@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from src.sqlite.base import Base
+from src.sqlite.sqlite_base import Base
 
 if TYPE_CHECKING:
-    from src.models.imagem import Imagem
+    from src.models.imagem_model import Imagem
 
 
 def normalizar_tags(valor: object) -> list[str]:

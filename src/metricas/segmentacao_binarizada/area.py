@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.metricas.metrica import Metrica
+from src.metricas.metrica_base import Metrica
 
 
 class Area(Metrica):

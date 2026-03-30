@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 import time
 
-from src.logs.base import EstatisticasLogGeral, formatar_duracao
+from src.logs.logs_base import EstatisticasLogGeral, formatar_duracao
 
 
 @dataclass
