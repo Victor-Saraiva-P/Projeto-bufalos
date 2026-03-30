@@ -17,7 +17,7 @@ Saidas geradas pelo projeto:
 
 ```text
 generated/
-  predicted_masks/         # mascaras geradas pelos modelos
+  predicted_masks_raw/     # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
   evaluation/              # artefatos de avaliacao
@@ -170,7 +170,7 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 O fluxo de execucao do projeto esta organizado em quatro notebooks:
 
-- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos em `generated/predicted_masks/`;
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos em `generated/predicted_masks_raw/`;
 - `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/`;
 - `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite;
 - `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.

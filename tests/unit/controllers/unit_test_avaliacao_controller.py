@@ -73,7 +73,7 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
         generated_dir="/generated",
         images_dir="/orig",
         ground_truth_raw_dir="/gt/raw",
-        predicted_masks_dir="/pred/raw",
+        predicted_masks_raw_dir="/pred/raw",
         predicted_masks_binary_dir="/pred/bin",
         ground_truth_binary_dir="/gt/bin",
         evaluation_dir="/eval",

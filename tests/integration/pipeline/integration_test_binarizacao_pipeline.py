@@ -1,10 +1,9 @@
 from pathlib import Path
 
 import pytest
-from PIL import Image
 
 from src.binarizacao import GaussianOpeningBinarizationStrategy
-from src.config import GROUND_TRUTH_RAW_DIR, MODELOS_PARA_AVALIACAO
+from src.config import MODELOS_PARA_AVALIACAO
 from src.controllers import BinarizacaoController, ImagemController
 from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
@@ -55,12 +54,12 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    entrada_modelos = tmp_path / "predicted_masks"
+    entrada_modelos = Path("tests/mock_generated/predicted_masks_raw")
     saida_modelos = tmp_path / "predicted_masks_binary"
     nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
-        predicted_masks_dir=str(entrada_modelos),
+        predicted_masks_raw_dir=str(entrada_modelos),
         predicted_masks_binary_dir=str(saida_modelos),
         sqlite_path=sqlite_path,
     )
@@ -80,13 +79,6 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
 
     ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
-    diretorio_modelo = entrada_modelos / nome_modelo
-    diretorio_modelo.mkdir(parents=True)
-
-    for linha in linhas:
-        Image.open(
-            Path(GROUND_TRUTH_RAW_DIR) / f"{linha.nome_arquivo}.jpg"
-        ).save(diretorio_modelo / f"{linha.nome_arquivo}.png")
 
     resumos = BinarizacaoController().processar_segmentacoes(
         GaussianOpeningBinarizationStrategy(),

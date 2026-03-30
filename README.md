@@ -88,7 +88,7 @@ Se voce quer:
 - `src/binarizacao/`: fachadas da etapa de binarizacao; a logica principal fica em `controllers/services`;
 - `src/logs/`: logs compartilhados de segmentacao, binarizacao e integridade;
 - `src/tagging/`: anotadores manuais de curadoria;
-- `tests/`: suite automatizada, incluindo `mock_data/` para insumos reduzidos e `mock_generated/` para artefatos gerados versionados;
+- `tests/`: suite automatizada, incluindo `mock_data/` para insumos reduzidos e `mock_generated/` para artefatos gerados versionados, como `predicted_masks_raw/`;
 - `notebooks/`: fluxo exploratorio e analitico;
 - `docs/`: documentacao organizada por tema;
 - `data/`: dados de entrada esperados pelo pipeline; o `Indice.xlsx` permanece como insumo do tagging e bootstrap inicial;

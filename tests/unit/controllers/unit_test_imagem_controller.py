@@ -42,7 +42,7 @@ def test_imagem_controller_delega_sincronizacao_para_service(monkeypatch) -> Non
         generated_dir="/generated",
         images_dir="/orig",
         ground_truth_raw_dir="/gt/raw",
-        predicted_masks_dir="/pred/raw",
+        predicted_masks_raw_dir="/pred/raw",
         predicted_masks_binary_dir="/pred/bin",
         ground_truth_binary_dir="/gt/bin",
         evaluation_dir="/eval",
@@ -69,7 +69,7 @@ def test_imagem_controller_verifica_segmentacoes_usando_diretorio_padrao(monkeyp
         generated_dir="/generated",
         images_dir="/orig",
         ground_truth_raw_dir="/gt/raw",
-        predicted_masks_dir="/tmp/predicted_masks",
+        predicted_masks_raw_dir="/tmp/predicted_masks_raw",
         predicted_masks_binary_dir="/pred/bin",
         ground_truth_binary_dir="/gt/bin",
         evaluation_dir="/eval",
@@ -88,4 +88,4 @@ def test_imagem_controller_verifica_segmentacoes_usando_diretorio_padrao(monkeyp
     resumo = controller.verificar_segmentacoes()
 
     assert resumo.total_png == 1
-    assert service.verificacoes == [("/tmp/predicted_masks", ".png")]
+    assert service.verificacoes == [("/tmp/predicted_masks_raw", ".png")]

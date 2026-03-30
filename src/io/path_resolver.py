@@ -12,7 +12,7 @@ class PathResolver:
     generated_dir: str
     images_dir: str
     ground_truth_raw_dir: str
-    predicted_masks_dir: str
+    predicted_masks_raw_dir: str
     predicted_masks_binary_dir: str
     ground_truth_binary_dir: str
     evaluation_dir: str
@@ -30,7 +30,7 @@ class PathResolver:
             IMAGES_DIR,
             INDICE_PATH,
             PREDICTED_MASKS_BINARY,
-            PREDICTED_MASKS_DIR,
+            PREDICTED_MASKS_RAW_DIR,
             SQLITE_PATH,
         )
 
@@ -39,7 +39,7 @@ class PathResolver:
             generated_dir=GENERATED_DIR,
             images_dir=IMAGES_DIR,
             ground_truth_raw_dir=GROUND_TRUTH_RAW_DIR,
-            predicted_masks_dir=PREDICTED_MASKS_DIR,
+            predicted_masks_raw_dir=PREDICTED_MASKS_RAW_DIR,
             predicted_masks_binary_dir=PREDICTED_MASKS_BINARY,
             ground_truth_binary_dir=GROUND_TRUTH_BINARY,
             evaluation_dir=EVALUATION_DIR,
@@ -64,7 +64,7 @@ class PathResolver:
 
     def caminho_mascara_predita(self, nome_modelo: str, nome_arquivo: str) -> str:
         return os.path.join(
-            self.predicted_masks_dir,
+            self.predicted_masks_raw_dir,
             nome_modelo,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )

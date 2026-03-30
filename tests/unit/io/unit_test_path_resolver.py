@@ -2,6 +2,7 @@ from src.config import (
     IMAGES_DIR,
     INDICE_PATH,
     PREDICTED_MASKS_BINARY,
+    PREDICTED_MASKS_RAW_DIR,
     SQLITE_PATH,
 )
 from src.io.path_resolver import PathResolver
@@ -12,6 +13,7 @@ def test_from_config_expoe_paths_esperados() -> None:
 
     assert resolver.images_dir == IMAGES_DIR
     assert resolver.indice_path == INDICE_PATH
+    assert resolver.predicted_masks_raw_dir == PREDICTED_MASKS_RAW_DIR
     assert resolver.sqlite_path == SQLITE_PATH
 
 

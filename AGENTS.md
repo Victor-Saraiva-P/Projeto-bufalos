@@ -68,7 +68,7 @@ Saidas esperadas em `generated/`:
 
 ```text
 generated/
-  predicted_masks/         # mascaras geradas pelos modelos
+  predicted_masks_raw/     # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
   evaluation/              # artefatos de avaliacao
@@ -403,7 +403,7 @@ remove(
 )
 ```
 
-Isso faz a etapa de segmentacao gerar uma mascara em escala de cinza, salva em `generated/predicted_masks/<modelo>/`, com formato `PNG`.
+Isso faz a etapa de segmentacao gerar uma mascara em escala de cinza, salva em `generated/predicted_masks_raw/<modelo>/`, com formato `PNG`.
 
 Decisao:
 
@@ -522,7 +522,7 @@ data_dir = "tests/mock_data"
 generated_dir = "tests/generated"
 images_dir = "tests/mock_data/images"
 ground_truth_raw_dir = "tests/mock_data/ground_truth_raw"
-predicted_masks_dir = "tests/generated/predicted_masks"
+predicted_masks_raw_dir = "tests/generated/predicted_masks_raw"
 predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
 ground_truth_binary_dir = "tests/generated/ground_truth_binary"
 evaluation_dir = "tests/generated/evaluation"

@@ -84,7 +84,7 @@ GENERATED_DIR = _resolver_caminho(_PATHS["generated_dir"])
 # Diretorios especificos
 IMAGES_DIR = _resolver_caminho(_PATHS["images_dir"])
 GROUND_TRUTH_RAW_DIR = _resolver_caminho(_PATHS["ground_truth_raw_dir"])
-PREDICTED_MASKS_DIR = _resolver_caminho(_PATHS["predicted_masks_dir"])
+PREDICTED_MASKS_RAW_DIR = _resolver_caminho(_PATHS["predicted_masks_raw_dir"])
 PREDICTED_MASKS_BINARY = _resolver_caminho(_PATHS["predicted_masks_binary_dir"])
 GROUND_TRUTH_BINARY = _resolver_caminho(_PATHS["ground_truth_binary_dir"])
 EVALUATION_DIR = _resolver_caminho(_PATHS["evaluation_dir"])

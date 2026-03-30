@@ -126,7 +126,7 @@ class BinarizacaoController:
         return resumos
 
     def _diretorio_modelo(self, nome_modelo: str) -> str:
-        return os.path.join(self.path_resolver.predicted_masks_dir, nome_modelo)
+        return os.path.join(self.path_resolver.predicted_masks_raw_dir, nome_modelo)
 
     def verificar_segmentacoes(
         self,

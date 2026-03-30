@@ -23,7 +23,7 @@ def _resolver_e2e() -> PathResolver:
 
     return PathResolver.from_config().with_overrides(
         generated_dir=str(e2e_generated_dir),
-        predicted_masks_dir=str(e2e_generated_dir / "predicted_masks"),
+        predicted_masks_raw_dir=str(e2e_generated_dir / "predicted_masks_raw"),
         predicted_masks_binary_dir=str(e2e_generated_dir / "predicted_masks_binary"),
         ground_truth_binary_dir=str(e2e_generated_dir / "ground_truth_binary"),
         evaluation_dir=str(e2e_generated_dir / "evaluation"),
@@ -167,7 +167,9 @@ def test_notebook_01_gera_segmentacoes(monkeypatch: pytest.MonkeyPatch) -> None:
     resumos = segmentacao_controller.processar_imagens()
     linhas = ImagemRepository(resolver.sqlite_path).list()
     nome_modelo = next(iter(modelos))
-    saidas_geradas = sorted((Path(resolver.predicted_masks_dir) / nome_modelo).glob("*.png"))
+    saidas_geradas = sorted(
+        (Path(resolver.predicted_masks_raw_dir) / nome_modelo).glob("*.png")
+    )
 
     assert resumo_integridade.total_png == 0
     assert len(linhas) == 5

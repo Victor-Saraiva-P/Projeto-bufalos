@@ -38,6 +38,6 @@ class ImagemController:
 
     def verificar_segmentacoes(self) -> ResumoVerificacaoPng:
         return self.imagem_service.verificar_pngs_corrompidos(
-            diretorio_base=self.path_resolver.predicted_masks_dir,
+            diretorio_base=self.path_resolver.predicted_masks_raw_dir,
             extensao_arquivo=REMBG_IMAGE_TYPE,
         )

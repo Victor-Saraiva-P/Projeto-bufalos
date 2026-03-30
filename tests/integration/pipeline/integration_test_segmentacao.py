@@ -16,7 +16,7 @@ def test_segmentacao_controller_processa_modelo_e_gera_arquivo(
     saida_modelo_dir = tmp_path / "predicted_masks"
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
-        predicted_masks_dir=str(saida_modelo_dir),
+        predicted_masks_raw_dir=str(saida_modelo_dir),
         sqlite_path=sqlite_path,
     )
     monkeypatch.setattr(
