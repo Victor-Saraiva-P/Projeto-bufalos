@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 import os
 
-from src.binarizacao.estrategias import BinarizationStrategy
+from src.binarizacao.binarizacao_base import BinarizationStrategy
 from src.config import (
     MODELOS_PARA_AVALIACAO,
 )

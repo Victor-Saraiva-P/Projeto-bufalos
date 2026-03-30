@@ -4,7 +4,7 @@ import os
 
 from PIL import Image
 
-from src.binarizacao.estrategias import BinarizationStrategy
+from src.binarizacao.binarizacao_base import BinarizationStrategy
 class BinarizacaoService:
     def processar_arquivo(
         self,

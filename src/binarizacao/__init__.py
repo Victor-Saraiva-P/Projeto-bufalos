@@ -1,7 +1,5 @@
-from src.binarizacao.estrategias import (
-    BinarizationStrategy,
-    GaussianOpeningBinarizationStrategy,
-)
+from src.binarizacao.binarizacao_base import BinarizationStrategy
+from src.binarizacao.estrategias import GaussianOpeningBinarizationStrategy
 from src.logs import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
