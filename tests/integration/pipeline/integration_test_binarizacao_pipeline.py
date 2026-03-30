@@ -38,7 +38,7 @@ def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
     assert stats.erro == 0
     assert len(saidas_geradas) == len(linhas)
     assert imagem_persistida is not None
-    assert imagem_persistida.ground_truth_binarizada is not None
+    assert imagem_persistida.ground_truth_binarizada is None
 
 
 def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
@@ -81,10 +81,4 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     assert stats.erro == 0
     assert len(saidas_geradas) == len(linhas)
     assert imagem_persistida is not None
-    assert [segmentacao.nome_modelo for segmentacao in imagem_persistida.segmentacoes] == [
-        nome_modelo
-    ]
-    assert (
-        imagem_persistida.segmentacoes[0].binarizacoes[0].estrategia_binarizacao
-        == "GaussianOpeningBinarizationStrategy"
-    )
+    assert imagem_persistida.segmentacoes == []

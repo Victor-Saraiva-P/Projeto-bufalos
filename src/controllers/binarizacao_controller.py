@@ -28,11 +28,22 @@ class BinarizacaoController:
         imagem_repository: ImagemRepository | None = None,
         binarizacao_service: BinarizacaoService | None = None,
     ):
-        self.path_resolver = path_resolver or PathResolver.from_config()
-        self.imagem_repository = imagem_repository or ImagemRepository(
-            sqlite_path or self.path_resolver.sqlite_path
+        self.path_resolver = (
+            path_resolver if path_resolver is not None else PathResolver.from_config()
         )
-        self.binarizacao_service = binarizacao_service or BinarizacaoService()
+        sqlite_path_resolvido = (
+            sqlite_path if sqlite_path is not None else self.path_resolver.sqlite_path
+        )
+        self.imagem_repository = (
+            imagem_repository
+            if imagem_repository is not None
+            else ImagemRepository(sqlite_path_resolvido)
+        )
+        self.binarizacao_service = (
+            binarizacao_service
+            if binarizacao_service is not None
+            else BinarizacaoService()
+        )
 
     def processar_ground_truth(
         self,
@@ -57,10 +68,6 @@ class BinarizacaoController:
                 strategy=strategy,
             )
             stats.registrar_resultado(resultado)
-
-            if resultado in {"ok", "skip"}:
-                self.binarizacao_service.garantir_ground_truth_binarizada(imagem)
-                self.imagem_repository.save(imagem)
 
             imprimir_status_binarizacao(
                 etapa="ground_truth",
@@ -116,14 +123,6 @@ class BinarizacaoController:
                     strategy=strategy,
                 )
                 stats.registrar_resultado(resultado)
-
-                if resultado in {"ok", "skip"}:
-                    self.binarizacao_service.garantir_binarizacao(
-                        imagem,
-                        nome_modelo,
-                        strategy,
-                    )
-                    self.imagem_repository.save(imagem)
 
                 imprimir_status_binarizacao(
                     etapa="modelo",

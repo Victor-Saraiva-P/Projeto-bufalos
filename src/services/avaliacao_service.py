@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.avaliacao.metricas import Area, IoU, Perimetro
+from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro
 from src.models import GroundTruthBinarizada, Imagem, Segmentacao
 
 

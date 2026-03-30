@@ -37,8 +37,8 @@ class Binarizacao(Base):
         primary_key=True,
         nullable=False,
     )
-    metrica_x: Mapped[float | None] = mapped_column(Float, nullable=True)
-    metrica_y: Mapped[float | None] = mapped_column(Float, nullable=True)
+    metrica_x: Mapped[float] = mapped_column(Float, nullable=False)
+    metrica_y: Mapped[float] = mapped_column(Float, nullable=False)
 
     segmentacao: Mapped["Segmentacao"] = relationship(
         "Segmentacao",

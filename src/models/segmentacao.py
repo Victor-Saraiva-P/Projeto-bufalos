@@ -23,9 +23,9 @@ class Segmentacao(Base):
         index=True,
     )
     nome_modelo: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
-    area: Mapped[float | None] = mapped_column(Float, nullable=True)
-    perimetro: Mapped[float | None] = mapped_column(Float, nullable=True)
-    iou: Mapped[float | None] = mapped_column(Float, nullable=True)
+    area: Mapped[float] = mapped_column(Float, nullable=False)
+    perimetro: Mapped[float] = mapped_column(Float, nullable=False)
+    iou: Mapped[float] = mapped_column(Float, nullable=False)
 
     imagem: Mapped["Imagem"] = relationship("Imagem", back_populates="segmentacoes")
     binarizacoes: Mapped[list["Binarizacao"]] = relationship(

@@ -38,12 +38,14 @@ Depois, rode os notebooks principais nesta ordem:
 
 1. `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`
 2. `notebooks/02_binarizacao_mascaras.ipynb`
-3. `notebooks/03_avaliacao_das_segmentacoes.ipynb`
+3. `notebooks/03_calculo_das_avaliacoes.ipynb`
+4. `notebooks/04_analise_das_avaliacoes.ipynb`
 
 Observacoes sobre persistencia:
 
 - o notebook 01 inicializa o SQLite em `generated/` a partir do `data/Indice.xlsx`;
-- depois disso, o pipeline usa o SQLite como fonte de verdade;
+- depois disso, o SQLite guarda o indice e os resultados completos de avaliacao;
+- o progresso de segmentacao e binarizacao e inferido pelos arquivos gerados em `generated/`;
 - o Excel continua sendo usado apenas no processo de tagging.
 - os notebooks 01 e 02 executam o pipeline por meio de controllers em `src/controllers/`.
 - nessa arquitetura, controllers podem ler `src/config.py`; services recebem caminhos, modelos e estrategias ja resolvidos por parametro.

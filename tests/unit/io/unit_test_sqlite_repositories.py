@@ -1,3 +1,6 @@
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from src.config import INDICE_PATH
 from src.io.indice_loader import carregar_indice_excel
 from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao, Tag
@@ -70,6 +73,9 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
         Segmentacao(
             nome_arquivo=imagem.nome_arquivo,
             nome_modelo="u2netp",
+            area=9.0,
+            perimetro=21.0,
+            iou=0.8,
             binarizacoes=[
                 Binarizacao(
                     nome_arquivo=imagem.nome_arquivo,
@@ -91,6 +97,37 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
         "GaussianOpeningBinarizationStrategy"
     )
     assert imagem_persistida.segmentacoes[0].binarizacoes[0].metrica_x == 1.0
+
+
+def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:
+    assert not GroundTruthBinarizada.__table__.c.area.nullable
+    assert not GroundTruthBinarizada.__table__.c.perimetro.nullable
+    assert not Segmentacao.__table__.c.area.nullable
+    assert not Segmentacao.__table__.c.perimetro.nullable
+    assert not Segmentacao.__table__.c.iou.nullable
+    assert not Binarizacao.__table__.c.metrica_x.nullable
+    assert not Binarizacao.__table__.c.metrica_y.nullable
+
+
+def test_imagem_repository_rejeita_segmentacao_parcial(tmp_path) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = ImagemRepository(sqlite_path)
+    repository.replace_all(carregar_indice_excel(INDICE_PATH))
+
+    imagem = repository.get("1166_Calcula_506")
+    assert imagem is not None
+    imagem.segmentacoes = [
+        Segmentacao(
+            nome_arquivo=imagem.nome_arquivo,
+            nome_modelo="u2netp",
+            area=1.0,
+            perimetro=2.0,
+            iou=None,  # type: ignore[arg-type]
+        )
+    ]
+
+    with pytest.raises(IntegrityError):
+        repository.save(imagem)
 
 
 def test_imagem_repository_replace_all_recria_schema_e_remove_dados_derivados(tmp_path) -> None:

@@ -30,7 +30,8 @@ Os notebooks principais executam esse fluxo nesta ordem:
 
 1. `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`
 2. `notebooks/02_binarizacao_mascaras.ipynb`
-3. `notebooks/03_avaliacao_das_segmentacoes.ipynb`
+3. `notebooks/03_calculo_das_avaliacoes.ipynb`
+4. `notebooks/04_analise_das_avaliacoes.ipynb`
 
 ## Estrutura Do Repositorio
 
@@ -45,7 +46,7 @@ Pastas principais:
 - `src/binarizacao/`: fachadas da etapa de binarizacao;
 - `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
 - `src/metricas/`: contratos compartilhados de metricas;
-- `src/avaliacao/metricas/`: metricas concretas de avaliacao de segmentacao;
+- `src/metricas/segmentacao_binarizada/`: metricas concretas da segmentacao binarizada;
 - `src/analysis/` e `src/visualization/`: agregacao, ranking e apresentacao;
 - `src/tagging/`: anotadores manuais de tags de curadoria;
 - `tests/`: suite automatizada;
@@ -189,13 +190,13 @@ Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tamb
 Arquivos relevantes:
 
 - `src/metricas/metrica.py`: contrato base das metricas reutilizaveis na pipeline;
-- `src/avaliacao/metricas/`: metricas concretas usadas na avaliacao das mascaras;
+- `src/metricas/segmentacao_binarizada/`: metricas concretas usadas na avaliacao das mascaras binarizadas;
 - `src/models/`: entidades persistidas do SQLite e do dominio analitico (`Imagem`, `Segmentacao`, `Binarizacao`, `GroundTruthBinarizada`, `Tag`);
 - `src/repositories/`: leitura e gravacao de entidades no banco;
-- `src/controllers/segmentacao_controller.py`: coordena a geracao de mascaras e registra `Segmentacao`;
-- `src/services/segmentacao_service.py`: executa a inferencia e atualiza as segmentacoes da imagem;
-- `src/controllers/binarizacao_controller.py`: coordena a binarizacao e registra `Binarizacao` e `GroundTruthBinarizada`;
-- `src/services/binarizacao_service.py`: executa a binarizacao e atualiza as entidades ligadas a cada segmentacao;
+- `src/controllers/segmentacao_controller.py`: coordena a geracao de mascaras e grava os arquivos previstos em `generated/`;
+- `src/services/segmentacao_service.py`: executa a inferencia sem persistir entidades metricas parciais;
+- `src/controllers/binarizacao_controller.py`: coordena a binarizacao e grava os artefatos binarios em `generated/`;
+- `src/services/binarizacao_service.py`: executa a binarizacao sem criar entidades metricas incompletas no SQLite;
 - `src/controllers/avaliacao_controller.py`: coordena o processamento e persistencia de uma imagem;
 - `src/services/avaliacao_service.py`: calcula as metricas e preenche `Segmentacao` e `GroundTruthBinarizada`;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
@@ -213,6 +214,7 @@ Regra de responsabilidade entre camadas:
 - notebooks 01 e 02 executam o pipeline por meio dos controllers em `src/controllers/`;
 - controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
 - services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
+- `Segmentacao`, `GroundTruthBinarizada` e `Binarizacao` so devem nascer quando as metricas completas forem calculadas.
 
 Exemplo minimo para coletar metricas:
 

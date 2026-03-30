@@ -19,8 +19,8 @@ class GroundTruthBinarizada(Base):
         ForeignKey("imagem.nome_arquivo"),
         primary_key=True,
     )
-    area: Mapped[float | None] = mapped_column(Float, nullable=True)
-    perimetro: Mapped[float | None] = mapped_column(Float, nullable=True)
+    area: Mapped[float] = mapped_column(Float, nullable=False)
+    perimetro: Mapped[float] = mapped_column(Float, nullable=False)
 
     imagem: Mapped["Imagem"] = relationship("Imagem", back_populates="ground_truth_binarizada")
 

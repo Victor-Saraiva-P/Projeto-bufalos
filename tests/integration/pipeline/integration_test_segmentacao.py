@@ -50,6 +50,4 @@ def test_segmentacao_controller_processa_modelo_e_gera_arquivo(
     assert resumos[nome_modelo].skip == 0
     assert len(saidas_geradas) == len(linhas)
     assert imagem_persistida is not None
-    assert [segmentacao.nome_modelo for segmentacao in imagem_persistida.segmentacoes] == [
-        nome_modelo
-    ]
+    assert imagem_persistida.segmentacoes == []

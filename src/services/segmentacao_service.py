@@ -7,7 +7,6 @@ import time
 
 from PIL import Image
 
-from src.models import Imagem, Segmentacao
 from src.segmentacao.integracoes import obter_api_rembg
 
 
@@ -74,15 +73,3 @@ class SegmentacaoService:
             status="ok",
             duracao_inferencia=duracao_inferencia,
         )
-
-    def garantir_segmentacao(self, imagem: Imagem, nome_modelo: str) -> Segmentacao:
-        for segmentacao in imagem.segmentacoes:
-            if segmentacao.nome_modelo == nome_modelo:
-                return segmentacao
-
-        segmentacao = Segmentacao(
-            nome_arquivo=imagem.nome_arquivo,
-            nome_modelo=nome_modelo,
-        )
-        imagem.segmentacoes.append(segmentacao)
-        return segmentacao

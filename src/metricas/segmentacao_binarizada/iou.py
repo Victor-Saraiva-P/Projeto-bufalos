@@ -1,8 +1,8 @@
 """
-Calculadora de IoU (Intersection over Union) para máscaras binárias.
+Calculadora de IoU (Intersection over Union) para mascaras binarias.
 
-Calcula a similaridade entre duas máscaras através da razão entre
-interseção e união.
+Calcula a similaridade entre duas mascaras atraves da razao entre
+intersecao e uniao.
 """
 
 import numpy as np
@@ -24,7 +24,7 @@ class IoU(Metrica):
 
     def calcular(self) -> float:
         """
-        Calcula Intersection over Union entre duas máscaras.
+        Calcula Intersection over Union entre duas mascaras.
         """
         intersection = np.logical_and(self._mask_modelo, self._mask_ground_truth).sum()
         union = np.logical_or(self._mask_modelo, self._mask_ground_truth).sum()

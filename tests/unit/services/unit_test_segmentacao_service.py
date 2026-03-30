@@ -3,7 +3,6 @@ from pathlib import Path
 from PIL import Image
 import pytest
 
-from src.models import Imagem, Segmentacao
 from src.services.segmentacao_service import ResultadoSegmentacaoArquivo, SegmentacaoService
 
 
@@ -95,14 +94,3 @@ def test_segmentar_arquivo_retorna_erro_quando_original_nao_existe(
     )
 
     assert resultado == ResultadoSegmentacaoArquivo(status="erro")
-
-
-def test_garantir_segmentacao_reaproveita_registro_existente() -> None:
-    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
-    existente = Segmentacao(nome_arquivo="bufalo_001", nome_modelo="u2net")
-    imagem.segmentacoes.append(existente)
-
-    segmento = SegmentacaoService().garantir_segmentacao(imagem, "u2net")
-
-    assert segmento is existente
-    assert imagem.segmentacoes == [existente]

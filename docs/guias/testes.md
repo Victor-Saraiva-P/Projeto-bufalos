@@ -69,7 +69,7 @@ Regra:
 
 Exemplos:
 
-- testes de `src.metricas` e `src.avaliacao.metricas` ficam em `tests/unit/metricas/`;
+- testes de `src.metricas` e `src.metricas.segmentacao_binarizada` ficam em `tests/unit/metricas/`;
 - testes de `src.models` ficam em `tests/unit/models/`;
 - testes de `src.repositories` ficam em `tests/unit/io/` enquanto a suite nao ganhar uma pasta propria;
 - testes de `src.controllers` e `src.services` devem acompanhar essas camadas em novas subpastas quando surgirem;

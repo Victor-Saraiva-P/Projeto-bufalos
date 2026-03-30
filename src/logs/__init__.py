@@ -1,4 +1,9 @@
 from src.logs.base import EstatisticasLogGeral, formatar_duracao
+from src.logs.avaliacao import (
+    EstatisticasAvaliacao,
+    imprimir_resumo_avaliacao,
+    imprimir_status_avaliacao,
+)
 from src.logs.binarizacao import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
@@ -13,14 +18,17 @@ from src.logs.segmentacao import (
 )
 
 __all__ = [
+    "EstatisticasAvaliacao",
     "EstatisticasLogGeral",
     "EstatisticasBinarizacao",
     "EstatisticasProcessamentoComEta",
     "formatar_duracao",
+    "imprimir_resumo_avaliacao",
     "imprimir_resumo_binarizacao",
     "imprimir_resumo_binarizacao_modelo",
     "imprimir_resumo_modelo",
     "imprimir_resumo_verificacao_png",
+    "imprimir_status_avaliacao",
     "imprimir_status",
     "imprimir_status_binarizacao",
 ]

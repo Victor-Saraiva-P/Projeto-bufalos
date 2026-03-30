@@ -16,7 +16,7 @@ class Perimetro(Metrica):
 
     def calcular(self) -> float:
         """
-        Calcula perímetro da máscara usando distância Euclidiana.
+        Calcula perimetro da mascara usando distancia Euclidiana.
         """
         contours, _ = cv2.findContours(
             self._mask_array,

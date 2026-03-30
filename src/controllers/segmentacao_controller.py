@@ -23,11 +23,22 @@ class SegmentacaoController:
         imagem_repository: ImagemRepository | None = None,
         segmentacao_service: SegmentacaoService | None = None,
     ):
-        self.path_resolver = path_resolver or PathResolver.from_config()
-        self.imagem_repository = imagem_repository or ImagemRepository(
-            sqlite_path or self.path_resolver.sqlite_path
+        self.path_resolver = (
+            path_resolver if path_resolver is not None else PathResolver.from_config()
         )
-        self.segmentacao_service = segmentacao_service or SegmentacaoService()
+        sqlite_path_resolvido = (
+            sqlite_path if sqlite_path is not None else self.path_resolver.sqlite_path
+        )
+        self.imagem_repository = (
+            imagem_repository
+            if imagem_repository is not None
+            else ImagemRepository(sqlite_path_resolvido)
+        )
+        self.segmentacao_service = (
+            segmentacao_service
+            if segmentacao_service is not None
+            else SegmentacaoService()
+        )
 
     def processar_imagens(
         self,
@@ -73,10 +84,6 @@ class SegmentacaoController:
                     rembg_session=rembg_session,
                 )
                 self._registrar_resultado(stats_geral, stats_modelo, resultado)
-
-                if resultado.status in {"ok", "skip"}:
-                    self.segmentacao_service.garantir_segmentacao(imagem, nome_modelo)
-                    self.imagem_repository.save(imagem)
 
                 imprimir_status(stats_geral, stats_modelo, nome_modelo)
 

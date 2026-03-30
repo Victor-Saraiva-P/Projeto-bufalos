@@ -3,7 +3,6 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from src.models import Imagem
 from src.services.binarizacao_service import BinarizacaoService
 
 
@@ -62,28 +61,3 @@ def test_processar_arquivo_retorna_erro_quando_entrada_nao_existe(tmp_path: Path
 
     assert resultado == "erro"
     assert strategy.calls == 0
-
-
-def test_garantir_ground_truth_binarizada_reaproveita_registro_existente() -> None:
-    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
-    service = BinarizacaoService()
-
-    primeiro = service.garantir_ground_truth_binarizada(imagem)
-    segundo = service.garantir_ground_truth_binarizada(imagem)
-
-    assert primeiro is segundo
-    assert imagem.ground_truth_binarizada is primeiro
-
-
-def test_garantir_binarizacao_cria_segmentacao_e_reaproveita_estrategia() -> None:
-    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
-    strategy = FakeBinarizationStrategy()
-    service = BinarizacaoService()
-
-    primeira = service.garantir_binarizacao(imagem, "u2netp", strategy)
-    segunda = service.garantir_binarizacao(imagem, "u2netp", strategy)
-
-    assert primeira is segunda
-    assert len(imagem.segmentacoes) == 1
-    assert imagem.segmentacoes[0].nome_modelo == "u2netp"
-    assert len(imagem.segmentacoes[0].binarizacoes) == 1

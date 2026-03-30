@@ -15,6 +15,6 @@ class Area(Metrica):
 
     def calcular(self) -> int:
         """
-        Calcula área da máscara (número de pixels ativos).
+        Calcula area da mascara (numero de pixels ativos).
         """
         return int((self._mask_array == 1).sum())

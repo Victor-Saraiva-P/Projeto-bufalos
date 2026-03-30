@@ -34,7 +34,7 @@ Organizacao do codigo em `src/`:
 - `src/controllers/` e `src/services/`: orquestracao dos fluxos e casos de uso do projeto;
 - `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
 - `src/metricas/`: contratos compartilhados de metricas;
-- `src/avaliacao/metricas/`: metricas concretas de avaliacao de segmentacao;
+- `src/metricas/segmentacao_binarizada/`: metricas concretas da segmentacao binarizada;
 - `src/analysis/` e `src/visualization/`: agregam, ranqueiam e apresentam os resultados;
 - `src/tagging/`: concentra os anotadores manuais de curadoria.
 
@@ -108,7 +108,7 @@ Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
 
 O script `src/tagging/manual_tagger.py` abre uma interface grafica para revisar as imagens pendentes e preencher a coluna `tags` de `data/Indice.xlsx`.
 
-Fora o tagging, o pipeline usa o SQLite em `generated/` como fonte de verdade. O notebook 01 inicializa esse banco a partir do Excel.
+Fora o tagging, o pipeline usa o SQLite em `generated/` para guardar o indice e os resultados completos de avaliacao. O notebook 01 inicializa esse banco a partir do Excel, e o progresso de segmentacao/binarizacao e inferido pelos arquivos gerados em `generated/`.
 
 Comando recomendado:
 
@@ -168,11 +168,12 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 ### Notebooks principais
 
-O fluxo de execucao do projeto esta organizado em tres notebooks:
+O fluxo de execucao do projeto esta organizado em quatro notebooks:
 
-- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos e registra `Segmentacao` no SQLite;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia, registrando `Binarizacao` e `GroundTruthBinarizada`;
-- `notebooks/03_avaliacao_das_segmentacoes.ipynb`: calcula metricas e compara os modelos.
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos em `generated/predicted_masks/`;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/`;
+- `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite;
+- `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.
 
 Nos notebooks 01 e 02, a execucao operacional acontece por meio dos controllers em `src/controllers/`.
 

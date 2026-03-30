@@ -8,10 +8,14 @@ from src.models import GroundTruthBinarizada, Imagem, Segmentacao
 class FakeImagemRepository:
     def __init__(self) -> None:
         self.salvos: list[Imagem] = []
+        self.imagens: list[Imagem] = []
 
     def save(self, imagem: Imagem) -> Imagem:
         self.salvos.append(imagem)
         return imagem
+
+    def list(self) -> list[Imagem]:
+        return list(self.imagens)
 
 
 class FakeAvaliacaoService:
@@ -88,3 +92,47 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     assert np.array_equal(service.chamadas[0][1], ground_truth_mask)
     assert list(service.chamadas[0][2]) == ["u2netp"]
     assert np.array_equal(service.chamadas[0][2]["u2netp"], model_mask)
+
+
+def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
+    repository = FakeImagemRepository()
+    service = FakeAvaliacaoService()
+    controller = AvaliacaoController(
+        imagem_repository=repository,
+        avaliacao_service=service,
+    )
+    imagem_skip = Imagem(nome_arquivo="ja_avaliada", fazenda="A", peso=1.0)
+    imagem_skip.ground_truth_binarizada = GroundTruthBinarizada(
+        nome_arquivo="ja_avaliada",
+        area=10.0,
+        perimetro=20.0,
+    )
+    imagem_skip.segmentacoes = [
+        Segmentacao(
+            nome_arquivo="ja_avaliada",
+            nome_modelo="u2netp",
+            area=5.0,
+            perimetro=7.0,
+            iou=0.8,
+        )
+    ]
+    imagem_ok = Imagem(nome_arquivo="avaliar", fazenda="B", peso=2.0)
+    repository.imagens = [imagem_skip, imagem_ok]
+    processadas: list[str] = []
+
+    def fake_processar_imagem(
+        imagem: Imagem,
+        modelos_para_avaliacao: list[str] | None = None,
+    ) -> Imagem:
+        processadas.append(imagem.nome_arquivo)
+        return imagem
+
+    monkeypatch.setattr(controller, "processar_imagem", fake_processar_imagem)
+
+    stats = controller.processar_imagens(modelos_para_avaliacao=["u2netp"])
+
+    assert processadas == ["avaliar"]
+    assert stats.total == 2
+    assert stats.ok == 1
+    assert stats.skip == 1
+    assert stats.erro == 0

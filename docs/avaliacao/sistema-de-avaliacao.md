@@ -24,16 +24,20 @@ O fluxo principal do projeto e:
 
 No projeto, a etapa de avaliacao e centralizada no notebook:
 
-- `notebooks/03_avaliacao_das_segmentacoes.ipynb`
+- `notebooks/03_calculo_das_avaliacoes.ipynb`
+
+A analise exploratoria e o ranking ficam no notebook:
+
+- `notebooks/04_analise_das_avaliacoes.ipynb`
 
 ## Componentes envolvidos
 
 Arquivos relevantes:
 
-- `src/controllers/segmentacao_controller.py`: processa a etapa de geracao de mascaras e registra `Segmentacao`;
-- `src/services/segmentacao_service.py`: executa a inferencia e atualiza a entidade `Segmentacao`;
-- `src/controllers/binarizacao_controller.py`: processa a etapa de binarizacao e registra `GroundTruthBinarizada` e `Binarizacao`;
-- `src/services/binarizacao_service.py`: executa a binarizacao e atualiza as entidades ligadas a cada `Segmentacao`;
+- `src/controllers/segmentacao_controller.py`: processa a etapa de geracao de mascaras e grava os artefatos previstos no filesystem;
+- `src/services/segmentacao_service.py`: executa a inferencia sem persistir entidades metricas parciais;
+- `src/controllers/binarizacao_controller.py`: processa a etapa de binarizacao e grava os artefatos binarios no filesystem;
+- `src/services/binarizacao_service.py`: executa a binarizacao sem criar entidades metricas incompletas;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
 - `src/analysis/ranker.py`: transforma as metricas agregadas em ranking;
 - `src/visualization/metric_plots.py`: gera graficos para inspecao das metricas;
@@ -44,6 +48,10 @@ Saida gerada:
 
 - `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
 
+Observacao importante:
+
+- `Segmentacao`, `GroundTruthBinarizada` e `Binarizacao` representam resultados metricos completos; elas nao sao criadas nas etapas 01 e 02.
+
 ## Como usar
 
 ### Via notebook
@@ -51,12 +59,17 @@ Saida gerada:
 Abra e execute:
 
 ```bash
-jupyter notebook notebooks/03_avaliacao_das_segmentacoes.ipynb
+jupyter notebook notebooks/03_calculo_das_avaliacoes.ipynb
 ```
 
-O notebook permite:
+O notebook 03 permite:
 
 - recalcular metricas;
+- persistir os resultados incrementais no SQLite;
+- acompanhar o progresso do processamento por imagem.
+
+Depois, use o notebook 04 para:
+
 - inspecionar distribuicoes por modelo;
 - ver os melhores e piores casos;
 - comparar o ranking final.

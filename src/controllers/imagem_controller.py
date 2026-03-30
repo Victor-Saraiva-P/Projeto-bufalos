@@ -16,11 +16,20 @@ class ImagemController:
         imagem_repository: ImagemRepository | None = None,
         imagem_service: ImagemService | None = None,
     ):
-        self.path_resolver = path_resolver or PathResolver.from_config()
-        self.imagem_repository = imagem_repository or ImagemRepository(
-            sqlite_path or self.path_resolver.sqlite_path
+        self.path_resolver = (
+            path_resolver if path_resolver is not None else PathResolver.from_config()
         )
-        self.imagem_service = imagem_service or ImagemService()
+        sqlite_path_resolvido = (
+            sqlite_path if sqlite_path is not None else self.path_resolver.sqlite_path
+        )
+        self.imagem_repository = (
+            imagem_repository
+            if imagem_repository is not None
+            else ImagemRepository(sqlite_path_resolvido)
+        )
+        self.imagem_service = (
+            imagem_service if imagem_service is not None else ImagemService()
+        )
 
     def sincronizar_indice_excel(self, indice_path: str | None = None) -> None:
         self.imagem_service.sincronizar_indice_excel(
