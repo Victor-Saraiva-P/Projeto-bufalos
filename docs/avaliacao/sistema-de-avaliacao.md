@@ -24,12 +24,20 @@ O fluxo principal do projeto e:
 
 No projeto, a etapa de avaliacao e centralizada no notebook:
 
-- `notebooks/03_avaliacao_das_segmentacoes.ipynb`
+- `notebooks/03_calculo_das_avaliacoes.ipynb`
+
+A analise exploratoria e o ranking ficam no notebook:
+
+- `notebooks/04_analise_das_avaliacoes.ipynb`
 
 ## Componentes envolvidos
 
 Arquivos relevantes:
 
+- `src/controllers/segmentacao_controller.py`: processa a etapa de geracao de mascaras e grava os artefatos previstos no filesystem;
+- `src/services/segmentacao_service.py`: executa a inferencia sem persistir entidades metricas parciais;
+- `src/controllers/binarizacao_controller.py`: processa a etapa de binarizacao e grava os artefatos binarios no filesystem;
+- `src/services/binarizacao_service.py`: executa a binarizacao sem criar entidades metricas incompletas;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
 - `src/analysis/ranker.py`: transforma as metricas agregadas em ranking;
 - `src/visualization/metric_plots.py`: gera graficos para inspecao das metricas;
@@ -38,7 +46,11 @@ Arquivos relevantes:
 
 Saida gerada:
 
-- `generated/evaluation/metrics_cache.csv`: cache das metricas calculadas.
+- `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
+
+Observacao importante:
+
+- `Segmentacao`, `GroundTruthBinarizada` e `Binarizacao` representam resultados metricos completos; elas nao sao criadas nas etapas 01 e 02.
 
 ## Como usar
 
@@ -47,12 +59,17 @@ Saida gerada:
 Abra e execute:
 
 ```bash
-jupyter notebook notebooks/03_avaliacao_das_segmentacoes.ipynb
+jupyter notebook notebooks/03_calculo_das_avaliacoes.ipynb
 ```
 
-O notebook permite:
+O notebook 03 permite:
 
 - recalcular metricas;
+- persistir os resultados incrementais no SQLite;
+- acompanhar o progresso do processamento por imagem.
+
+Depois, use o notebook 04 para:
+
 - inspecionar distribuicoes por modelo;
 - ver os melhores e piores casos;
 - comparar o ranking final.
@@ -137,9 +154,9 @@ Regra importante:
 
 - a soma dos pesos deve ser `1.0`.
 
-## Recalculo e cache
+## Persistencia
 
-Por padrao, a coleta usa cache para evitar recomputar tudo a cada execucao.
+Por padrao, a coleta usa o SQLite do projeto como fonte de verdade para as metricas.
 
 Para forcar recalcucao:
 
@@ -148,9 +165,17 @@ collector = MetricsCollector(force_recalculate=True)
 df_metrics = collector.collect_all_metrics()
 ```
 
-Isso atualiza o arquivo:
+Isso sobrescreve os registros de avaliacao no banco:
 
-- `generated/evaluation/metrics_cache.csv`
+- `generated/bufalos.sqlite3`
+
+Arquitetura da persistencia:
+
+- `src/models/` define as entidades persistidas (`Imagem`, `GroundTruthBinarizada`, `Segmentacao`, `Binarizacao`, `Tag`);
+- `src/repositories/` encapsula o CRUD dessas entidades;
+- `src/logs/` centraliza os logs compartilhados do pipeline;
+- `src/controllers/avaliacao_controller.py` coordena o processamento de cada imagem;
+- `src/services/avaliacao_service.py` calcula as metricas e preenche `Segmentacao` e `GroundTruthBinarizada` antes da persistencia.
 
 ## Leitura dos resultados
 

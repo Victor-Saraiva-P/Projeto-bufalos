@@ -15,8 +15,8 @@ from PIL import Image, ImageTk
 
 from src.config import IMAGES_DIR, INDICE_PATH, TAGS_COL
 from src.io.indice_loader import carregar_indice_excel
-from src.io.path_utils import caminho_foto_original
-from src.models.indice_linha import IndiceLinha
+from src.io.path_resolver import PathResolver
+from src.models import Imagem
 
 
 TAG_OPTIONS = [
@@ -31,17 +31,18 @@ BUTTON_DEFAULT_BG = "#d6d3d1"
 BUTTON_SELECTED_BG = "#0f766e"
 BUTTON_DEFAULT_FG = "#1c1917"
 BUTTON_SELECTED_FG = "#f5f5f4"
+_PATH_RESOLVER = PathResolver.from_config()
 
 
 @dataclass(frozen=True)
 class PendingImage:
     row_number: int
     line_number: int
-    indice_linha: IndiceLinha
+    imagem: Imagem
 
 
 def _resolve_image_path(nome_arquivo: str) -> str:
-    caminho_padrao = caminho_foto_original(nome_arquivo)
+    caminho_padrao = _PATH_RESOLVER.caminho_foto_original(nome_arquivo)
     if os.path.exists(caminho_padrao):
         return caminho_padrao
 
@@ -101,10 +102,10 @@ class FocusedTagRepository:
             PendingImage(
                 row_number=idx,
                 line_number=idx - 1,
-                indice_linha=linha,
+                imagem=linha,
             )
             for idx, linha in enumerate(linhas, start=2)
-            if self.focus_tag not in linha.tags
+            if self.focus_tag not in linha.nomes_tags
         ]
 
     def get_current_pending(self) -> PendingImage | None:
@@ -117,7 +118,7 @@ class FocusedTagRepository:
         if current_pending is None:
             return None
 
-        current_tags = current_pending.indice_linha.tags
+        current_tags = current_pending.imagem.nomes_tags
         next_value = self._build_next_tags_value(current_tags, mark_focus_tag)
 
         self.worksheet.cell(
@@ -417,8 +418,8 @@ class FocusedTaggerApp:
         self.finish_button.configure(state="normal")
         self.review_button.configure(state="normal")
 
-        linha = pending.indice_linha
-        tags_text = ", ".join(linha.tags) if linha.tags else "sem tags"
+        linha = pending.imagem
+        tags_text = ", ".join(linha.nomes_tags) if linha.nomes_tags else "sem tags"
         self.status_label.configure(
             text=(
                 f"Linha {pending.line_number}: {linha.nome_arquivo} | "

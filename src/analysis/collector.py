@@ -2,22 +2,17 @@
 Coletor de métricas de segmentação para avaliação de modelos.
 
 Este módulo processa todas as imagens e modelos, calculando métricas
-e armazenando resultados em cache para análises posteriores.
+e persistindo resultados no SQLite do projeto.
 """
 
-import os
+from typing import Optional
+
 import pandas as pd
-from pathlib import Path
-from typing import List, Optional
 from tqdm.auto import tqdm
 
-from src.config import (
-    MODELOS_PARA_AVALIACAO,
-    EVALUATION_DIR,
-    METRICS_CACHE_PATH,
-)
-from src.models.avaliacao import Avaliacao
-from src.io.indice_loader import carregar_indice_excel
+from src.controllers.avaliacao_controller import AvaliacaoController
+from src.models import Imagem
+from src.repositories import ImagemRepository
 
 
 class MetricsCollector:
@@ -25,86 +20,48 @@ class MetricsCollector:
     Coleta e processa métricas de segmentação para todos os modelos.
 
     Esta classe:
-    - Itera sobre todas as imagens do índice
-    - Para cada imagem, calcula métricas de cada modelo vs ground truth
-    - Armazena resultados em DataFrame com cache em CSV
-    - Calcula diferenças absolutas e relativas para área e perímetro
-
-    Attributes:
-        force_recalculate: Se True, ignora cache e recalcula tudo
-        df: DataFrame com todas as métricas coletadas
+    - Itera sobre todas as imagens do índice persistido no SQLite
+    - Para cada imagem, calcula métricas de cada segmentacao vs ground truth
+    - Persiste resultados por imagem no SQLite
+    - Materializa um DataFrame analítico a partir das entidades persistidas
     """
 
     def __init__(self, force_recalculate: bool = False):
-        """
-        Inicializa o coletor de métricas.
-
-        Args:
-            force_recalculate: Se True, recalcula todas as métricas mesmo com cache válido
-        """
         self.force_recalculate = force_recalculate
         self.df: Optional[pd.DataFrame] = None
+        self.imagem_repository = ImagemRepository()
+        self.avaliacao_controller = AvaliacaoController(
+            imagem_repository=self.imagem_repository
+        )
 
     def collect_all_metrics(self) -> pd.DataFrame:
-        """
-        Coleta métricas de todas as imagens e modelos.
-
-        Tenta carregar do cache primeiro. Se não houver cache válido ou
-        force_recalculate=True, processa todas as imagens.
-
-        Returns:
-            DataFrame com colunas:
-                - nome_arquivo: nome da imagem
-                - modelo: nome do modelo
-                - area: área da segmentação (pixels)
-                - perimetro: perímetro da segmentação
-                - iou: Intersection over Union vs GT
-                - area_gt: área do ground truth
-                - perimetro_gt: perímetro do ground truth
-                - area_diff_abs: |area - area_gt|
-                - area_similarity: 1 - (|area - area_gt| / area_gt)
-                - perimetro_diff_abs: |perimetro - perimetro_gt|
-                - perimetro_similarity: 1 - (|perimetro - perimetro_gt| / perimetro_gt)
-        """
-        # Tentar carregar do cache
         if not self.force_recalculate:
-            cached_df = self._load_cache()
-            if cached_df is not None:
-                print(f"✓ Métricas carregadas do cache: {METRICS_CACHE_PATH}")
-                self.df = cached_df
+            sqlite_df = self._build_metrics_dataframe(self.imagem_repository.list())
+            if not sqlite_df.empty:
+                print("✓ Métricas carregadas do SQLite")
+                self.df = sqlite_df
                 return self.df
 
-        # Processar todas as imagens
         print("Coletando métricas de todas as imagens...")
-        indice_excel = carregar_indice_excel()
-
-        all_metrics = []
+        indice = self.imagem_repository.list()
         modelos_com_erro = set()
 
-        for linha in tqdm(indice_excel, desc="Processando imagens"):
+        for imagem in tqdm(indice, desc="Processando imagens"):
             try:
-                metrics = self._calculate_metrics_for_image(
-                    linha.nome_arquivo, modelos_com_erro
-                )
-                all_metrics.extend(metrics)
+                self._calculate_metrics_for_image(imagem, modelos_com_erro)
             except Exception as e:
-                print(f"\n⚠ Erro ao processar {linha.nome_arquivo}: {e}")
+                print(f"\n⚠ Erro ao processar {imagem.nome_arquivo}: {e}")
                 continue
 
-        if not all_metrics:
+        self.df = self._build_metrics_dataframe(self.imagem_repository.list())
+
+        if self.df.empty:
             raise ValueError("Nenhuma métrica foi coletada. Verifique as segmentações.")
 
-        # Criar DataFrame
-        self.df = pd.DataFrame(all_metrics)
-
-        # Mostrar resumo de modelos com problemas
         if modelos_com_erro:
             print(f"\n⚠ Modelos sem segmentações encontradas:")
             for modelo in sorted(modelos_com_erro):
                 print(f"  - {modelo}")
-
-        # Salvar cache
-        self._save_cache(self.df)
 
         print(f"\n✓ Métricas coletadas: {len(self.df)} registros")
         print(f"  - Imagens processadas: {self.df['nome_arquivo'].nunique()}")
@@ -112,132 +69,62 @@ class MetricsCollector:
 
         return self.df
 
-    def _calculate_metrics_for_image(
-        self, nome_arquivo: str, modelos_com_erro: set
-    ) -> List[dict]:
-        """
-        Calcula métricas para uma imagem específica.
+    def _calculate_metrics_for_image(self, imagem: Imagem, modelos_com_erro: set) -> None:
+        imagem_avaliada = self.avaliacao_controller.processar_imagem(imagem)
 
-        Args:
-            nome_arquivo: Nome do arquivo da imagem
-            modelos_com_erro: Set para acumular modelos com problemas
-
-        Returns:
-            Lista de dicionários com métricas de cada modelo
-        """
-        # Criar avaliação e calcular métricas
-        avaliacao = Avaliacao(nome_arquivo)
-        avaliacao.calcular_metricas()
-
-        # Extrair métricas do ground truth
-        gt_area = avaliacao.ground_truth.area
-        gt_perimetro = avaliacao.ground_truth.perimetro
-
-        metrics_list = []
-
-        # Processar cada modelo
-        for segmentacao in avaliacao.segmentacoes:
-            # Verificar se modelo tem dados válidos (métricas calculadas)
+        for segmentacao in imagem_avaliada.segmentacoes:
             if (
                 segmentacao.area is None
                 or segmentacao.perimetro is None
                 or segmentacao.iou is None
             ):
-                modelos_com_erro.add(segmentacao.modelo)
+                modelos_com_erro.add(segmentacao.nome_modelo)
+
+    @staticmethod
+    def _build_metrics_dataframe(imagens: list[Imagem]) -> pd.DataFrame:
+        registros: list[dict[str, float | str]] = []
+
+        for imagem in imagens:
+            ground_truth = imagem.ground_truth_binarizada
+            if ground_truth is None:
                 continue
 
-            # Garantir que gt também tem métricas válidas
-            assert gt_area is not None, f"GT área None para {nome_arquivo}"
-            assert gt_perimetro is not None, f"GT perímetro None para {nome_arquivo}"
+            area_gt = ground_truth.area
+            perimetro_gt = ground_truth.perimetro
+            if area_gt is None or perimetro_gt is None:
+                continue
 
-            # Após as verificações acima, sabemos que os valores não são None
-            # type: ignore é necessário pois o LSP não reconhece o narrowing
-            area_diff_abs = abs(segmentacao.area - gt_area)  # type: ignore
-            perimetro_diff_abs = abs(segmentacao.perimetro - gt_perimetro)  # type: ignore
+            for segmentacao in imagem.segmentacoes:
+                area = segmentacao.area
+                perimetro = segmentacao.perimetro
+                iou = segmentacao.iou
 
-            # Calcular SIMILARIDADE (não diferença)
-            # Similaridade = 1 - (diferença / valor_gt)
-            # Valor 1.0 = idêntico ao GT (perfeito)
-            # Valor 0.0 = completamente diferente
-            # Evitar divisão por zero
-            area_similarity = 1.0 - (area_diff_abs / gt_area) if gt_area > 0 else 0.0  # type: ignore
-            perimetro_similarity = (
-                1.0 - (perimetro_diff_abs / gt_perimetro) if gt_perimetro > 0 else 0.0  # type: ignore
-            )
+                if area is None or perimetro is None or iou is None:
+                    continue
 
-            # Garantir que similaridade não seja negativa (pode acontecer se modelo >> GT)
-            area_similarity = max(0.0, area_similarity)
-            perimetro_similarity = max(0.0, perimetro_similarity)
+                area_diff_abs = abs(area - area_gt)
+                perimetro_diff_abs = abs(perimetro - perimetro_gt)
+                area_similarity = 1.0 - (area_diff_abs / area_gt) if area_gt > 0 else 0.0
+                perimetro_similarity = (
+                    1.0 - (perimetro_diff_abs / perimetro_gt)
+                    if perimetro_gt > 0
+                    else 0.0
+                )
 
-            metrics_list.append(
-                {
-                    "nome_arquivo": nome_arquivo,
-                    "modelo": segmentacao.modelo,
-                    "area": segmentacao.area,
-                    "perimetro": segmentacao.perimetro,
-                    "iou": segmentacao.iou,
-                    "area_gt": gt_area,
-                    "perimetro_gt": gt_perimetro,
-                    "area_diff_abs": area_diff_abs,
-                    "area_similarity": area_similarity,
-                    "perimetro_diff_abs": perimetro_diff_abs,
-                    "perimetro_similarity": perimetro_similarity,
-                }
-            )
+                registros.append(
+                    {
+                        "nome_arquivo": imagem.nome_arquivo,
+                        "modelo": segmentacao.nome_modelo,
+                        "area": area,
+                        "perimetro": perimetro,
+                        "iou": iou,
+                        "area_gt": area_gt,
+                        "perimetro_gt": perimetro_gt,
+                        "area_diff_abs": area_diff_abs,
+                        "area_similarity": max(0.0, area_similarity),
+                        "perimetro_diff_abs": perimetro_diff_abs,
+                        "perimetro_similarity": max(0.0, perimetro_similarity),
+                    }
+                )
 
-        return metrics_list
-
-    def _save_cache(self, df: pd.DataFrame) -> None:
-        """
-        Salva DataFrame em arquivo CSV de cache.
-
-        Args:
-            df: DataFrame a ser salvo
-        """
-        # Criar diretório se não existir
-        os.makedirs(EVALUATION_DIR, exist_ok=True)
-
-        # Salvar CSV
-        df.to_csv(METRICS_CACHE_PATH, index=False)
-        print(f"✓ Cache salvo em: {METRICS_CACHE_PATH}")
-
-    def _load_cache(self) -> Optional[pd.DataFrame]:
-        """
-        Carrega DataFrame do arquivo de cache.
-
-        Returns:
-            DataFrame se cache existe e é válido, None caso contrário
-        """
-        cache_path = Path(METRICS_CACHE_PATH)
-
-        if not cache_path.exists():
-            print("Cache não encontrado. Processando todas as imagens...")
-            return None
-
-        try:
-            df = pd.read_csv(METRICS_CACHE_PATH)
-
-            # Validar colunas esperadas
-            expected_cols = {
-                "nome_arquivo",
-                "modelo",
-                "area",
-                "perimetro",
-                "iou",
-                "area_gt",
-                "perimetro_gt",
-                "area_diff_abs",
-                "area_similarity",
-                "perimetro_diff_abs",
-                "perimetro_similarity",
-            }
-
-            if not expected_cols.issubset(df.columns):
-                print("Cache inválido (colunas incorretas). Recalculando...")
-                return None
-
-            return df
-
-        except Exception as e:
-            print(f"Erro ao carregar cache: {e}. Recalculando...")
-            return None
+        return pd.DataFrame(registros)

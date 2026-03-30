@@ -9,11 +9,10 @@ from PIL import Image
 from typing import Tuple
 from matplotlib.figure import Figure
 
-from src.io.path_utils import (
-    caminho_foto_original,
-    caminho_ground_truth_binaria,
-    caminho_mascara_predita_binaria,
-)
+from src.io.path_resolver import PathResolver
+
+
+_PATH_RESOLVER = PathResolver.from_config()
 
 
 def plot_image_grid(
@@ -66,7 +65,7 @@ def plot_image_grid(
     for row_idx, nome_arquivo in enumerate(unique_images):
         # Coluna 0: Imagem Original
         try:
-            img_path = caminho_foto_original(nome_arquivo)
+            img_path = _PATH_RESOLVER.caminho_foto_original(nome_arquivo)
             img = Image.open(img_path)
             axes[row_idx, 0].imshow(img)
             axes[row_idx, 0].set_title(f"Original\n{nome_arquivo[:15]}...", fontsize=8)
@@ -79,7 +78,7 @@ def plot_image_grid(
 
         # Coluna 1: Ground Truth
         try:
-            gt_path = caminho_ground_truth_binaria(nome_arquivo)
+            gt_path = _PATH_RESOLVER.caminho_ground_truth_binaria(nome_arquivo)
             gt_img = Image.open(gt_path).convert("L")
             axes[row_idx, 1].imshow(gt_img, cmap="gray")
             axes[row_idx, 1].set_title("GT", fontsize=8)
@@ -100,7 +99,10 @@ def plot_image_grid(
             ]
 
             try:
-                seg_path = caminho_mascara_predita_binaria(modelo, nome_arquivo)
+                seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
+                    modelo,
+                    nome_arquivo,
+                )
                 seg_img = Image.open(seg_path).convert("L")
                 axes[row_idx, col_idx].imshow(seg_img, cmap="gray")
 
@@ -187,7 +189,7 @@ def plot_single_image_comparison(
     # Original (canto superior esquerdo)
     ax_orig = fig.add_subplot(gs[0, 0])
     try:
-        img_path = caminho_foto_original(nome_arquivo)
+        img_path = _PATH_RESOLVER.caminho_foto_original(nome_arquivo)
         img = Image.open(img_path)
         ax_orig.imshow(img)
         ax_orig.set_title("Original", fontsize=10)
@@ -199,7 +201,7 @@ def plot_single_image_comparison(
     # Ground Truth (centro superior)
     ax_gt = fig.add_subplot(gs[0, 1])
     try:
-        gt_path = caminho_ground_truth_binaria(nome_arquivo)
+        gt_path = _PATH_RESOLVER.caminho_ground_truth_binaria(nome_arquivo)
         gt_img = Image.open(gt_path).convert("L")
         ax_gt.imshow(gt_img, cmap="gray")
         ax_gt.set_title("Ground Truth", fontsize=10)
@@ -216,7 +218,10 @@ def plot_single_image_comparison(
         ax = fig.add_subplot(gs[row_pos, col_pos])
 
         try:
-            seg_path = caminho_mascara_predita_binaria(str(row["modelo"]), nome_arquivo)
+            seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
+                str(row["modelo"]),
+                nome_arquivo,
+            )
             seg_img = Image.open(seg_path).convert("L")
             ax.imshow(seg_img, cmap="gray")
             ax.set_title(f"{row['modelo']}\\nIoU: {row['iou']:.4f}", fontsize=9)

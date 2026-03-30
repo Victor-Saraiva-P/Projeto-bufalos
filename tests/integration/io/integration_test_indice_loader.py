@@ -1,60 +1,61 @@
-from decimal import Decimal
-
 import pandas as pd
 import pytest
 
-from mock_config import MockDataConfig
+from src.config import INDICE_PATH, SQLITE_PATH
+from src.controllers import ImagemController
 from src.io import indice_loader
-from src.models.indice_linha import IndiceLinha
+from src.repositories import ImagemRepository
 
 
-def test_carregar_indice_excel_com_mock_data(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    config = MockDataConfig()
-    monkeypatch.setattr(indice_loader, "INDICE_PATH", str(config.indice_path))
+def test_carregar_indice_excel_retorna_imagens_com_tags() -> None:
+    linhas = indice_loader.carregar_indice_excel(INDICE_PATH)
 
-    indice_df = pd.read_excel(config.indice_path)
-    linhas = indice_loader.carregar_indice_excel()
-    linhas_esperadas = [
-        IndiceLinha(
-            nome_arquivo="493098e5-da4e-47dc-80cc-eddd2c703a24",
-            fazenda="Manezinho",
-            peso=Decimal("55"),
-            tags=["ok"],
-        ),
-        IndiceLinha(
-            nome_arquivo="e2b294f6-387c-49ce-8fd8-8e80e80cdc46",
-            fazenda="Faco",
-            peso=Decimal("188"),
-            tags=["angulo_extremo", "baixo_contraste"],
-        ),
-        IndiceLinha(
-            nome_arquivo="67_Laje-Nova_453",
-            fazenda="Laje Nova",
-            peso=Decimal("453"),
-            tags=["ok"],
-        ),
-        IndiceLinha(
-            nome_arquivo="1166_Calcula_506",
-            fazenda="Calcula",
-            peso=Decimal("506"),
-            tags=["ok"],
-        ),
-        IndiceLinha(
-            nome_arquivo="284_Mamucaba_350",
-            fazenda="Mamucaba",
-            peso=Decimal("350"),
-            tags=["baixo_contraste"],
-        ),
+    assert [linha.nome_arquivo for linha in linhas] == [
+        "493098e5-da4e-47dc-80cc-eddd2c703a24",
+        "e2b294f6-387c-49ce-8fd8-8e80e80cdc46",
+        "67_Laje-Nova_453",
+        "1166_Calcula_506",
+        "284_Mamucaba_350",
+    ]
+    assert [linha.nomes_tags for linha in linhas] == [
+        ["ok"],
+        ["angulo_extremo", "baixo_contraste"],
+        ["ok"],
+        ["ok"],
+        ["baixo_contraste"],
     ]
 
-    assert list(indice_df.columns) == ["Nome do arquivo", "Fazenda", "Peso", "Tags"]
-    assert len(indice_df) == 5
-    assert linhas == linhas_esperadas
+
+def test_imagem_controller_sincroniza_excel_para_sqlite() -> None:
+    sqlite_path = SQLITE_PATH
+
+    ImagemController().sincronizar_indice_excel()
+    linhas = ImagemRepository(sqlite_path).list()
+    assert [linha.nome_arquivo for linha in linhas] == [
+        "1166_Calcula_506",
+        "284_Mamucaba_350",
+        "493098e5-da4e-47dc-80cc-eddd2c703a24",
+        "67_Laje-Nova_453",
+        "e2b294f6-387c-49ce-8fd8-8e80e80cdc46",
+    ]
+    assert [linha.fazenda for linha in linhas] == [
+        "Calcula",
+        "Mamucaba",
+        "Manezinho",
+        "Laje Nova",
+        "Faco",
+    ]
+    assert [linha.peso for linha in linhas] == [506.0, 350.0, 55.0, 453.0, 188.0]
+    assert [linha.nomes_tags for linha in linhas] == [
+        ["ok"],
+        ["baixo_contraste"],
+        ["ok"],
+        ["ok"],
+        ["angulo_extremo", "baixo_contraste"],
+    ]
 
 
-def test_carregar_indice_excel_falha_quando_faltam_colunas(
+def test_imagem_controller_falha_quando_faltam_colunas_no_excel(
     tmp_path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -67,10 +68,19 @@ def test_carregar_indice_excel_falha_quando_faltam_colunas(
     )
     df.to_excel(indice_invalido, index=False)
 
-    monkeypatch.setattr(indice_loader, "INDICE_PATH", str(indice_invalido))
+    from src.io.path_resolver import PathResolver
+
+    resolver = PathResolver.from_config().with_overrides(
+        indice_path=str(indice_invalido),
+        sqlite_path=str(tmp_path / "bufalos.sqlite3"),
+    )
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
 
     with pytest.raises(
         ValueError,
         match="Alguma das colunas esperadas nao foi encontrada no arquivo Excel.",
     ):
-        indice_loader.carregar_indice_excel()
+        ImagemController().sincronizar_indice_excel()

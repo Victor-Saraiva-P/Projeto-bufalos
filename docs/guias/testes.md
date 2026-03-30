@@ -9,27 +9,43 @@ A suite automatizada existe para validar comportamento sem depender do dataset c
 Principios da suite:
 
 - usar um dataset reduzido e controlado;
+- desenvolver novas funcionalidades e correcoes usando TDD sempre que pratico;
 - separar testes por tipo;
 - manter os imports do pacote `src` via instalacao do projeto;
 - evitar acoplamento desnecessario com caminhos do ambiente real.
+
+## Abordagem de desenvolvimento
+
+O projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao.
+
+Fluxo esperado:
+
+1. escrever ou ajustar um teste que descreva o comportamento desejado;
+2. executar o teste e confirmar a falha inicial;
+3. implementar a menor mudanca necessaria para fazer o teste passar;
+4. refatorar preservando a suite verde.
+
+Essa diretriz vale tanto para novas funcionalidades quanto para correcoes de bug, desde que o comportamento seja testavel de forma automatizada.
 
 ## Estrutura atual
 
 Estrutura principal:
 
 ```text
+config.toml
+config.test.toml
 tests/
-  config.toml
   conftest.py
-  mock_config.py
   mock_data/
   mock_generated/
   fixtures/
   unit/
     analysis/
+    binarizacao/
     io/
     logs/
-    metrics/
+    avaliacao/
+    metricas/
     models/
     runtime/
     segmentacao/
@@ -53,27 +69,12 @@ Regra:
 
 Exemplos:
 
-- testes de `src.metrics` ficam em `tests/unit/metrics/`;
+- testes de `src.metricas` e `src.metricas.segmentacao_binarizada` ficam em `tests/unit/metricas/`;
 - testes de `src.models` ficam em `tests/unit/models/`;
+- testes de `src.repositories` ficam em `tests/unit/io/` enquanto a suite nao ganhar uma pasta propria;
+- testes de `src.controllers` e `src.services` devem acompanhar essas camadas em novas subpastas quando surgirem;
+- testes de `src.binarizacao` ficam em `tests/unit/binarizacao/`;
 - testes de `src.segmentacao` ficam em `tests/unit/segmentacao/`.
-
-## Convencao de nomes dos arquivos
-
-Os arquivos de teste devem comecar pelo tipo do teste.
-
-Regra:
-
-- testes unitarios usam o prefixo `unit_test_`;
-- testes de integracao usam o prefixo `integration_test_`;
-- testes end-to-end usam o prefixo `e2e_test_`.
-
-Exemplos:
-
-- `tests/unit/io/unit_test_path_utils.py`
-- `tests/integration/pipeline/integration_test_segmentacao.py`
-- `tests/e2e/e2e_test_segmentacao.py`
-
-Essa convencao deve ser seguida em novos arquivos para manter o espelhamento da suite e evitar ambiguidade sobre o tipo do teste ja no nome do arquivo.
 
 ### `tests/integration/`
 
@@ -93,6 +94,24 @@ Reserva os testes ponta a ponta, normalmente mais caros e menos adequados para e
 
 Contem helpers, builders e fixtures compartilhadas entre diferentes camadas da suite.
 
+## Convencao de nomes dos arquivos
+
+Os arquivos de teste devem comecar pelo tipo do teste.
+
+Regra:
+
+- testes unitarios usam o prefixo `unit_test_`;
+- testes de integracao usam o prefixo `integration_test_`;
+- testes end-to-end usam o prefixo `e2e_test_`.
+
+Exemplos:
+
+- `tests/unit/io/unit_test_path_utils.py`
+- `tests/integration/pipeline/integration_test_segmentacao.py`
+- `tests/e2e/e2e_test_segmentacao.py`
+
+Essa convencao deve ser seguida em novos arquivos para manter o espelhamento da suite e evitar ambiguidade sobre o tipo do teste ja no nome do arquivo.
+
 ## Convencoes de import
 
 `tests/` nao deve ser tratado como pacote instalado.
@@ -103,16 +122,10 @@ Por isso:
 - use imports locais da propria suite quando necessario;
 - mantenha imports com prefixo `src.` para o codigo do projeto.
 
-Exemplo correto:
+Exemplo preferido:
 
 ```python
-from mock_config import MockDataConfig
-```
-
-Exemplo a evitar:
-
-```python
-from tests.mock_config import MockDataConfig
+from src.config import INDICE_PATH, MODELOS_PARA_AVALIACAO
 ```
 
 ## Dataset reduzido
@@ -132,7 +145,8 @@ tests/mock_data/
 
 Objetivos desse dataset:
 
-- testar leitura do indice Excel;
+- testar bootstrap do indice Excel para SQLite;
+- testar leitura do indice a partir do SQLite;
 - validar fluxos baseados em nomes de arquivo reais;
 - permitir testes de integracao sem depender de `data/`.
 
@@ -164,26 +178,35 @@ Objetivos desse conjunto:
 
 ## Configuracao da suite
 
-A configuracao dedicada aos testes fica em `tests/config.toml`.
+A configuracao base do projeto fica em `config.toml`.
 
-O arquivo `tests/mock_config.py` funciona como um loader fino para ler esse TOML e expor caminhos resolvidos.
+O override de teste fica em `config.test.toml`.
 
-Caminhos esperados:
+Durante a suite, `tests/conftest.py` define `BUFALOS_ENV=test` antes de qualquer import de `src.config`.
 
-- `mock_data_dir`
-- `indice_path`
-- `images_dir`
-- `ground_truth_raw_dir`
+Com isso:
 
-Estrutura da configuracao:
+- `src/config.py` continua sendo o loader oficial;
+- `config.toml` funciona como base;
+- `config.test.toml` sobrescreve apenas o que muda para a suite, principalmente paths e subconjunto de modelos.
+
+Exemplo enxuto de override:
 
 ```toml
 [paths]
-mock_data_dir = "mock_data"
-indice_file = "Indice.xlsx"
-images_dir = "images"
-ground_truth_raw_dir = "ground_truth_raw"
-lock_file = ".~lock.Indice.xlsx#"
+data_dir = "tests/mock_data"
+generated_dir = "tests/generated"
+images_dir = "tests/mock_data/images"
+ground_truth_raw_dir = "tests/mock_data/ground_truth_raw"
+predicted_masks_dir = "tests/generated/predicted_masks"
+predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
+ground_truth_binary_dir = "tests/generated/ground_truth_binary"
+evaluation_dir = "tests/generated/evaluation"
+indice_file = "tests/mock_data/Indice.xlsx"
+sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
+
+[models]
+u2netp = "cpu"
 ```
 
 ## Fluxo local recomendado
@@ -220,11 +243,4 @@ Relatorio HTML:
 pytest --cov=src --cov-report=html
 ```
 
-O relatorio e gerado em `htmlcov/index.html`.
-
-## Observacoes
-
-- o dataset de teste usa `ground_truth_raw/`, nao `ground_truth/`;
-- `.~lock.Indice.xlsx#` e arquivo temporario de editor e nao faz parte do dataset;
-- `tests/unit/` tende a acompanhar `src/`, enquanto `tests/integration/` e orientado a fluxo;
-- o CI rapido exclui os testes marcados como `e2e`; veja [`ci.md`](./ci.md).
+O relatorio fica em `htmlcov/`.

@@ -24,6 +24,7 @@ dependencies = [
     "rembg[gpu]",
     "scikit-image",
     "scipy",
+    "sqlalchemy",
 ]
 
 [tool.setuptools]
@@ -32,6 +33,3 @@ include-package-data = true
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src", "src.*"]
-
-[tool.setuptools.package-data]
-src = ["config.toml"]

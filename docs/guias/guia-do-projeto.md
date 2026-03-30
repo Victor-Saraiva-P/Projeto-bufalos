@@ -10,7 +10,7 @@ Estrutura minima na pasta `data`:
 data/
   ground_truth_raw/ # mascaras de referencia (segmentacao manual)
   images/           # imagens originais de entrada
-  Indice.xlsx       # planilha com indice das imagens
+  Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
 
 Saidas geradas pelo projeto:
@@ -20,8 +20,23 @@ generated/
   predicted_masks/         # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
-  evaluation/              # caches e artefatos de avaliacao
+  evaluation/              # artefatos de avaliacao
+  bufalos.sqlite3          # fonte de verdade do pipeline
 ```
+
+Organizacao do codigo em `src/`:
+
+- `src/segmentacao/`: gera mascaras previstas e faz verificacoes de integridade;
+- `src/binarizacao/`: binariza mascaras previstas e mascaras de referencia;
+- `src/models/`: entidades persistidas do dominio e do banco SQLite;
+- `src/repositories/`: persistencia CRUD baseada nas entidades de `src/models/`;
+- `src/sqlite/`: infraestrutura de sessao, conexao e `Base` declarativa do SQLite;
+- `src/controllers/` e `src/services/`: orquestracao dos fluxos e casos de uso do projeto;
+- `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
+- `src/metricas/`: contratos compartilhados de metricas;
+- `src/metricas/segmentacao_binarizada/`: metricas concretas da segmentacao binarizada;
+- `src/analysis/` e `src/visualization/`: agregam, ranqueiam e apresentam os resultados;
+- `src/tagging/`: concentra os anotadores manuais de curadoria.
 
 ## Configuracao do ambiente
 
@@ -78,9 +93,22 @@ Todos os comandos abaixo assumem que voce esta na raiz do repositorio e com o am
 source .venv/bin/activate
 ```
 
+## Abordagem de desenvolvimento
+
+O projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao.
+
+Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
+
+1. escrever primeiro o teste que descreve o comportamento desejado;
+2. observar a falha inicial do teste;
+3. implementar a menor mudanca necessaria para fazer o teste passar;
+4. refatorar com a suite em estado verde.
+
 ### Anotador manual de tags
 
 O script `src/tagging/manual_tagger.py` abre uma interface grafica para revisar as imagens pendentes e preencher a coluna `tags` de `data/Indice.xlsx`.
+
+Fora o tagging, o pipeline usa o SQLite em `generated/` para guardar o indice e os resultados completos de avaliacao. O notebook 01 inicializa esse banco a partir do Excel, e o progresso de segmentacao/binarizacao e inferido pelos arquivos gerados em `generated/`.
 
 Comando recomendado:
 
@@ -136,15 +164,23 @@ Comportamento do fluxo:
 - se a celula ainda estiver vazia e nenhuma marcacao for feita, o fluxo grava `ok`;
 - se a imagem ja tiver outras tags, elas sao preservadas.
 
-As tags de curadoria estao definidas em `../avaliacao/tags-de-imagem.md`.
+As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 ### Notebooks principais
 
-O fluxo de execucao do projeto esta organizado em tres notebooks:
+O fluxo de execucao do projeto esta organizado em quatro notebooks:
 
-- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia;
-- `notebooks/03_avaliacao_das_segmentacoes.ipynb`: calcula metricas e compara os modelos.
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos em `generated/predicted_masks/`;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/`;
+- `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite;
+- `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.
+
+Nos notebooks 01 e 02, a execucao operacional acontece por meio dos controllers em `src/controllers/`.
+
+Regra de responsabilidade:
+
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 
 Para abrir o ambiente de notebooks:
 
@@ -212,49 +248,14 @@ Edite `~/.local/share/jupyter/kernels/projeto-bufalos/kernel.json` para incluir:
 
 ### Verificar se a GPU esta funcionando
 
-No Python ou Jupyter:
+Depois de configurar o kernel, execute o notebook de segmentacao usando esse ambiente.
 
-```python
-import onnxruntime as ort
-print(ort.get_available_providers())
-```
+Sinais esperados:
 
-Deve incluir `CUDAExecutionProvider`.
+- a inferencia deve ocorrer sem erro de biblioteca ausente;
+- o backend de GPU deve conseguir carregar `onnxruntime-gpu`;
+- se houver falha de carregamento, revise o `LD_LIBRARY_PATH` e as versoes de CUDA/cuDNN.
 
-Ou via CLI:
+## Convencao documental
 
-```bash
-rembg p data/images generated/test -m u2net
-```
-
-## Modelos disponiveis para avaliacao
-
-Os modelos configurados ficam em `src/config.py`, no dicionario `MODELOS_PARA_AVALIACAO`.
-
-Observacoes:
-
-- o projeto pode ser executado sem GPU;
-- os providers configurados em `src/config.py` definem quais modelos tentam usar `gpu` e quais usam `cpu`;
-- modelos `birefnet-*` consomem muita VRAM;
-- em GPUs com 4 GB podem ocorrer erros de memoria com imagens grandes;
-- alguns modelos estao configurados para `cpu` por esse motivo.
-
-## Estrutura do projeto
-
-```text
-data/
-docs/
-generated/
-notebooks/
-src/
-tests/
-pyproject.toml
-```
-
-## Documentacao relacionada
-
-- `../guias/testes.md`
-- `../guias/ci.md`
-- `../avaliacao/sistema-de-avaliacao.md`
-- `../avaliacao/tags-de-imagem.md`
-- `../decisoes-tecnicas/`
+As regras de sincronizacao entre `README.md`, `docs/` e `AGENTS.md` estao definidas em `docs/guias/documentacao-do-repositorio.md`.

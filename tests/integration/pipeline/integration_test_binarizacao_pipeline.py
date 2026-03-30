@@ -3,41 +3,40 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from mock_config import MockDataConfig
-from src.io import indice_loader, path_utils
-from src.io.indice_loader import carregar_indice_excel
-from src.segmentacao import (
-    GaussianOpeningBinarizationStrategy,
-    binarizar_ground_truth,
-    binarizar_mascaras_preditas,
-)
+from src.binarizacao import GaussianOpeningBinarizationStrategy
+from src.config import GROUND_TRUTH_RAW_DIR, MODELOS_PARA_AVALIACAO
+from src.controllers import BinarizacaoController, ImagemController
+from src.io.path_resolver import PathResolver
+from src.repositories import ImagemRepository
 
 
-def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
-    mock_data_config: MockDataConfig,
+def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     saida_ground_truth = tmp_path / "ground_truth_binary"
-
-    monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
-    monkeypatch.setattr(
-        path_utils,
-        "GROUND_TRUTH_RAW_DIR",
-        str(mock_data_config.ground_truth_raw_dir),
-    )
-    monkeypatch.setattr(
-        path_utils,
-        "GROUND_TRUTH_BINARY",
-        str(saida_ground_truth),
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    resolver = PathResolver.from_config().with_overrides(
+        ground_truth_binary_dir=str(saida_ground_truth),
+        sqlite_path=sqlite_path,
     )
 
-    linhas = carregar_indice_excel()
-    stats = binarizar_ground_truth(linhas, GaussianOpeningBinarizationStrategy())
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+
+    ImagemController().sincronizar_indice_excel()
+    linhas = ImagemRepository(resolver.sqlite_path).list()
+    stats = BinarizacaoController().processar_ground_truth(
+        GaussianOpeningBinarizationStrategy(),
+        imagens=linhas,
+    )
+    imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
     saidas_geradas = sorted(saida_ground_truth.glob("*.png"))
 
@@ -48,47 +47,52 @@ def test_binarizar_ground_truth_processa_indice_e_gera_pngs(
     assert stats.skip == 0
     assert stats.erro == 0
     assert len(saidas_geradas) == len(linhas)
+    assert imagem_persistida is not None
+    assert imagem_persistida.ground_truth_binarizada is None
 
 
-def test_binarizar_mascaras_preditas_processa_modelo_e_gera_pngs(
-    mock_data_config: MockDataConfig,
+def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     entrada_modelos = tmp_path / "predicted_masks"
     saida_modelos = tmp_path / "predicted_masks_binary"
-    nome_modelo = next(iter(mock_data_config.modelos_para_avaliacao))
-
-    monkeypatch.setattr(
-        indice_loader,
-        "INDICE_PATH",
-        str(mock_data_config.indice_path),
-    )
-    monkeypatch.setattr(
-        path_utils,
-        "PREDICTED_MASKS_DIR",
-        str(entrada_modelos),
-    )
-    monkeypatch.setattr(
-        path_utils,
-        "PREDICTED_MASKS_BINARY",
-        str(saida_modelos),
+    nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    resolver = PathResolver.from_config().with_overrides(
+        predicted_masks_dir=str(entrada_modelos),
+        predicted_masks_binary_dir=str(saida_modelos),
+        sqlite_path=sqlite_path,
     )
 
-    linhas = carregar_indice_excel()
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
+        {nome_modelo: MODELOS_PARA_AVALIACAO[nome_modelo]},
+    )
+
+    ImagemController().sincronizar_indice_excel()
+    linhas = ImagemRepository(resolver.sqlite_path).list()
     diretorio_modelo = entrada_modelos / nome_modelo
     diretorio_modelo.mkdir(parents=True)
 
     for linha in linhas:
         Image.open(
-            mock_data_config.ground_truth_raw_dir / f"{linha.nome_arquivo}.jpg"
+            Path(GROUND_TRUTH_RAW_DIR) / f"{linha.nome_arquivo}.jpg"
         ).save(diretorio_modelo / f"{linha.nome_arquivo}.png")
 
-    resumos = binarizar_mascaras_preditas(
-        linhas,
-        {nome_modelo: mock_data_config.modelos_para_avaliacao[nome_modelo]},
+    resumos = BinarizacaoController().processar_segmentacoes(
         GaussianOpeningBinarizationStrategy(),
+        imagens=linhas,
     )
+    imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
     saidas_geradas = sorted((saida_modelos / nome_modelo).glob("*.png"))
     stats = resumos[nome_modelo]
@@ -99,3 +103,5 @@ def test_binarizar_mascaras_preditas_processa_modelo_e_gera_pngs(
     assert stats.skip == 0
     assert stats.erro == 0
     assert len(saidas_geradas) == len(linhas)
+    assert imagem_persistida is not None
+    assert imagem_persistida.segmentacoes == []
