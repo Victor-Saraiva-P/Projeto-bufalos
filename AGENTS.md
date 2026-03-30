@@ -37,9 +37,16 @@ Os notebooks principais executam esse fluxo nesta ordem:
 Pastas principais:
 
 - `src/`: codigo principal do projeto;
-- `src/segmentacao/`: geracao de máscaras previstas, integracao com `rembg`, verificacoes de integridade e logging;
-- `src/binarizacao/`: estrategias, pipeline e logs da binarizacao;
-- `src/metrics/`, `src/analysis/` e `src/visualization/`: calculo de metricas, agregacao, ranking e apresentacao;
+- `src/models/`: entidades persistidas do dominio (`Imagem`, `Segmentacao`, `Binarizacao`, `Tag`, etc.);
+- `src/repositories/`: persistencia CRUD baseada nas entidades;
+- `src/sqlite/`: infraestrutura de sessao, `Base` e configuracao do SQLite;
+- `src/controllers/` e `src/services/`: orquestracao dos fluxos e casos de uso;
+- `src/segmentacao/`: fachadas da etapa de segmentacao e verificacoes de integridade;
+- `src/binarizacao/`: fachadas da etapa de binarizacao;
+- `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
+- `src/metricas/`: contratos compartilhados de metricas;
+- `src/avaliacao/metricas/`: metricas concretas de avaliacao de segmentacao;
+- `src/analysis/` e `src/visualization/`: agregacao, ranking e apresentacao;
 - `src/tagging/`: anotadores manuais de tags de curadoria;
 - `tests/`: suite automatizada;
 - `notebooks/`: fluxo exploratorio e analitico do projeto;
@@ -53,7 +60,7 @@ Estrutura minima esperada em `data/`:
 data/
   ground_truth_raw/ # mascaras de referencia
   images/           # imagens originais de entrada
-  Indice.xlsx       # planilha com indice das imagens
+  Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
 
 Saidas esperadas em `generated/`:
@@ -63,7 +70,8 @@ generated/
   predicted_masks/         # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
-  evaluation/              # caches e artefatos de avaliacao
+  evaluation/              # artefatos de avaliacao
+  bufalos.sqlite3          # fonte de verdade do pipeline
 ```
 
 ## Setup E Execucao Local
@@ -180,6 +188,16 @@ Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tamb
 
 Arquivos relevantes:
 
+- `src/metricas/metrica.py`: contrato base das metricas reutilizaveis na pipeline;
+- `src/avaliacao/metricas/`: metricas concretas usadas na avaliacao das mascaras;
+- `src/models/`: entidades persistidas do SQLite e do dominio analitico (`Imagem`, `Segmentacao`, `Binarizacao`, `GroundTruthBinarizada`, `Tag`);
+- `src/repositories/`: leitura e gravacao de entidades no banco;
+- `src/controllers/segmentacao_controller.py`: coordena a geracao de mascaras e registra `Segmentacao`;
+- `src/services/segmentacao_service.py`: executa a inferencia e atualiza as segmentacoes da imagem;
+- `src/controllers/binarizacao_controller.py`: coordena a binarizacao e registra `Binarizacao` e `GroundTruthBinarizada`;
+- `src/services/binarizacao_service.py`: executa a binarizacao e atualiza as entidades ligadas a cada segmentacao;
+- `src/controllers/avaliacao_controller.py`: coordena o processamento e persistencia de uma imagem;
+- `src/services/avaliacao_service.py`: calcula as metricas e preenche `Segmentacao` e `GroundTruthBinarizada`;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
 - `src/analysis/ranker.py`: transforma as metricas agregadas em ranking;
 - `src/visualization/metric_plots.py`: gera graficos para inspecao das metricas;
@@ -188,7 +206,13 @@ Arquivos relevantes:
 
 Saida gerada:
 
-- `generated/evaluation/metrics_cache.csv`: cache das metricas calculadas.
+- `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
+
+Regra de responsabilidade entre camadas:
+
+- notebooks 01 e 02 executam o pipeline por meio dos controllers em `src/controllers/`;
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 
 Exemplo minimo para coletar metricas:
 
@@ -256,11 +280,11 @@ Regra importante:
 
 - a soma dos pesos deve ser `1.0`.
 
-Recalculo e cache:
+Persistencia:
 
-- por padrao, a coleta usa cache;
+- por padrao, a coleta usa o SQLite do projeto como fonte de verdade;
 - para forcar recalcucao, use `MetricsCollector(force_recalculate=True)`;
-- isso atualiza `generated/evaluation/metrics_cache.csv`.
+- isso sobrescreve os registros de avaliacao no banco.
 
 Ao analisar resultados, normalmente vale olhar:
 
@@ -363,8 +387,9 @@ Consequencias:
 
 Implementacao relacionada:
 
-- `src/segmentacao/geracao_mascaras.py`
-- `src/config.toml`
+- `src/controllers/segmentacao_controller.py`
+- `src/services/segmentacao_service.py`
+- `config.toml`
 
 Comportamento atual:
 
@@ -393,7 +418,7 @@ Motivo:
 
 Implementacao relacionada:
 
-- `src/config.toml`
+- `config.toml`
 
 Decisao:
 
@@ -427,19 +452,20 @@ Abordagem de desenvolvimento:
 Estrutura principal:
 
 ```text
+config.toml
+config.test.toml
 tests/
-  config.toml
   conftest.py
-  mock_config.py
   mock_data/
   mock_generated/
   fixtures/
   unit/
     analysis/
+    avaliacao/
     binarizacao/
     io/
     logs/
-    metrics/
+    metricas/
     models/
     runtime/
     segmentacao/
@@ -463,16 +489,10 @@ Convencoes de import:
 - use imports locais da propria suite quando necessario;
 - mantenha imports com prefixo `src.` para o codigo do projeto.
 
-Exemplo correto:
+Exemplo preferido:
 
 ```python
-from mock_config import MockDataConfig
-```
-
-Exemplo a evitar:
-
-```python
-from tests.mock_config import MockDataConfig
+from src.config import INDICE_PATH, MODELOS_PARA_AVALIACAO
 ```
 
 Dataset reduzido:
@@ -487,25 +507,28 @@ Artefatos versionados:
 
 Configuracao da suite:
 
-- fica em `tests/config.toml`;
-- `tests/mock_config.py` le o TOML e expoe caminhos resolvidos.
-
-Caminhos esperados:
-
-- `mock_data_dir`
-- `indice_path`
-- `images_dir`
-- `ground_truth_raw_dir`
+- a base fica em `config.toml`;
+- o override da suite fica em `config.test.toml`;
+- `tests/conftest.py` define `BUFALOS_ENV=test` antes dos imports de `src.config`;
+- `config.test.toml` sobrescreve apenas paths e o subconjunto de modelos usados na suite.
 
 Trecho esperado de configuracao:
 
 ```toml
 [paths]
-mock_data_dir = "mock_data"
-indice_file = "Indice.xlsx"
-images_dir = "images"
-ground_truth_raw_dir = "ground_truth_raw"
-lock_file = ".~lock.Indice.xlsx#"
+data_dir = "tests/mock_data"
+generated_dir = "tests/generated"
+images_dir = "tests/mock_data/images"
+ground_truth_raw_dir = "tests/mock_data/ground_truth_raw"
+predicted_masks_dir = "tests/generated/predicted_masks"
+predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
+ground_truth_binary_dir = "tests/generated/ground_truth_binary"
+evaluation_dir = "tests/generated/evaluation"
+indice_file = "tests/mock_data/Indice.xlsx"
+sqlite_file = "tests/generated/bufalos-testes.sqlite3"
+
+[models]
+u2netp = "cpu"
 ```
 
 Fluxo local recomendado:
@@ -650,7 +673,7 @@ Convencoes principais:
 - mantenha notebooks finos, movendo logica reutilizavel para `src/`;
 - arquivos e funcoes usam `snake_case`;
 - classes usam `PascalCase`;
-- em `src/segmentacao/logging/` e `src/binarizacao/logging/`, modulos de logging devem comecar com `logs_`;
+- em `src/logs/`, modulos de logging devem refletir claramente o dominio atendido, como `segmentacao.py`, `binarizacao.py` e `integridade.py`;
 - em `src/binarizacao/estrategias/`, abstracoes base devem usar nomes de dominio claros, como `binarizacao_base.py`.
 
 Quando uma decisao tecnica impactar o pipeline:

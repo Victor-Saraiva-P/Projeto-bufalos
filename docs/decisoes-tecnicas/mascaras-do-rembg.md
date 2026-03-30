@@ -4,8 +4,9 @@ Este documento registra a decisao tecnica sobre como as mascaras sao geradas na 
 
 ## Implementacao relacionada
 
-- `src/segmentacao/geracao_mascaras.py`
-- `src/config.toml`
+- `src/controllers/segmentacao_controller.py`
+- `src/services/segmentacao_service.py`
+- `config.toml`
 
 ## Comportamento atual no codigo
 
@@ -21,7 +22,7 @@ remove(
 
 Isso significa que a saida gerada nessa etapa e uma mascara em escala de cinza, salva em `generated/predicted_masks/<modelo>/`.
 
-O formato de arquivo configurado para essa saida e `PNG`, conforme `src/config.toml`.
+O formato de arquivo configurado para essa saida e `PNG`, conforme `config.toml`.
 
 ## Decisao adotada
 

@@ -32,10 +32,10 @@ Essa diretriz vale tanto para novas funcionalidades quanto para correcoes de bug
 Estrutura principal:
 
 ```text
+config.toml
+config.test.toml
 tests/
-  config.toml
   conftest.py
-  mock_config.py
   mock_data/
   mock_generated/
   fixtures/
@@ -44,7 +44,8 @@ tests/
     binarizacao/
     io/
     logs/
-    metrics/
+    avaliacao/
+    metricas/
     models/
     runtime/
     segmentacao/
@@ -68,8 +69,10 @@ Regra:
 
 Exemplos:
 
-- testes de `src.metrics` ficam em `tests/unit/metrics/`;
+- testes de `src.metricas` e `src.avaliacao.metricas` ficam em `tests/unit/metricas/`;
 - testes de `src.models` ficam em `tests/unit/models/`;
+- testes de `src.repositories` ficam em `tests/unit/io/` enquanto a suite nao ganhar uma pasta propria;
+- testes de `src.controllers` e `src.services` devem acompanhar essas camadas em novas subpastas quando surgirem;
 - testes de `src.binarizacao` ficam em `tests/unit/binarizacao/`;
 - testes de `src.segmentacao` ficam em `tests/unit/segmentacao/`.
 
@@ -119,16 +122,10 @@ Por isso:
 - use imports locais da propria suite quando necessario;
 - mantenha imports com prefixo `src.` para o codigo do projeto.
 
-Exemplo correto:
+Exemplo preferido:
 
 ```python
-from mock_config import MockDataConfig
-```
-
-Exemplo a evitar:
-
-```python
-from tests.mock_config import MockDataConfig
+from src.config import INDICE_PATH, MODELOS_PARA_AVALIACAO
 ```
 
 ## Dataset reduzido
@@ -148,7 +145,8 @@ tests/mock_data/
 
 Objetivos desse dataset:
 
-- testar leitura do indice Excel;
+- testar bootstrap do indice Excel para SQLite;
+- testar leitura do indice a partir do SQLite;
 - validar fluxos baseados em nomes de arquivo reais;
 - permitir testes de integracao sem depender de `data/`.
 
@@ -180,26 +178,35 @@ Objetivos desse conjunto:
 
 ## Configuracao da suite
 
-A configuracao dedicada aos testes fica em `tests/config.toml`.
+A configuracao base do projeto fica em `config.toml`.
 
-O arquivo `tests/mock_config.py` funciona como um loader fino para ler esse TOML e expor caminhos resolvidos.
+O override de teste fica em `config.test.toml`.
 
-Caminhos esperados:
+Durante a suite, `tests/conftest.py` define `BUFALOS_ENV=test` antes de qualquer import de `src.config`.
 
-- `mock_data_dir`
-- `indice_path`
-- `images_dir`
-- `ground_truth_raw_dir`
+Com isso:
 
-Estrutura da configuracao:
+- `src/config.py` continua sendo o loader oficial;
+- `config.toml` funciona como base;
+- `config.test.toml` sobrescreve apenas o que muda para a suite, principalmente paths e subconjunto de modelos.
+
+Exemplo enxuto de override:
 
 ```toml
 [paths]
-mock_data_dir = "mock_data"
-indice_file = "Indice.xlsx"
-images_dir = "images"
-ground_truth_raw_dir = "ground_truth_raw"
-lock_file = ".~lock.Indice.xlsx#"
+data_dir = "tests/mock_data"
+generated_dir = "tests/generated"
+images_dir = "tests/mock_data/images"
+ground_truth_raw_dir = "tests/mock_data/ground_truth_raw"
+predicted_masks_dir = "tests/generated/predicted_masks"
+predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
+ground_truth_binary_dir = "tests/generated/ground_truth_binary"
+evaluation_dir = "tests/generated/evaluation"
+indice_file = "tests/mock_data/Indice.xlsx"
+sqlite_file = "tests/generated/bufalos-testes.sqlite3"
+
+[models]
+u2netp = "cpu"
 ```
 
 ## Fluxo local recomendado

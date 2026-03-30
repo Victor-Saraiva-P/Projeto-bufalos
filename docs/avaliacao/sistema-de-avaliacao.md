@@ -30,6 +30,10 @@ No projeto, a etapa de avaliacao e centralizada no notebook:
 
 Arquivos relevantes:
 
+- `src/controllers/segmentacao_controller.py`: processa a etapa de geracao de mascaras e registra `Segmentacao`;
+- `src/services/segmentacao_service.py`: executa a inferencia e atualiza a entidade `Segmentacao`;
+- `src/controllers/binarizacao_controller.py`: processa a etapa de binarizacao e registra `GroundTruthBinarizada` e `Binarizacao`;
+- `src/services/binarizacao_service.py`: executa a binarizacao e atualiza as entidades ligadas a cada `Segmentacao`;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
 - `src/analysis/ranker.py`: transforma as metricas agregadas em ranking;
 - `src/visualization/metric_plots.py`: gera graficos para inspecao das metricas;
@@ -38,7 +42,7 @@ Arquivos relevantes:
 
 Saida gerada:
 
-- `generated/evaluation/metrics_cache.csv`: cache das metricas calculadas.
+- `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
 
 ## Como usar
 
@@ -137,9 +141,9 @@ Regra importante:
 
 - a soma dos pesos deve ser `1.0`.
 
-## Recalculo e cache
+## Persistencia
 
-Por padrao, a coleta usa cache para evitar recomputar tudo a cada execucao.
+Por padrao, a coleta usa o SQLite do projeto como fonte de verdade para as metricas.
 
 Para forcar recalcucao:
 
@@ -148,9 +152,17 @@ collector = MetricsCollector(force_recalculate=True)
 df_metrics = collector.collect_all_metrics()
 ```
 
-Isso atualiza o arquivo:
+Isso sobrescreve os registros de avaliacao no banco:
 
-- `generated/evaluation/metrics_cache.csv`
+- `generated/bufalos.sqlite3`
+
+Arquitetura da persistencia:
+
+- `src/models/` define as entidades persistidas (`Imagem`, `GroundTruthBinarizada`, `Segmentacao`, `Binarizacao`, `Tag`);
+- `src/repositories/` encapsula o CRUD dessas entidades;
+- `src/logs/` centraliza os logs compartilhados do pipeline;
+- `src/controllers/avaliacao_controller.py` coordena o processamento de cada imagem;
+- `src/services/avaliacao_service.py` calcula as metricas e preenche `Segmentacao` e `GroundTruthBinarizada` antes da persistencia.
 
 ## Leitura dos resultados
 

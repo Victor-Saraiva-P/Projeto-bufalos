@@ -40,6 +40,14 @@ Depois, rode os notebooks principais nesta ordem:
 2. `notebooks/02_binarizacao_mascaras.ipynb`
 3. `notebooks/03_avaliacao_das_segmentacoes.ipynb`
 
+Observacoes sobre persistencia:
+
+- o notebook 01 inicializa o SQLite em `generated/` a partir do `data/Indice.xlsx`;
+- depois disso, o pipeline usa o SQLite como fonte de verdade;
+- o Excel continua sendo usado apenas no processo de tagging.
+- os notebooks 01 e 02 executam o pipeline por meio de controllers em `src/controllers/`.
+- nessa arquitetura, controllers podem ler `src/config.py`; services recebem caminhos, modelos e estrategias ja resolvidos por parametro.
+
 Para executar a suite automatizada:
 
 ```bash
@@ -70,14 +78,19 @@ Se voce quer:
 ## Onde Encontrar Cada Coisa
 
 - `src/`: codigo principal do projeto;
-- `src/segmentacao/`: geracao de mascaras, integracoes com o `rembg` e verificacoes de integridade;
-- `src/binarizacao/`: estrategias, pipeline e logs especificos da binarizacao;
+- `src/models/`: entidades persistidas do dominio (`Imagem`, `Segmentacao`, `Binarizacao`, `Tag`, etc.);
+- `src/repositories/`: CRUD e consultas baseadas nas entidades;
+- `src/sqlite/`: infraestrutura de sessao, `Base` e configuracao do SQLite;
+- `src/controllers/` e `src/services/`: orquestracao e casos de uso da aplicacao;
+- `src/segmentacao/`: fachadas da etapa de segmentacao; a logica principal fica em `controllers/services`;
+- `src/binarizacao/`: fachadas da etapa de binarizacao; a logica principal fica em `controllers/services`;
+- `src/logs/`: logs compartilhados de segmentacao, binarizacao e integridade;
 - `src/tagging/`: anotadores manuais de curadoria;
 - `tests/`: suite automatizada, incluindo `mock_data/` para insumos reduzidos e `mock_generated/` para artefatos gerados versionados;
 - `notebooks/`: fluxo exploratorio e analitico;
 - `docs/`: documentacao organizada por tema;
-- `data/`: dados de entrada esperados pelo pipeline;
-- `generated/`: artefatos gerados durante segmentacao, binarizacao e avaliacao.
+- `data/`: dados de entrada esperados pelo pipeline; o `Indice.xlsx` permanece como insumo do tagging e bootstrap inicial;
+- `generated/`: artefatos gerados durante segmentacao, binarizacao e avaliacao, incluindo o SQLite do projeto.
 
 ## Estrutura Da Documentacao
 

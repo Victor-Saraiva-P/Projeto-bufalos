@@ -10,7 +10,7 @@ Estrutura minima na pasta `data`:
 data/
   ground_truth_raw/ # mascaras de referencia (segmentacao manual)
   images/           # imagens originais de entrada
-  Indice.xlsx       # planilha com indice das imagens
+  Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
 
 Saidas geradas pelo projeto:
@@ -20,14 +20,22 @@ generated/
   predicted_masks/         # mascaras geradas pelos modelos
   predicted_masks_binary/  # mascaras previstas apos binarizacao
   ground_truth_binary/     # mascaras manuais apos binarizacao
-  evaluation/              # caches e artefatos de avaliacao
+  evaluation/              # artefatos de avaliacao
+  bufalos.sqlite3          # fonte de verdade do pipeline
 ```
 
 Organizacao do codigo em `src/`:
 
 - `src/segmentacao/`: gera mascaras previstas e faz verificacoes de integridade;
 - `src/binarizacao/`: binariza mascaras previstas e mascaras de referencia;
-- `src/metrics/`, `src/analysis/` e `src/visualization/`: avaliam e apresentam os resultados;
+- `src/models/`: entidades persistidas do dominio e do banco SQLite;
+- `src/repositories/`: persistencia CRUD baseada nas entidades de `src/models/`;
+- `src/sqlite/`: infraestrutura de sessao, conexao e `Base` declarativa do SQLite;
+- `src/controllers/` e `src/services/`: orquestracao dos fluxos e casos de uso do projeto;
+- `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
+- `src/metricas/`: contratos compartilhados de metricas;
+- `src/avaliacao/metricas/`: metricas concretas de avaliacao de segmentacao;
+- `src/analysis/` e `src/visualization/`: agregam, ranqueiam e apresentam os resultados;
 - `src/tagging/`: concentra os anotadores manuais de curadoria.
 
 ## Configuracao do ambiente
@@ -100,6 +108,8 @@ Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
 
 O script `src/tagging/manual_tagger.py` abre uma interface grafica para revisar as imagens pendentes e preencher a coluna `tags` de `data/Indice.xlsx`.
 
+Fora o tagging, o pipeline usa o SQLite em `generated/` como fonte de verdade. O notebook 01 inicializa esse banco a partir do Excel.
+
 Comando recomendado:
 
 ```bash
@@ -160,9 +170,16 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 O fluxo de execucao do projeto esta organizado em tres notebooks:
 
-- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia;
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos e registra `Segmentacao` no SQLite;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia, registrando `Binarizacao` e `GroundTruthBinarizada`;
 - `notebooks/03_avaliacao_das_segmentacoes.ipynb`: calcula metricas e compara os modelos.
+
+Nos notebooks 01 e 02, a execucao operacional acontece por meio dos controllers em `src/controllers/`.
+
+Regra de responsabilidade:
+
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 
 Para abrir o ambiente de notebooks:
 

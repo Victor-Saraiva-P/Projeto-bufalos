@@ -4,7 +4,7 @@ Este documento registra a decisao de nao usar o modelo `u2net_cloth_seg` na conf
 
 ## Implementacao relacionada
 
-- `src/config.toml`
+- `config.toml`
 
 ## Contexto
 
@@ -18,7 +18,7 @@ Durante a avaliacao com imagens de bufalos, o comportamento observado foi incons
 
 ## Decisao adotada
 
-- nao incluir `u2net_cloth_seg` entre os modelos ativos em `src/config.toml`;
+- nao incluir `u2net_cloth_seg` entre os modelos ativos em `config.toml`;
 - manter o identificador apenas comentado, com referencia para esta documentacao.
 
 ## Motivo
