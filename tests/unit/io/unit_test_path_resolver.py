@@ -41,5 +41,17 @@ def test_caminho_mascara_avaliacao_usa_ground_truth_para_modelo_especial() -> No
         "/tmp/gt/bufalo_001.png"
     )
     assert resolver.caminho_mascara_avaliacao("u2netp", "bufalo_001") == (
-        "/tmp/pred_bin/u2netp/bufalo_001.png"
+        "/tmp/pred_bin/GaussianaOpening/u2netp/bufalo_001.png"
     )
+
+
+def test_caminho_mascara_predita_binaria_aceita_nome_binarizacao_explicitamente() -> None:
+    resolver = PathResolver.from_config().with_overrides(
+        predicted_masks_binary_dir="/tmp/pred_bin",
+    )
+
+    assert resolver.caminho_mascara_predita_binaria(
+        "u2netp",
+        "bufalo_001",
+        nome_binarizacao="MinhaBinarizacao",
+    ) == "/tmp/pred_bin/MinhaBinarizacao/u2netp/bufalo_001.png"

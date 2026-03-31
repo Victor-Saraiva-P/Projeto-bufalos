@@ -2,7 +2,7 @@ import numpy as np
 
 from src.controllers.avaliacao_controller import AvaliacaoController
 from src.io.path_resolver import PathResolver
-from src.models import GroundTruthBinarizada, Imagem, Segmentacao
+from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao
 
 
 class FakeImagemRepository:
@@ -31,30 +31,67 @@ class FakeSegmentacaoRepository:
         return segmentacao
 
 
+class FakeBinarizacaoRepository:
+    def __init__(self) -> None:
+        self.salvos: list[Binarizacao] = []
+
+    def save(self, binarizacao: Binarizacao) -> Binarizacao:
+        self.salvos.append(binarizacao)
+        return binarizacao
+
+
 class FakeAvaliacaoService:
     def __init__(self) -> None:
-        self.chamadas: list[tuple[Imagem, np.ndarray, dict[str, np.ndarray]]] = []
+        self.chamadas: list[
+            tuple[
+                Imagem,
+                np.ndarray,
+                dict[str, np.ndarray],
+                dict[str, np.ndarray],
+                str,
+            ]
+        ] = []
 
     def avaliar(
         self,
         imagem: Imagem,
         ground_truth_mask: np.ndarray,
         mascaras_modelo: dict[str, np.ndarray],
+        score_masks_modelo: dict[str, np.ndarray],
+        estrategia_binarizacao: str,
     ) -> Imagem:
-        self.chamadas.append((imagem, ground_truth_mask, mascaras_modelo))
+        self.chamadas.append(
+            (
+                imagem,
+                ground_truth_mask,
+                mascaras_modelo,
+                score_masks_modelo,
+                estrategia_binarizacao,
+            )
+        )
         imagem.ground_truth_binarizada = GroundTruthBinarizada(
             nome_arquivo=imagem.nome_arquivo,
             area=10.0,
             perimetro=20.0,
         )
-        imagem.segmentacoes = [
-            Segmentacao(
+        segmentacao = Segmentacao(
+            nome_arquivo=imagem.nome_arquivo,
+            nome_modelo="u2netp",
+            area=5.0,
+            perimetro=7.0,
+            iou=0.8,
+        )
+        segmentacao.binarizacoes.append(
+            Binarizacao(
                 nome_arquivo=imagem.nome_arquivo,
                 nome_modelo="u2netp",
-                area=5.0,
-                perimetro=7.0,
-                iou=0.8,
+                estrategia_binarizacao=estrategia_binarizacao,
+                metrica_x=0.9,
+                metrica_y=-1.0,
             )
+        )
+        imagem.segmentacoes = [
+            segmentacao
         ]
         return imagem
 
@@ -66,6 +103,7 @@ class FakePathResolver(PathResolver):
 def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> None:
     repository = FakeImagemRepository()
     ground_truth_repository = FakeGroundTruthBinarizadaRepository()
+    binarizacao_repository = FakeBinarizacaoRepository()
     segmentacao_repository = FakeSegmentacaoRepository()
     service = FakeAvaliacaoService()
     resolver = FakePathResolver(
@@ -90,29 +128,39 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     )
     monkeypatch.setattr(
         "src.controllers.avaliacao_controller.carregar_mask_array_avaliacao",
-        lambda nome_arquivo, nome_modelo, path_resolver: (
+        lambda nome_arquivo, nome_modelo, path_resolver, nome_binarizacao=None: (
             ground_truth_mask if nome_modelo == "ground_truth" else model_mask
         ),
+    )
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.carregar_score_mask_predita",
+        lambda nome_arquivo, nome_modelo, path_resolver: score_mask,
     )
     controller = AvaliacaoController(
         imagem_repository=repository,
         ground_truth_binarizada_repository=ground_truth_repository,
+        binarizacao_repository=binarizacao_repository,
         segmentacao_repository=segmentacao_repository,
         avaliacao_service=service,
     )
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     ground_truth_mask = np.zeros((2, 2), dtype=np.uint8)
     model_mask = np.ones((2, 2), dtype=np.uint8)
+    score_mask = np.full((2, 2), 127, dtype=np.float64)
 
     imagem_avaliada = controller.processar_imagem(imagem)
 
     assert imagem_avaliada.ground_truth_binarizada is not None
     assert len(ground_truth_repository.salvos) == 1
     assert len(segmentacao_repository.salvos) == 1
+    assert len(binarizacao_repository.salvos) == 1
     assert service.chamadas[0][0] is imagem
     assert np.array_equal(service.chamadas[0][1], ground_truth_mask)
     assert list(service.chamadas[0][2]) == ["u2netp"]
     assert np.array_equal(service.chamadas[0][2]["u2netp"], model_mask)
+    assert list(service.chamadas[0][3]) == ["u2netp"]
+    assert np.array_equal(service.chamadas[0][3]["u2netp"], score_mask)
+    assert service.chamadas[0][4] == "GaussianaOpening"
 
 
 def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
@@ -121,6 +169,7 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     controller = AvaliacaoController(
         imagem_repository=repository,
         ground_truth_binarizada_repository=FakeGroundTruthBinarizadaRepository(),
+        binarizacao_repository=FakeBinarizacaoRepository(),
         segmentacao_repository=FakeSegmentacaoRepository(),
         avaliacao_service=service,
     )
@@ -130,15 +179,23 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         area=10.0,
         perimetro=20.0,
     )
-    imagem_skip.segmentacoes = [
-        Segmentacao(
+    segmentacao_skip = Segmentacao(
+        nome_arquivo="ja_avaliada",
+        nome_modelo="u2netp",
+        area=5.0,
+        perimetro=7.0,
+        iou=0.8,
+    )
+    segmentacao_skip.binarizacoes.append(
+        Binarizacao(
             nome_arquivo="ja_avaliada",
             nome_modelo="u2netp",
-            area=5.0,
-            perimetro=7.0,
-            iou=0.8,
+            estrategia_binarizacao="GaussianaOpening",
+            metrica_x=0.9,
+            metrica_y=-1.0,
         )
-    ]
+    )
+    imagem_skip.segmentacoes = [segmentacao_skip]
     imagem_ok = Imagem(nome_arquivo="avaliar", fazenda="B", peso=2.0)
     repository.imagens = [imagem_skip, imagem_ok]
     processadas: list[str] = []

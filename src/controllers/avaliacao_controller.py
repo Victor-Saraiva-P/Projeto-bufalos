@@ -3,8 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterable
 import time
 
+from src.binarizacao import GaussianOpeningBinarizationStrategy
 from src.config import MODELOS_PARA_AVALIACAO
-from src.io.mask_utils import carregar_mask_array_avaliacao
+from src.io.mask_utils import (
+    carregar_mask_array_avaliacao,
+    carregar_score_mask_predita,
+)
 from src.io.path_resolver import PathResolver
 from src.logs import (
     EstatisticasAvaliacao,
@@ -14,6 +18,7 @@ from src.logs import (
 from src.models import Imagem
 from src.repositories import (
     GroundTruthBinarizadaRepository,
+    BinarizacaoRepository,
     ImagemRepository,
     SegmentacaoRepository,
 )
@@ -21,14 +26,18 @@ from src.services.avaliacao_service import AvaliacaoService
 
 
 class AvaliacaoController:
+    ESTRATEGIA_BINARIZACAO_PADRAO = GaussianOpeningBinarizationStrategy().nome_pasta
+
     def __init__(
         self,
         imagem_repository: ImagemRepository | None = None,
         ground_truth_binarizada_repository: GroundTruthBinarizadaRepository | None = None,
+        binarizacao_repository: BinarizacaoRepository | None = None,
         segmentacao_repository: SegmentacaoRepository | None = None,
         avaliacao_service: AvaliacaoService | None = None,
     ):
         self.path_resolver = PathResolver.from_config()
+        self.estrategia_binarizacao = self.ESTRATEGIA_BINARIZACAO_PADRAO
         self.imagem_repository = (
             imagem_repository
             if imagem_repository is not None
@@ -39,6 +48,11 @@ class AvaliacaoController:
             ground_truth_binarizada_repository
             if ground_truth_binarizada_repository is not None
             else GroundTruthBinarizadaRepository(sqlite_path)
+        )
+        self.binarizacao_repository = (
+            binarizacao_repository
+            if binarizacao_repository is not None
+            else BinarizacaoRepository(sqlite_path)
         )
         self.segmentacao_repository = (
             segmentacao_repository
@@ -64,6 +78,15 @@ class AvaliacaoController:
                 imagem.nome_arquivo,
                 nome_modelo,
                 path_resolver=self.path_resolver,
+                nome_binarizacao=self.estrategia_binarizacao,
+            )
+            for nome_modelo in nomes_modelo
+        }
+        score_masks_modelo = {
+            nome_modelo: carregar_score_mask_predita(
+                imagem.nome_arquivo,
+                nome_modelo,
+                path_resolver=self.path_resolver,
             )
             for nome_modelo in nomes_modelo
         }
@@ -72,15 +95,23 @@ class AvaliacaoController:
             imagem=imagem,
             ground_truth_mask=ground_truth_mask,
             mascaras_modelo=mascaras_modelo,
+            score_masks_modelo=score_masks_modelo,
+            estrategia_binarizacao=self.estrategia_binarizacao,
         )
         ground_truth = imagem_avaliada.ground_truth_binarizada
         if ground_truth is not None:
             self.ground_truth_binarizada_repository.save(ground_truth)
 
-        imagem_avaliada.segmentacoes = [
-            self.segmentacao_repository.save(segmentacao)
+        binarizacoes = [
+            binarizacao
             for segmentacao in imagem_avaliada.segmentacoes
+            for binarizacao in segmentacao.binarizacoes
+            if binarizacao.estrategia_binarizacao == self.estrategia_binarizacao
         ]
+        for segmentacao in imagem_avaliada.segmentacoes:
+            self.segmentacao_repository.save(segmentacao)
+        for binarizacao in binarizacoes:
+            self.binarizacao_repository.save(binarizacao)
         return imagem_avaliada
 
     def processar_imagens(
@@ -120,8 +151,8 @@ class AvaliacaoController:
         imprimir_resumo_avaliacao(stats)
         return stats
 
-    @staticmethod
     def _imagem_ja_avaliada(
+        self,
         imagem: Imagem,
         nomes_modelo: list[str],
     ) -> bool:
@@ -145,6 +176,19 @@ class AvaliacaoController:
                 segmentacao.area is None
                 or segmentacao.perimetro is None
                 or segmentacao.iou is None
+            ):
+                return False
+            binarizacao_atual = next(
+                (
+                    binarizacao
+                    for binarizacao in segmentacao.binarizacoes
+                    if binarizacao.estrategia_binarizacao == self.estrategia_binarizacao
+                ),
+                None,
+            )
+            if (
+                binarizacao_atual is None
+                or binarizacao_atual.auprc < 0
             ):
                 return False
 

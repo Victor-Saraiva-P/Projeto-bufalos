@@ -12,6 +12,8 @@ if TYPE_CHECKING:
 
 
 class Binarizacao(Base):
+    METRICA_NAO_CALCULADA = -1.0
+
     __tablename__ = "binarizacao"
     __table_args__ = (
         ForeignKeyConstraint(
@@ -44,6 +46,14 @@ class Binarizacao(Base):
         "Segmentacao",
         back_populates="binarizacoes",
     )
+
+    @property
+    def auprc(self) -> float:
+        return float(self.metrica_x)
+
+    @auprc.setter
+    def auprc(self, value: float) -> None:
+        self.metrica_x = value
 
     def __repr__(self) -> str:
         return (

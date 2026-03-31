@@ -45,3 +45,10 @@ def test_gaussian_opening_strategy_remove_ruido_com_opening() -> None:
     result = strategy.binarizar(image)
 
     assert np.count_nonzero(np.array(result)) == 0
+
+
+def test_gaussian_opening_strategy_expoe_nome_e_nome_pasta() -> None:
+    strategy = GaussianOpeningBinarizationStrategy()
+
+    assert strategy.nome == "GaussianaOpening"
+    assert strategy.nome_pasta == "GaussianaOpening"

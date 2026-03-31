@@ -56,6 +56,7 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
 ) -> None:
     entrada_modelos = Path("tests/mock_generated/predicted_masks_raw")
     saida_modelos = tmp_path / "predicted_masks_binary"
+    strategy = GaussianOpeningBinarizationStrategy()
     nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
@@ -81,12 +82,12 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     linhas = ImagemRepository(resolver.sqlite_path).list()
 
     resumos = BinarizacaoController().processar_segmentacoes(
-        GaussianOpeningBinarizationStrategy(),
+        strategy,
         imagens=linhas,
     )
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
-    saidas_geradas = sorted((saida_modelos / nome_modelo).glob("*.png"))
+    saidas_geradas = sorted((saida_modelos / strategy.nome_pasta / nome_modelo).glob("*.png"))
     stats = resumos[nome_modelo]
 
     assert stats.total == len(linhas)

@@ -99,9 +99,13 @@ def plot_image_grid(
             ]
 
             try:
+                nome_binarizacao = None
+                if not model_data.empty and "estrategia_binarizacao" in model_data.columns:
+                    nome_binarizacao = str(model_data.iloc[0]["estrategia_binarizacao"])
                 seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
                     modelo,
                     nome_arquivo,
+                    nome_binarizacao=nome_binarizacao,
                 )
                 seg_img = Image.open(seg_path).convert("L")
                 axes[row_idx, col_idx].imshow(seg_img, cmap="gray")
@@ -114,6 +118,8 @@ def plot_image_grid(
                     def format_metric(name, value):
                         if name == "iou":
                             return f"IoU: {value:.3f}"
+                        elif name == "auprc":
+                            return f"AUPRC: {value:.3f}"
                         elif name == "area_similarity":
                             return f"Área: {value * 100:.1f}%"
                         elif name == "perimetro_similarity":
@@ -122,8 +128,8 @@ def plot_image_grid(
 
                     # Montar string com métrica principal primeiro
                     metrics_order = [metric_name]
-                    for m in ["iou", "area_similarity", "perimetro_similarity"]:
-                        if m != metric_name:
+                    for m in ["iou", "auprc", "area_similarity", "perimetro_similarity"]:
+                        if m != metric_name and m in row_data.index:
                             metrics_order.append(m)
 
                     metric_lines = [
@@ -218,9 +224,15 @@ def plot_single_image_comparison(
         ax = fig.add_subplot(gs[row_pos, col_pos])
 
         try:
+            nome_binarizacao = (
+                str(row["estrategia_binarizacao"])
+                if "estrategia_binarizacao" in row.index
+                else None
+            )
             seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
                 str(row["modelo"]),
                 nome_arquivo,
+                nome_binarizacao=nome_binarizacao,
             )
             seg_img = Image.open(seg_path).convert("L")
             ax.imshow(seg_img, cmap="gray")

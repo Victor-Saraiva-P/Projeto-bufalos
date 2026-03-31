@@ -110,6 +110,7 @@ class BinarizacaoController:
                     caminho_saida=self.path_resolver.caminho_mascara_predita_binaria(
                         nome_modelo,
                         imagem.nome_arquivo,
+                        nome_binarizacao=strategy.nome_pasta,
                     ),
                     strategy=strategy,
                 )

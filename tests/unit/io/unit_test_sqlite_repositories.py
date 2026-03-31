@@ -106,7 +106,7 @@ def test_binarizacao_repository_save_persiste_binarizacao_relacionada(tmp_path) 
         Binarizacao(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
-            estrategia_binarizacao="GaussianOpeningBinarizationStrategy",
+            estrategia_binarizacao="GaussianaOpening",
             metrica_x=1.0,
             metrica_y=2.0,
         )
@@ -116,15 +116,14 @@ def test_binarizacao_repository_save_persiste_binarizacao_relacionada(tmp_path) 
 
     assert segmentacao is not None
     assert len(segmentacao.binarizacoes) == 1
-    assert segmentacao.binarizacoes[0].estrategia_binarizacao == (
-        "GaussianOpeningBinarizationStrategy"
-    )
+    assert segmentacao.binarizacoes[0].estrategia_binarizacao == "GaussianaOpening"
     assert segmentacao.binarizacoes[0].metrica_x == 1.0
+    assert segmentacao.binarizacoes[0].auprc == 1.0
     assert (
         binarizacao_repository.get(
             "1166_Calcula_506",
             "u2netp",
-            "GaussianOpeningBinarizationStrategy",
+            "GaussianaOpening",
         )
         is not None
     )
@@ -173,7 +172,7 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
         Binarizacao(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
-            estrategia_binarizacao="GaussianOpeningBinarizationStrategy",
+            estrategia_binarizacao="GaussianaOpening",
             metrica_x=1.0,
             metrica_y=2.0,
         )
@@ -184,9 +183,10 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
     assert imagem_persistida is not None
     assert [registro.nome_modelo for registro in imagem_persistida.segmentacoes] == ["u2netp"]
     assert imagem_persistida.segmentacoes[0].binarizacoes[0].estrategia_binarizacao == (
-        "GaussianOpeningBinarizationStrategy"
+        "GaussianaOpening"
     )
     assert imagem_persistida.segmentacoes[0].binarizacoes[0].metrica_x == 1.0
+    assert imagem_persistida.segmentacoes[0].binarizacoes[0].auprc == 1.0
 
 
 def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:

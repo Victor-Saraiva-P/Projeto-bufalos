@@ -73,10 +73,13 @@ class MetricsCollector:
         imagem_avaliada = self.avaliacao_controller.processar_imagem(imagem)
 
         for segmentacao in imagem_avaliada.segmentacoes:
+            binarizacao = self._selecionar_binarizacao(segmentacao)
             if (
                 segmentacao.area is None
                 or segmentacao.perimetro is None
                 or segmentacao.iou is None
+                or binarizacao is None
+                or binarizacao.auprc < 0
             ):
                 modelos_com_erro.add(segmentacao.nome_modelo)
 
@@ -98,8 +101,15 @@ class MetricsCollector:
                 area = segmentacao.area
                 perimetro = segmentacao.perimetro
                 iou = segmentacao.iou
+                binarizacao = MetricsCollector._selecionar_binarizacao(segmentacao)
 
-                if area is None or perimetro is None or iou is None:
+                if (
+                    area is None
+                    or perimetro is None
+                    or iou is None
+                    or binarizacao is None
+                    or binarizacao.auprc < 0
+                ):
                     continue
 
                 area_diff_abs = abs(area - area_gt)
@@ -115,9 +125,11 @@ class MetricsCollector:
                     {
                         "nome_arquivo": imagem.nome_arquivo,
                         "modelo": segmentacao.nome_modelo,
+                        "estrategia_binarizacao": binarizacao.estrategia_binarizacao,
                         "area": area,
                         "perimetro": perimetro,
                         "iou": iou,
+                        "auprc": binarizacao.auprc,
                         "area_gt": area_gt,
                         "perimetro_gt": perimetro_gt,
                         "area_diff_abs": area_diff_abs,
@@ -128,3 +140,17 @@ class MetricsCollector:
                 )
 
         return pd.DataFrame(registros)
+
+    @staticmethod
+    def _selecionar_binarizacao(segmentacao):
+        return next(
+            (
+                binarizacao
+                for binarizacao in segmentacao.binarizacoes
+                if (
+                    binarizacao.estrategia_binarizacao
+                    == AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO
+                )
+            ),
+            None,
+        )

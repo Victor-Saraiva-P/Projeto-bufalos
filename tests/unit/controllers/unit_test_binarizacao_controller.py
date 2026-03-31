@@ -84,7 +84,11 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
 ) -> None:
     imagens = [Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)]
     repository = FakeImagemRepository(imagens)
-    service = FakeBinarizacaoService(resultados={"/pred/bin/u2netp/bufalo_001.png": "ok"})
+    service = FakeBinarizacaoService(
+        resultados={
+            "/pred/bin/GaussianaOpening/u2netp/bufalo_001.png": "ok"
+        }
+    )
     resolver = FakePathResolver(
         data_dir="/data",
         generated_dir="/generated",

@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
+from src.binarizacao import AUPRC
+from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao
 from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro
-from src.models import GroundTruthBinarizada, Imagem, Segmentacao
 
 
 class AvaliacaoService:
@@ -12,6 +13,8 @@ class AvaliacaoService:
         imagem: Imagem,
         ground_truth_mask: np.ndarray,
         mascaras_modelo: dict[str, np.ndarray],
+        score_masks_modelo: dict[str, np.ndarray],
+        estrategia_binarizacao: str,
     ) -> Imagem:
         area_ground_truth = Area(
             nome_arquivo=imagem.nome_arquivo,
@@ -40,6 +43,8 @@ class AvaliacaoService:
                 nome_modelo,
                 ground_truth_mask,
                 mask_modelo,
+                score_masks_modelo[nome_modelo],
+                estrategia_binarizacao,
                 segmentacoes.get(nome_modelo),
             )
 
@@ -55,6 +60,8 @@ class AvaliacaoService:
         nome_modelo: str,
         ground_truth_mask: np.ndarray,
         mask_modelo: np.ndarray,
+        score_mask_modelo: np.ndarray,
+        estrategia_binarizacao: str,
         segmentacao: Segmentacao | None = None,
     ) -> Segmentacao:
         area = Area(
@@ -73,6 +80,12 @@ class AvaliacaoService:
             mask_ground_truth=ground_truth_mask,
             modelo=nome_modelo,
         ).calcular()
+        auprc = AUPRC(
+            nome_arquivo=nome_arquivo,
+            score_mask=score_mask_modelo,
+            ground_truth_mask=ground_truth_mask,
+            modelo=nome_modelo,
+        ).calcular()
 
         registro = segmentacao or Segmentacao(
             nome_arquivo=nome_arquivo,
@@ -81,4 +94,34 @@ class AvaliacaoService:
         registro.area = float(area)
         registro.perimetro = float(perimetro)
         registro.iou = float(iou)
+        self._atualizar_binarizacao(
+            registro=registro,
+            estrategia_binarizacao=estrategia_binarizacao,
+            auprc=float(auprc),
+        )
         return registro
+
+    @staticmethod
+    def _atualizar_binarizacao(
+        registro: Segmentacao,
+        estrategia_binarizacao: str,
+        auprc: float,
+    ) -> None:
+        binarizacoes = {
+            binarizacao.estrategia_binarizacao: binarizacao
+            for binarizacao in registro.binarizacoes
+        }
+        binarizacao = binarizacoes.get(estrategia_binarizacao)
+        if binarizacao is None:
+            binarizacao = Binarizacao(
+                nome_arquivo=registro.nome_arquivo,
+                nome_modelo=registro.nome_modelo,
+                estrategia_binarizacao=estrategia_binarizacao,
+                metrica_x=auprc,
+                metrica_y=Binarizacao.METRICA_NAO_CALCULADA,
+            )
+            registro.binarizacoes.append(binarizacao)
+            return
+
+        binarizacao.auprc = auprc
+        binarizacao.metrica_y = Binarizacao.METRICA_NAO_CALCULADA

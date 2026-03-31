@@ -196,10 +196,11 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
 
     resolver, modelos, linhas = _executar_fluxo_notebook_02()
     nome_modelo = next(iter(modelos))
+    strategy = GaussianOpeningBinarizationStrategy()
 
     saidas_ground_truth = sorted(Path(resolver.ground_truth_binary_dir).glob("*.png"))
     saidas_modelo = sorted(
-        (Path(resolver.predicted_masks_binary_dir) / nome_modelo).glob("*.png")
+        (Path(resolver.predicted_masks_binary_dir) / strategy.nome_pasta / nome_modelo).glob("*.png")
     )
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
@@ -248,7 +249,19 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for imagem in imagens
     )
     assert all(
-        segmentacao.area > 0 and segmentacao.perimetro > 0 and 0.0 <= segmentacao.iou <= 1.0
+        segmentacao.area > 0
+        and segmentacao.perimetro > 0
+        and 0.0 <= segmentacao.iou <= 1.0
+        for imagem in imagens
+        for segmentacao in imagem.segmentacoes
+    )
+    assert all(
+        any(
+            binarizacao.estrategia_binarizacao
+            == AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO
+            and 0.0 <= binarizacao.auprc <= 1.0
+            for binarizacao in segmentacao.binarizacoes
+        )
         for imagem in imagens
         for segmentacao in imagem.segmentacoes
     )

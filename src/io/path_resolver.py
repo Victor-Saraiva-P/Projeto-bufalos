@@ -3,7 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import os
 
+from src.binarizacao.estrategias.gaussiana import GaussianOpeningBinarizationStrategy
 from src.config import IMAGES_TYPE, REMBG_IMAGE_TYPE
+
+_NOME_PASTA_BINARIZACAO_PADRAO = GaussianOpeningBinarizationStrategy().nome_pasta
 
 
 @dataclass(frozen=True)
@@ -73,15 +76,31 @@ class PathResolver:
         self,
         nome_modelo: str,
         nome_arquivo: str,
+        nome_binarizacao: str | None = None,
     ) -> str:
+        nome_pasta_binarizacao = (
+            nome_binarizacao
+            if nome_binarizacao is not None
+            else _NOME_PASTA_BINARIZACAO_PADRAO
+        )
         return os.path.join(
             self.predicted_masks_binary_dir,
+            nome_pasta_binarizacao,
             nome_modelo,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )
 
-    def caminho_mascara_avaliacao(self, nome_modelo: str, nome_arquivo: str) -> str:
+    def caminho_mascara_avaliacao(
+        self,
+        nome_modelo: str,
+        nome_arquivo: str,
+        nome_binarizacao: str | None = None,
+    ) -> str:
         if nome_modelo == "ground_truth":
             return self.caminho_ground_truth_binaria(nome_arquivo)
 
-        return self.caminho_mascara_predita_binaria(nome_modelo, nome_arquivo)
+        return self.caminho_mascara_predita_binaria(
+            nome_modelo,
+            nome_arquivo,
+            nome_binarizacao=nome_binarizacao,
+        )
