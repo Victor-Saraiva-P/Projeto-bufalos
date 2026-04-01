@@ -44,13 +44,18 @@ Criterios praticos:
 
 ### `multi_bufalos`
 
-Use quando houver mais de um bufalo visivel na cena.
+Use quando houver mais de um bufalo no primeiro plano da cena.
 
 Sinais tipicos:
 
-- outro animal compete com o sujeito principal;
-- a cena pode confundir a segmentacao;
-- a presenca de outros animais dificulta a leitura do porte corporal.
+- mais de um bufalo aparece como objeto de interesse da segmentacao;
+- ha multiplos corpos relevantes no primeiro plano, e nao apenas um sujeito principal com outros animais ao fundo;
+- a presenca de mais de uma instancia pode confundir a separacao entre sujeito e fundo ou a atribuicao do contorno principal.
+
+Regra pratica:
+
+- nao use `multi_bufalos` apenas porque existe outro bufalo pequeno, distante ou claramente no fundo;
+- use `multi_bufalos` quando a composicao sugere multiplos sujeitos relevantes no primeiro plano.
 
 ### `cortado`
 
