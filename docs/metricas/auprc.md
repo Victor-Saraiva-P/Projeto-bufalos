@@ -30,7 +30,7 @@ A AUPRC é apropriada para avaliação de segmentação quando:
 
 ## Implementação no projeto
 
-O cálculo foi implementado em `src/binarizacao/metricas/auprc.py` e segue o
-mesmo padrão de interface abstrata usado nas demais métricas do projeto, mas
-adaptado ao contexto de binarização: entrada com `score_mask` contínuo e
-`ground_truth_mask` binário.
+O cálculo foi implementado em `src/metricas/segmentacao_bruta/auprc.py` e
+segue o mesmo padrão de interface abstrata usado nas demais métricas do
+projeto. Ela fica no grupo de métricas para segmentação bruta:
+entrada com `score_mask` contínuo e `ground_truth_mask` binário.

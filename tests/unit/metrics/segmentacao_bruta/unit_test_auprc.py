@@ -3,7 +3,7 @@ import math
 import numpy as np
 import pytest
 
-from src.binarizacao import AUPRC
+from src.metricas import AUPRC
 
 
 def test_auprc_retorna_1_quando_separacao_e_perfeita() -> None:

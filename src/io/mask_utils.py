@@ -22,7 +22,7 @@ def carregar_mask_array_avaliacao(
     nome_binarizacao: str | None = None,
 ) -> np.ndarray:
     resolver = path_resolver or PathResolver.from_config()
-    image_path = resolver.caminho_mascara_avaliacao(
+    image_path = resolver.caminho_segmentacao_avaliacao(
         modelo,
         nome_arquivo,
         nome_binarizacao=nome_binarizacao,
@@ -36,5 +36,5 @@ def carregar_score_mask_predita(
     path_resolver: PathResolver | None = None,
 ) -> np.ndarray:
     resolver = path_resolver or PathResolver.from_config()
-    image_path = resolver.caminho_mascara_predita(modelo, nome_arquivo)
+    image_path = resolver.caminho_segmentacao_bruta(modelo, nome_arquivo)
     return carregar_mascara_cinza(image_path)

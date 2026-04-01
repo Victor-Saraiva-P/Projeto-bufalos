@@ -2,8 +2,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from src.binarizacao import AUPRC
-from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao
+from src.models import (
+    GroundTruthBinarizada,
+    Imagem,
+    SegmentacaoBinarizada,
+    SegmentacaoBruta,
+)
+from src.metricas import AUPRC
 from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro
 
 
@@ -33,23 +38,23 @@ class AvaliacaoService:
             perimetro=float(perimetro_ground_truth),
         )
 
-        segmentacoes = {
+        segmentacoes_brutas = {
             segmentacao.nome_modelo: segmentacao
-            for segmentacao in imagem.segmentacoes
+            for segmentacao in imagem.segmentacoes_brutas
         }
         for nome_modelo, mask_modelo in mascaras_modelo.items():
-            segmentacoes[nome_modelo] = self._avaliar_modelo(
+            segmentacoes_brutas[nome_modelo] = self._avaliar_modelo(
                 imagem.nome_arquivo,
                 nome_modelo,
                 ground_truth_mask,
                 mask_modelo,
                 score_masks_modelo[nome_modelo],
                 estrategia_binarizacao,
-                segmentacoes.get(nome_modelo),
+                segmentacoes_brutas.get(nome_modelo),
             )
 
-        imagem.segmentacoes = sorted(
-            segmentacoes.values(),
+        imagem.segmentacoes_brutas = sorted(
+            segmentacoes_brutas.values(),
             key=lambda segmentacao: segmentacao.nome_modelo,
         )
         return imagem
@@ -62,8 +67,8 @@ class AvaliacaoService:
         mask_modelo: np.ndarray,
         score_mask_modelo: np.ndarray,
         estrategia_binarizacao: str,
-        segmentacao: Segmentacao | None = None,
-    ) -> Segmentacao:
+        segmentacao_bruta: SegmentacaoBruta | None = None,
+    ) -> SegmentacaoBruta:
         area = Area(
             nome_arquivo=nome_arquivo,
             mask_array=mask_modelo,
@@ -87,41 +92,46 @@ class AvaliacaoService:
             modelo=nome_modelo,
         ).calcular()
 
-        registro = segmentacao or Segmentacao(
+        registro = segmentacao_bruta or SegmentacaoBruta(
             nome_arquivo=nome_arquivo,
             nome_modelo=nome_modelo,
+            auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
         )
-        registro.area = float(area)
-        registro.perimetro = float(perimetro)
-        registro.iou = float(iou)
-        self._atualizar_binarizacao(
+        registro.auprc = float(auprc)
+        self._atualizar_segmentacao_binarizada(
             registro=registro,
             estrategia_binarizacao=estrategia_binarizacao,
-            auprc=float(auprc),
+            area=float(area),
+            perimetro=float(perimetro),
+            iou=float(iou),
         )
         return registro
 
     @staticmethod
-    def _atualizar_binarizacao(
-        registro: Segmentacao,
+    def _atualizar_segmentacao_binarizada(
+        registro: SegmentacaoBruta,
         estrategia_binarizacao: str,
-        auprc: float,
+        area: float,
+        perimetro: float,
+        iou: float,
     ) -> None:
-        binarizacoes = {
-            binarizacao.estrategia_binarizacao: binarizacao
-            for binarizacao in registro.binarizacoes
+        segmentacoes_binarizadas = {
+            segmentacao_binarizada.estrategia_binarizacao: segmentacao_binarizada
+            for segmentacao_binarizada in registro.segmentacoes_binarizadas
         }
-        binarizacao = binarizacoes.get(estrategia_binarizacao)
-        if binarizacao is None:
-            binarizacao = Binarizacao(
+        segmentacao_binarizada = segmentacoes_binarizadas.get(estrategia_binarizacao)
+        if segmentacao_binarizada is None:
+            segmentacao_binarizada = SegmentacaoBinarizada(
                 nome_arquivo=registro.nome_arquivo,
                 nome_modelo=registro.nome_modelo,
                 estrategia_binarizacao=estrategia_binarizacao,
-                metrica_x=auprc,
-                metrica_y=Binarizacao.METRICA_NAO_CALCULADA,
+                area=area,
+                perimetro=perimetro,
+                iou=iou,
             )
-            registro.binarizacoes.append(binarizacao)
+            registro.segmentacoes_binarizadas.append(segmentacao_binarizada)
             return
 
-        binarizacao.auprc = auprc
-        binarizacao.metrica_y = Binarizacao.METRICA_NAO_CALCULADA
+        segmentacao_binarizada.area = area
+        segmentacao_binarizada.perimetro = perimetro
+        segmentacao_binarizada.iou = iou

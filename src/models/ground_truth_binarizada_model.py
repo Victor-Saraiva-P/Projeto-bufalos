@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class GroundTruthBinarizada(Base):
-    __tablename__ = "ground_of_truth_binarizada"
+    __tablename__ = "ground_truth_binarizada"
 
     nome_arquivo: Mapped[str] = mapped_column(
         String,

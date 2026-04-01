@@ -11,7 +11,7 @@ import pandas as pd
 from tqdm.auto import tqdm
 
 from src.controllers.avaliacao_controller import AvaliacaoController
-from src.models import Imagem
+from src.models import Imagem, SegmentacaoBruta
 from src.repositories import ImagemRepository
 
 
@@ -72,16 +72,16 @@ class MetricsCollector:
     def _calculate_metrics_for_image(self, imagem: Imagem, modelos_com_erro: set) -> None:
         imagem_avaliada = self.avaliacao_controller.processar_imagem(imagem)
 
-        for segmentacao in imagem_avaliada.segmentacoes:
-            binarizacao = self._selecionar_binarizacao(segmentacao)
+        for segmentacao_bruta in imagem_avaliada.segmentacoes_brutas:
+            segmentacao_binarizada = self._selecionar_segmentacao_binarizada(segmentacao_bruta)
             if (
-                segmentacao.area is None
-                or segmentacao.perimetro is None
-                or segmentacao.iou is None
-                or binarizacao is None
-                or binarizacao.auprc < 0
+                segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
+                or segmentacao_binarizada is None
+                or segmentacao_binarizada.area is None
+                or segmentacao_binarizada.perimetro is None
+                or segmentacao_binarizada.iou is None
             ):
-                modelos_com_erro.add(segmentacao.nome_modelo)
+                modelos_com_erro.add(segmentacao_bruta.nome_modelo)
 
     @staticmethod
     def _build_metrics_dataframe(imagens: list[Imagem]) -> pd.DataFrame:
@@ -97,20 +97,23 @@ class MetricsCollector:
             if area_gt is None or perimetro_gt is None:
                 continue
 
-            for segmentacao in imagem.segmentacoes:
-                area = segmentacao.area
-                perimetro = segmentacao.perimetro
-                iou = segmentacao.iou
-                binarizacao = MetricsCollector._selecionar_binarizacao(segmentacao)
+            for segmentacao_bruta in imagem.segmentacoes_brutas:
+                segmentacao_binarizada = MetricsCollector._selecionar_segmentacao_binarizada(
+                    segmentacao_bruta
+                )
 
                 if (
-                    area is None
-                    or perimetro is None
-                    or iou is None
-                    or binarizacao is None
-                    or binarizacao.auprc < 0
+                    segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
+                    or segmentacao_binarizada is None
+                    or segmentacao_binarizada.area is None
+                    or segmentacao_binarizada.perimetro is None
+                    or segmentacao_binarizada.iou is None
                 ):
                     continue
+
+                area = segmentacao_binarizada.area
+                perimetro = segmentacao_binarizada.perimetro
+                iou = segmentacao_binarizada.iou
 
                 area_diff_abs = abs(area - area_gt)
                 perimetro_diff_abs = abs(perimetro - perimetro_gt)
@@ -124,12 +127,12 @@ class MetricsCollector:
                 registros.append(
                     {
                         "nome_arquivo": imagem.nome_arquivo,
-                        "modelo": segmentacao.nome_modelo,
-                        "estrategia_binarizacao": binarizacao.estrategia_binarizacao,
+                        "modelo": segmentacao_bruta.nome_modelo,
+                        "estrategia_binarizacao": segmentacao_binarizada.estrategia_binarizacao,
                         "area": area,
                         "perimetro": perimetro,
                         "iou": iou,
-                        "auprc": binarizacao.auprc,
+                        "auprc": segmentacao_bruta.auprc,
                         "area_gt": area_gt,
                         "perimetro_gt": perimetro_gt,
                         "area_diff_abs": area_diff_abs,
@@ -142,13 +145,13 @@ class MetricsCollector:
         return pd.DataFrame(registros)
 
     @staticmethod
-    def _selecionar_binarizacao(segmentacao):
+    def _selecionar_segmentacao_binarizada(segmentacao_bruta):
         return next(
             (
-                binarizacao
-                for binarizacao in segmentacao.binarizacoes
+                segmentacao_binarizada
+                for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
                 if (
-                    binarizacao.estrategia_binarizacao
+                    segmentacao_binarizada.estrategia_binarizacao
                     == AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO
                 )
             ),

@@ -13,10 +13,10 @@ def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    saida_ground_truth = tmp_path / "ground_truth_binary"
+    saida_ground_truth = tmp_path / "ground_truth_binarizada"
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
-        ground_truth_binary_dir=str(saida_ground_truth),
+        ground_truth_binarizada_dir=str(saida_ground_truth),
         sqlite_path=sqlite_path,
     )
 
@@ -54,14 +54,14 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    entrada_modelos = Path("tests/mock_generated/predicted_masks_raw")
-    saida_modelos = tmp_path / "predicted_masks_binary"
+    entrada_modelos = Path("tests/mock_generated/segmentacoes_brutas")
+    saida_modelos = tmp_path / "segmentacoes_binarizadas"
     strategy = GaussianOpeningBinarizationStrategy()
     nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
-        predicted_masks_raw_dir=str(entrada_modelos),
-        predicted_masks_binary_dir=str(saida_modelos),
+        segmentacoes_brutas_dir=str(entrada_modelos),
+        segmentacoes_binarizadas_dir=str(saida_modelos),
         sqlite_path=sqlite_path,
     )
 
@@ -97,4 +97,4 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     assert stats.erro == 0
     assert len(saidas_geradas) == len(linhas)
     assert imagem_persistida is not None
-    assert imagem_persistida.segmentacoes == []
+    assert imagem_persistida.segmentacoes_brutas == []

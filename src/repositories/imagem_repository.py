@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from src.config import SQLITE_PATH
 from src.models import (
     Imagem,
-    Segmentacao,
+    SegmentacaoBruta,
     Tag,
 )
 from src.sqlite import (
@@ -56,8 +56,8 @@ class ImagemRepository:
                 .options(
                     selectinload(Imagem.tags),
                     selectinload(Imagem.ground_truth_binarizada),
-                    selectinload(Imagem.segmentacoes).selectinload(
-                        Segmentacao.binarizacoes
+                    selectinload(Imagem.segmentacoes_brutas).selectinload(
+                        SegmentacaoBruta.segmentacoes_binarizadas
                     ),
                 )
                 .where(Imagem.nome_arquivo == nome_arquivo)
@@ -72,8 +72,8 @@ class ImagemRepository:
                     .options(
                         selectinload(Imagem.tags),
                         selectinload(Imagem.ground_truth_binarizada),
-                        selectinload(Imagem.segmentacoes).selectinload(
-                            Segmentacao.binarizacoes
+                        selectinload(Imagem.segmentacoes_brutas).selectinload(
+                            SegmentacaoBruta.segmentacoes_binarizadas
                         ),
                     )
                     .order_by(Imagem.nome_arquivo)

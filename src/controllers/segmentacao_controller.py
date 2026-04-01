@@ -66,10 +66,10 @@ class SegmentacaoController:
                     original_path=self.path_resolver.caminho_foto_original(
                         imagem.nome_arquivo
                     ),
-                    mascara_path=self.path_resolver.caminho_ground_truth(
+                    mascara_path=self.path_resolver.caminho_ground_truth_bruta(
                         imagem.nome_arquivo
                     ),
-                    output_path=self.path_resolver.caminho_mascara_predita(
+                    output_path=self.path_resolver.caminho_segmentacao_bruta(
                         nome_modelo,
                         imagem.nome_arquivo,
                     ),

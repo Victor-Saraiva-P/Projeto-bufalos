@@ -68,10 +68,10 @@ def test_processar_imagens_nao_persiste_segmentacoes_parciais(
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt",
-        predicted_masks_raw_dir="/pred",
-        predicted_masks_binary_dir="/pred_bin",
-        ground_truth_binary_dir="/gt_bin",
+        ground_truth_brutos_dir="/gt",
+        segmentacoes_brutas_dir="/pred",
+        segmentacoes_binarizadas_dir="/pred_bin",
+        ground_truth_binarizada_dir="/gt_bin",
         evaluation_dir="/eval",
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -100,9 +100,9 @@ def test_processar_imagens_nao_persiste_segmentacoes_parciais(
     assert resumos["u2net"].skip == 1
     assert resumos["u2net"].erro == 1
     assert service.sessoes == [("u2net", ["CPUExecutionProvider"])]
-    assert imagens[0].segmentacoes == []
-    assert imagens[1].segmentacoes == []
-    assert imagens[2].segmentacoes == []
+    assert imagens[0].segmentacoes_brutas == []
+    assert imagens[1].segmentacoes_brutas == []
+    assert imagens[2].segmentacoes_brutas == []
 
 
 def test_processar_imagens_busca_imagens_no_repositorio_quando_nao_recebe_lista(
@@ -117,10 +117,10 @@ def test_processar_imagens_busca_imagens_no_repositorio_quando_nao_recebe_lista(
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt",
-        predicted_masks_raw_dir="/pred",
-        predicted_masks_binary_dir="/pred_bin",
-        ground_truth_binary_dir="/gt_bin",
+        ground_truth_brutos_dir="/gt",
+        segmentacoes_brutas_dir="/pred",
+        segmentacoes_binarizadas_dir="/pred_bin",
+        ground_truth_binarizada_dir="/gt_bin",
         evaluation_dir="/eval",
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",

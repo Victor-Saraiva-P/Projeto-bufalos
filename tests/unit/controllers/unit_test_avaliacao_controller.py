@@ -2,7 +2,12 @@ import numpy as np
 
 from src.controllers.avaliacao_controller import AvaliacaoController
 from src.io.path_resolver import PathResolver
-from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao
+from src.models import (
+    GroundTruthBinarizada,
+    Imagem,
+    SegmentacaoBinarizada,
+    SegmentacaoBruta,
+)
 
 
 class FakeImagemRepository:
@@ -24,18 +29,21 @@ class FakeGroundTruthBinarizadaRepository:
 
 class FakeSegmentacaoRepository:
     def __init__(self) -> None:
-        self.salvos: list[Segmentacao] = []
+        self.salvos: list[SegmentacaoBruta] = []
 
-    def save(self, segmentacao: Segmentacao) -> Segmentacao:
+    def save(self, segmentacao: SegmentacaoBruta) -> SegmentacaoBruta:
         self.salvos.append(segmentacao)
         return segmentacao
 
 
 class FakeBinarizacaoRepository:
     def __init__(self) -> None:
-        self.salvos: list[Binarizacao] = []
+        self.salvos: list[SegmentacaoBinarizada] = []
 
-    def save(self, binarizacao: Binarizacao) -> Binarizacao:
+    def save(
+        self,
+        binarizacao: SegmentacaoBinarizada,
+    ) -> SegmentacaoBinarizada:
         self.salvos.append(binarizacao)
         return binarizacao
 
@@ -74,23 +82,22 @@ class FakeAvaliacaoService:
             area=10.0,
             perimetro=20.0,
         )
-        segmentacao = Segmentacao(
+        segmentacao = SegmentacaoBruta(
             nome_arquivo=imagem.nome_arquivo,
             nome_modelo="u2netp",
-            area=5.0,
-            perimetro=7.0,
-            iou=0.8,
+            auprc=0.9,
         )
-        segmentacao.binarizacoes.append(
-            Binarizacao(
+        segmentacao.segmentacoes_binarizadas.append(
+            SegmentacaoBinarizada(
                 nome_arquivo=imagem.nome_arquivo,
                 nome_modelo="u2netp",
                 estrategia_binarizacao=estrategia_binarizacao,
-                metrica_x=0.9,
-                metrica_y=-1.0,
+                area=5.0,
+                perimetro=7.0,
+                iou=0.8,
             )
         )
-        imagem.segmentacoes = [
+        imagem.segmentacoes_brutas = [
             segmentacao
         ]
         return imagem
@@ -110,10 +117,10 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt/raw",
-        predicted_masks_raw_dir="/pred/raw",
-        predicted_masks_binary_dir="/pred/bin",
-        ground_truth_binary_dir="/gt/bin",
+        ground_truth_brutos_dir="/gt/raw",
+        segmentacoes_brutas_dir="/pred/raw",
+        segmentacoes_binarizadas_dir="/pred/bin",
+        ground_truth_binarizada_dir="/gt/bin",
         evaluation_dir="/eval",
         indice_path="/tmp/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -139,8 +146,8 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     controller = AvaliacaoController(
         imagem_repository=repository,
         ground_truth_binarizada_repository=ground_truth_repository,
-        binarizacao_repository=binarizacao_repository,
-        segmentacao_repository=segmentacao_repository,
+        segmentacao_binarizada_repository=binarizacao_repository,
+        segmentacao_bruta_repository=segmentacao_repository,
         avaliacao_service=service,
     )
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
@@ -169,8 +176,8 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     controller = AvaliacaoController(
         imagem_repository=repository,
         ground_truth_binarizada_repository=FakeGroundTruthBinarizadaRepository(),
-        binarizacao_repository=FakeBinarizacaoRepository(),
-        segmentacao_repository=FakeSegmentacaoRepository(),
+        segmentacao_binarizada_repository=FakeBinarizacaoRepository(),
+        segmentacao_bruta_repository=FakeSegmentacaoRepository(),
         avaliacao_service=service,
     )
     imagem_skip = Imagem(nome_arquivo="ja_avaliada", fazenda="A", peso=1.0)
@@ -179,23 +186,22 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         area=10.0,
         perimetro=20.0,
     )
-    segmentacao_skip = Segmentacao(
+    segmentacao_skip = SegmentacaoBruta(
         nome_arquivo="ja_avaliada",
         nome_modelo="u2netp",
-        area=5.0,
-        perimetro=7.0,
-        iou=0.8,
+        auprc=0.9,
     )
-    segmentacao_skip.binarizacoes.append(
-        Binarizacao(
+    segmentacao_skip.segmentacoes_binarizadas.append(
+        SegmentacaoBinarizada(
             nome_arquivo="ja_avaliada",
             nome_modelo="u2netp",
             estrategia_binarizacao="GaussianaOpening",
-            metrica_x=0.9,
-            metrica_y=-1.0,
+            area=5.0,
+            perimetro=7.0,
+            iou=0.8,
         )
     )
-    imagem_skip.segmentacoes = [segmentacao_skip]
+    imagem_skip.segmentacoes_brutas = [segmentacao_skip]
     imagem_ok = Imagem(nome_arquivo="avaliar", fazenda="B", peso=2.0)
     repository.imagens = [imagem_skip, imagem_ok]
     processadas: list[str] = []

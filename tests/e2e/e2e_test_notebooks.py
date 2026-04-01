@@ -22,9 +22,11 @@ def _resolver_e2e() -> PathResolver:
 
     return PathResolver.from_config().with_overrides(
         generated_dir=str(e2e_generated_dir),
-        predicted_masks_raw_dir=str(e2e_generated_dir / "predicted_masks_raw"),
-        predicted_masks_binary_dir=str(e2e_generated_dir / "predicted_masks_binary"),
-        ground_truth_binary_dir=str(e2e_generated_dir / "ground_truth_binary"),
+        segmentacoes_brutas_dir=str(e2e_generated_dir / "segmentacoes_brutas"),
+        segmentacoes_binarizadas_dir=str(
+            e2e_generated_dir / "segmentacoes_binarizadas"
+        ),
+        ground_truth_binarizada_dir=str(e2e_generated_dir / "ground_truth_binarizada"),
         evaluation_dir=str(e2e_generated_dir / "evaluation"),
         sqlite_path=str(e2e_generated_dir / "bufalos-e2e.sqlite3"),
     )
@@ -168,7 +170,7 @@ def test_notebook_01_gera_segmentacoes(monkeypatch: pytest.MonkeyPatch) -> None:
     linhas = ImagemRepository(resolver.sqlite_path).list()
     nome_modelo = next(iter(modelos))
     saidas_geradas = sorted(
-        (Path(resolver.predicted_masks_raw_dir) / nome_modelo).glob("*.png")
+        (Path(resolver.segmentacoes_brutas_dir) / nome_modelo).glob("*.png")
     )
 
     assert resumo_integridade.total_png == 0
@@ -198,9 +200,13 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
     nome_modelo = next(iter(modelos))
     strategy = GaussianOpeningBinarizationStrategy()
 
-    saidas_ground_truth = sorted(Path(resolver.ground_truth_binary_dir).glob("*.png"))
+    saidas_ground_truth = sorted(Path(resolver.ground_truth_binarizada_dir).glob("*.png"))
     saidas_modelo = sorted(
-        (Path(resolver.predicted_masks_binary_dir) / strategy.nome_pasta / nome_modelo).glob("*.png")
+        (
+            Path(resolver.segmentacoes_binarizadas_dir)
+            / strategy.nome_pasta
+            / nome_modelo
+        ).glob("*.png")
     )
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
@@ -208,7 +214,7 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
     assert len(saidas_modelo) == len(linhas)
     assert imagem_persistida is not None
     assert imagem_persistida.ground_truth_binarizada is None
-    assert imagem_persistida.segmentacoes == []
+    assert imagem_persistida.segmentacoes_brutas == []
 
 
 @pytest.mark.e2e
@@ -239,7 +245,10 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
     assert len(imagens) == len(linhas)
     assert all(imagem.ground_truth_binarizada is not None for imagem in imagens)
     assert all(
-        any(segmentacao.nome_modelo == nome_modelo for segmentacao in imagem.segmentacoes)
+        any(
+            segmentacao_bruta.nome_modelo == nome_modelo
+            for segmentacao_bruta in imagem.segmentacoes_brutas
+        )
         for imagem in imagens
     )
     assert all(
@@ -249,19 +258,24 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for imagem in imagens
     )
     assert all(
-        segmentacao.area > 0
-        and segmentacao.perimetro > 0
-        and 0.0 <= segmentacao.iou <= 1.0
+        segmentacao_binarizada.area > 0
+        and segmentacao_binarizada.perimetro > 0
+        and 0.0 <= segmentacao_binarizada.iou <= 1.0
         for imagem in imagens
-        for segmentacao in imagem.segmentacoes
+        for segmentacao_bruta in imagem.segmentacoes_brutas
+        for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
+    )
+    assert all(
+        0.0 <= segmentacao_bruta.auprc <= 1.0
+        for imagem in imagens
+        for segmentacao_bruta in imagem.segmentacoes_brutas
     )
     assert all(
         any(
-            binarizacao.estrategia_binarizacao
+            segmentacao_binarizada.estrategia_binarizacao
             == AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO
-            and 0.0 <= binarizacao.auprc <= 1.0
-            for binarizacao in segmentacao.binarizacoes
+            for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
         )
         for imagem in imagens
-        for segmentacao in imagem.segmentacoes
+        for segmentacao_bruta in imagem.segmentacoes_brutas
     )

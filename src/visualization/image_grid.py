@@ -78,7 +78,7 @@ def plot_image_grid(
 
         # Coluna 1: Ground Truth
         try:
-            gt_path = _PATH_RESOLVER.caminho_ground_truth_binaria(nome_arquivo)
+            gt_path = _PATH_RESOLVER.caminho_ground_truth_binarizada(nome_arquivo)
             gt_img = Image.open(gt_path).convert("L")
             axes[row_idx, 1].imshow(gt_img, cmap="gray")
             axes[row_idx, 1].set_title("GT", fontsize=8)
@@ -102,7 +102,7 @@ def plot_image_grid(
                 nome_binarizacao = None
                 if not model_data.empty and "estrategia_binarizacao" in model_data.columns:
                     nome_binarizacao = str(model_data.iloc[0]["estrategia_binarizacao"])
-                seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
+                seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                     modelo,
                     nome_arquivo,
                     nome_binarizacao=nome_binarizacao,
@@ -207,7 +207,7 @@ def plot_single_image_comparison(
     # Ground Truth (centro superior)
     ax_gt = fig.add_subplot(gs[0, 1])
     try:
-        gt_path = _PATH_RESOLVER.caminho_ground_truth_binaria(nome_arquivo)
+        gt_path = _PATH_RESOLVER.caminho_ground_truth_binarizada(nome_arquivo)
         gt_img = Image.open(gt_path).convert("L")
         ax_gt.imshow(gt_img, cmap="gray")
         ax_gt.set_title("Ground Truth", fontsize=10)
@@ -229,7 +229,7 @@ def plot_single_image_comparison(
                 if "estrategia_binarizacao" in row.index
                 else None
             )
-            seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
+            seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                 str(row["modelo"]),
                 nome_arquivo,
                 nome_binarizacao=nome_binarizacao,

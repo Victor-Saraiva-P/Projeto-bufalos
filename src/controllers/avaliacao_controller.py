@@ -15,12 +15,12 @@ from src.logs import (
     imprimir_resumo_avaliacao,
     imprimir_status_avaliacao,
 )
-from src.models import Imagem
+from src.models import Imagem, SegmentacaoBruta
 from src.repositories import (
     GroundTruthBinarizadaRepository,
-    BinarizacaoRepository,
     ImagemRepository,
-    SegmentacaoRepository,
+    SegmentacaoBinarizadaRepository,
+    SegmentacaoBrutaRepository,
 )
 from src.services.avaliacao_service import AvaliacaoService
 
@@ -32,8 +32,8 @@ class AvaliacaoController:
         self,
         imagem_repository: ImagemRepository | None = None,
         ground_truth_binarizada_repository: GroundTruthBinarizadaRepository | None = None,
-        binarizacao_repository: BinarizacaoRepository | None = None,
-        segmentacao_repository: SegmentacaoRepository | None = None,
+        segmentacao_binarizada_repository: SegmentacaoBinarizadaRepository | None = None,
+        segmentacao_bruta_repository: SegmentacaoBrutaRepository | None = None,
         avaliacao_service: AvaliacaoService | None = None,
     ):
         self.path_resolver = PathResolver.from_config()
@@ -49,15 +49,15 @@ class AvaliacaoController:
             if ground_truth_binarizada_repository is not None
             else GroundTruthBinarizadaRepository(sqlite_path)
         )
-        self.binarizacao_repository = (
-            binarizacao_repository
-            if binarizacao_repository is not None
-            else BinarizacaoRepository(sqlite_path)
+        self.segmentacao_binarizada_repository = (
+            segmentacao_binarizada_repository
+            if segmentacao_binarizada_repository is not None
+            else SegmentacaoBinarizadaRepository(sqlite_path)
         )
-        self.segmentacao_repository = (
-            segmentacao_repository
-            if segmentacao_repository is not None
-            else SegmentacaoRepository(sqlite_path)
+        self.segmentacao_bruta_repository = (
+            segmentacao_bruta_repository
+            if segmentacao_bruta_repository is not None
+            else SegmentacaoBrutaRepository(sqlite_path)
         )
         self.avaliacao_service = (
             avaliacao_service if avaliacao_service is not None else AvaliacaoService()
@@ -102,16 +102,16 @@ class AvaliacaoController:
         if ground_truth is not None:
             self.ground_truth_binarizada_repository.save(ground_truth)
 
-        binarizacoes = [
-            binarizacao
-            for segmentacao in imagem_avaliada.segmentacoes
-            for binarizacao in segmentacao.binarizacoes
-            if binarizacao.estrategia_binarizacao == self.estrategia_binarizacao
+        segmentacoes_binarizadas = [
+            segmentacao_binarizada
+            for segmentacao_bruta in imagem_avaliada.segmentacoes_brutas
+            for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
+            if segmentacao_binarizada.estrategia_binarizacao == self.estrategia_binarizacao
         ]
-        for segmentacao in imagem_avaliada.segmentacoes:
-            self.segmentacao_repository.save(segmentacao)
-        for binarizacao in binarizacoes:
-            self.binarizacao_repository.save(binarizacao)
+        for segmentacao_bruta in imagem_avaliada.segmentacoes_brutas:
+            self.segmentacao_bruta_repository.save(segmentacao_bruta)
+        for segmentacao_binarizada in segmentacoes_binarizadas:
+            self.segmentacao_binarizada_repository.save(segmentacao_binarizada)
         return imagem_avaliada
 
     def processar_imagens(
@@ -164,31 +164,34 @@ class AvaliacaoController:
         ):
             return False
 
-        segmentacoes = {
-            segmentacao.nome_modelo: segmentacao
-            for segmentacao in imagem.segmentacoes
+        segmentacoes_brutas = {
+            segmentacao_bruta.nome_modelo: segmentacao_bruta
+            for segmentacao_bruta in imagem.segmentacoes_brutas
         }
         for nome_modelo in nomes_modelo:
-            segmentacao = segmentacoes.get(nome_modelo)
-            if segmentacao is None:
+            segmentacao_bruta = segmentacoes_brutas.get(nome_modelo)
+            if segmentacao_bruta is None:
                 return False
             if (
-                segmentacao.area is None
-                or segmentacao.perimetro is None
-                or segmentacao.iou is None
+                segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
             ):
                 return False
-            binarizacao_atual = next(
+            segmentacao_binarizada_atual = next(
                 (
-                    binarizacao
-                    for binarizacao in segmentacao.binarizacoes
-                    if binarizacao.estrategia_binarizacao == self.estrategia_binarizacao
+                    segmentacao_binarizada
+                    for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
+                    if (
+                        segmentacao_binarizada.estrategia_binarizacao
+                        == self.estrategia_binarizacao
+                    )
                 ),
                 None,
             )
             if (
-                binarizacao_atual is None
-                or binarizacao_atual.auprc < 0
+                segmentacao_binarizada_atual is None
+                or segmentacao_binarizada_atual.area is None
+                or segmentacao_binarizada_atual.perimetro is None
+                or segmentacao_binarizada_atual.iou is None
             ):
                 return False
 

@@ -53,8 +53,10 @@ class BinarizacaoController:
 
         for idx, imagem in enumerate(linhas, start=1):
             resultado = self.binarizacao_service.processar_arquivo(
-                caminho_entrada=self.path_resolver.caminho_ground_truth(imagem.nome_arquivo),
-                caminho_saida=self.path_resolver.caminho_ground_truth_binaria(
+                caminho_entrada=self.path_resolver.caminho_ground_truth_bruta(
+                    imagem.nome_arquivo
+                ),
+                caminho_saida=self.path_resolver.caminho_ground_truth_binarizada(
                     imagem.nome_arquivo
                 ),
                 strategy=strategy,
@@ -103,11 +105,11 @@ class BinarizacaoController:
 
             for idx, imagem in enumerate(linhas, start=1):
                 resultado = self.binarizacao_service.processar_arquivo(
-                    caminho_entrada=self.path_resolver.caminho_mascara_predita(
+                    caminho_entrada=self.path_resolver.caminho_segmentacao_bruta(
                         nome_modelo,
                         imagem.nome_arquivo,
                     ),
-                    caminho_saida=self.path_resolver.caminho_mascara_predita_binaria(
+                    caminho_saida=self.path_resolver.caminho_segmentacao_binarizada(
                         nome_modelo,
                         imagem.nome_arquivo,
                         nome_binarizacao=strategy.nome_pasta,
@@ -127,7 +129,7 @@ class BinarizacaoController:
         return resumos
 
     def _diretorio_modelo(self, nome_modelo: str) -> str:
-        return os.path.join(self.path_resolver.predicted_masks_raw_dir, nome_modelo)
+        return os.path.join(self.path_resolver.segmentacoes_brutas_dir, nome_modelo)
 
     def verificar_segmentacoes(
         self,

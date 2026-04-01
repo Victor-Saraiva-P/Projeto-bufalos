@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from src.models import Imagem, Segmentacao
+from src.models import Imagem, SegmentacaoBinarizada, SegmentacaoBruta
 from src.services.avaliacao_service import AvaliacaoService
 
 
@@ -46,8 +46,12 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
-    existente = Segmentacao(nome_arquivo="bufalo_001", nome_modelo="u2netp")
-    imagem.segmentacoes.append(existente)
+    existente = SegmentacaoBruta(
+        nome_arquivo="bufalo_001",
+        nome_modelo="u2netp",
+        auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
+    )
+    imagem.segmentacoes_brutas.append(existente)
 
     imagem_avaliada = AvaliacaoService().avaliar(
         imagem=imagem,
@@ -66,14 +70,19 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     assert imagem_avaliada.ground_truth_binarizada is not None
     assert imagem_avaliada.ground_truth_binarizada.area == 100.0
     assert imagem_avaliada.ground_truth_binarizada.perimetro == 20.0
-    assert [segmentacao.nome_modelo for segmentacao in imagem_avaliada.segmentacoes] == [
+    assert [
+        segmentacao_bruta.nome_modelo
+        for segmentacao_bruta in imagem_avaliada.segmentacoes_brutas
+    ] == [
         "modnet",
         "u2netp",
     ]
-    assert imagem_avaliada.segmentacoes[1] is existente
-    assert existente.area == 40.0
-    assert existente.perimetro == 8.0
-    assert existente.iou == 0.75
-    assert len(existente.binarizacoes) == 1
-    assert existente.binarizacoes[0].estrategia_binarizacao == "GaussianaOpening"
-    assert existente.binarizacoes[0].auprc == 0.9
+    assert imagem_avaliada.segmentacoes_brutas[1] is existente
+    assert existente.auprc == 0.9
+    assert len(existente.segmentacoes_binarizadas) == 1
+    binarizada = existente.segmentacoes_binarizadas[0]
+    assert isinstance(binarizada, SegmentacaoBinarizada)
+    assert binarizada.estrategia_binarizacao == "GaussianaOpening"
+    assert binarizada.area == 40.0
+    assert binarizada.perimetro == 8.0
+    assert binarizada.iou == 0.75

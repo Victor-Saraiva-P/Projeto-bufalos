@@ -1,6 +1,5 @@
 from src.binarizacao.binarizacao_base import BinarizationStrategy
 from src.binarizacao.estrategias import GaussianOpeningBinarizationStrategy
-from src.binarizacao.metricas import AUPRC
 from src.logs import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
@@ -9,7 +8,6 @@ from src.logs import (
 )
 
 __all__ = [
-    "AUPRC",
     "BinarizationStrategy",
     "EstatisticasBinarizacao",
     "GaussianOpeningBinarizationStrategy",

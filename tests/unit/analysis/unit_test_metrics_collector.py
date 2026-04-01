@@ -1,6 +1,11 @@
 from src.analysis.collector import MetricsCollector
 from src.controllers.avaliacao_controller import AvaliacaoController
-from src.models import Binarizacao, GroundTruthBinarizada, Imagem, Segmentacao
+from src.models import (
+    GroundTruthBinarizada,
+    Imagem,
+    SegmentacaoBinarizada,
+    SegmentacaoBruta,
+)
 
 
 def test_build_metrics_dataframe_inclui_auprc() -> None:
@@ -10,23 +15,22 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
         area=100.0,
         perimetro=40.0,
     )
-    segmentacao = Segmentacao(
+    segmentacao = SegmentacaoBruta(
         nome_arquivo="bufalo_001",
         nome_modelo="u2netp",
-        area=90.0,
-        perimetro=38.0,
-        iou=0.8,
+        auprc=0.92,
     )
-    segmentacao.binarizacoes = [
-        Binarizacao(
+    segmentacao.segmentacoes_binarizadas = [
+        SegmentacaoBinarizada(
             nome_arquivo="bufalo_001",
             nome_modelo="u2netp",
             estrategia_binarizacao=AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO,
-            metrica_x=0.92,
-            metrica_y=-1.0,
+            area=90.0,
+            perimetro=38.0,
+            iou=0.8,
         )
     ]
-    imagem.segmentacoes = [segmentacao]
+    imagem.segmentacoes_brutas = [segmentacao]
 
     df = MetricsCollector._build_metrics_dataframe([imagem])
 
@@ -55,23 +59,22 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valida() -> None
         area=100.0,
         perimetro=40.0,
     )
-    segmentacao = Segmentacao(
+    segmentacao = SegmentacaoBruta(
         nome_arquivo="bufalo_001",
         nome_modelo="u2netp",
-        area=90.0,
-        perimetro=38.0,
-        iou=0.8,
+        auprc=-1.0,
     )
-    segmentacao.binarizacoes = [
-        Binarizacao(
+    segmentacao.segmentacoes_binarizadas = [
+        SegmentacaoBinarizada(
             nome_arquivo="bufalo_001",
             nome_modelo="u2netp",
             estrategia_binarizacao=AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO,
-            metrica_x=-1.0,
-            metrica_y=-1.0,
+            area=90.0,
+            perimetro=38.0,
+            iou=0.8,
         )
     ]
-    imagem.segmentacoes = [segmentacao]
+    imagem.segmentacoes_brutas = [segmentacao]
 
     df = MetricsCollector._build_metrics_dataframe([imagem])
 

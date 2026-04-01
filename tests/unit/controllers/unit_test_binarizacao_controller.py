@@ -50,10 +50,10 @@ def test_processar_ground_truth_nao_persiste_registro_parcial(
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt/raw",
-        predicted_masks_raw_dir="/pred/raw",
-        predicted_masks_binary_dir="/pred/bin",
-        ground_truth_binary_dir="/gt/bin",
+        ground_truth_brutos_dir="/gt/raw",
+        segmentacoes_brutas_dir="/pred/raw",
+        segmentacoes_binarizadas_dir="/pred/bin",
+        ground_truth_binarizada_dir="/gt/bin",
         evaluation_dir="/eval",
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -93,10 +93,10 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt/raw",
-        predicted_masks_raw_dir="/pred/raw",
-        predicted_masks_binary_dir="/pred/bin",
-        ground_truth_binary_dir="/gt/bin",
+        ground_truth_brutos_dir="/gt/raw",
+        segmentacoes_brutas_dir="/pred/raw",
+        segmentacoes_binarizadas_dir="/pred/bin",
+        ground_truth_binarizada_dir="/gt/bin",
         evaluation_dir="/eval",
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -127,4 +127,4 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
     assert stats.ok == 1
     assert stats.skip == 0
     assert stats.erro == 0
-    assert imagens[0].segmentacoes == []
+    assert imagens[0].segmentacoes_brutas == []

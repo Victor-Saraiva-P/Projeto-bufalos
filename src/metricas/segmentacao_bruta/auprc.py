@@ -57,4 +57,3 @@ class AUPRC(Metrica):
         valores_gt = np.unique(self._ground_truth_mask)
         if not np.all(np.isin(valores_gt, (0, 1, False, True))):
             raise ValueError("ground_truth_mask precisa ser binaria.")
-

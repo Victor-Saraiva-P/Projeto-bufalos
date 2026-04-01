@@ -41,10 +41,10 @@ def test_imagem_controller_delega_sincronizacao_para_service(monkeypatch) -> Non
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt/raw",
-        predicted_masks_raw_dir="/pred/raw",
-        predicted_masks_binary_dir="/pred/bin",
-        ground_truth_binary_dir="/gt/bin",
+        ground_truth_brutos_dir="/gt/raw",
+        segmentacoes_brutas_dir="/pred/raw",
+        segmentacoes_binarizadas_dir="/pred/bin",
+        ground_truth_binarizada_dir="/gt/bin",
         evaluation_dir="/eval",
         indice_path="/tmp/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -68,10 +68,10 @@ def test_imagem_controller_verifica_segmentacoes_usando_diretorio_padrao(monkeyp
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt/raw",
-        predicted_masks_raw_dir="/tmp/predicted_masks_raw",
-        predicted_masks_binary_dir="/pred/bin",
-        ground_truth_binary_dir="/gt/bin",
+        ground_truth_brutos_dir="/gt/raw",
+        segmentacoes_brutas_dir="/tmp/segmentacoes_brutas",
+        segmentacoes_binarizadas_dir="/pred/bin",
+        ground_truth_binarizada_dir="/gt/bin",
         evaluation_dir="/eval",
         indice_path="/tmp/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -88,4 +88,4 @@ def test_imagem_controller_verifica_segmentacoes_usando_diretorio_padrao(monkeyp
     resumo = controller.verificar_segmentacoes()
 
     assert resumo.total_png == 1
-    assert service.verificacoes == [("/tmp/predicted_masks_raw", ".png")]
+    assert service.verificacoes == [("/tmp/segmentacoes_brutas", ".png")]
