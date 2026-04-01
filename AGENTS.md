@@ -323,7 +323,7 @@ Conjunto de tags:
 Definicoes:
 
 - `ok`: imagem adequada para analise, sem ressalvas relevantes;
-- `multi_bufalos`: mais de um bufalo visivel na cena;
+- `multi_bufalos`: mais de um bufalo visivel na cena com presenca relevante para a leitura da imagem;
 - `cortado`: parte relevante do corpo ficou fora do enquadramento;
 - `angulo_extremo`: o angulo dificulta comparar volume corporal ou contorno;
 - `baixo_contraste`: o contorno do bufalo se mistura ao fundo;
