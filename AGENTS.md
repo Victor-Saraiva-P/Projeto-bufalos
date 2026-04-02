@@ -606,7 +606,8 @@ Dataset reduzido:
 Artefatos versionados:
 
 - ficam em `tests/mock_generated/`;
-- guardam saidas intermediarias e finais estaveis para testes de integracao.
+- guardam saidas intermediarias e finais estaveis para testes de integracao;
+- incluem o fixture `tests/mock_generated/bufalos-avaliacao.sqlite3` para cenarios de leitura analitica.
 
 Configuracao da suite:
 
@@ -648,6 +649,12 @@ segmentacao_strategies = ["GaussianaOpening"]
 [models]
 u2netp = "cpu"
 ```
+
+Observacao:
+
+- o `config.test.toml` aponta para `tests/mock_generated/bufalos-testes.sqlite3`;
+- testes que escrevem no banco devem sobrescrever `sqlite_path` para `tmp_path`;
+- o fixture versionado da avaliacao fica em `tests/mock_generated/bufalos-avaliacao.sqlite3`.
 
 Fluxo local recomendado:
 

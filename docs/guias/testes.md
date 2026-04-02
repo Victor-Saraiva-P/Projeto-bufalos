@@ -178,6 +178,7 @@ Estrutura atual:
 
 ```text
 tests/mock_generated/
+  bufalos-avaliacao.sqlite3
   ground_truth_binarizada/
   segmentacoes_brutas/
     execucao_1/
@@ -192,6 +193,7 @@ Objetivos desse conjunto:
 
 - disponibilizar mascaras geradas estaveis para cenarios de integracao;
 - evitar depender da execucao previa dos notebooks ou do `rembg` em testes futuros da avaliacao;
+- disponibilizar um SQLite versionado com a avaliacao pronta para cenarios de leitura analitica;
 - permitir testes sobre artefatos binarios versionados.
 
 ## Configuracao da suite
@@ -276,6 +278,12 @@ segmentacao_strategies = ["GaussianaOpening"]
 [models]
 u2netp = "cpu"
 ```
+
+Observacao:
+
+- o `config.test.toml` aponta para `tests/mock_generated/bufalos-testes.sqlite3`;
+- testes que escrevem no banco devem sobrescrever `sqlite_path` para `tmp_path`;
+- o fixture versionado da avaliacao fica em `tests/mock_generated/bufalos-avaliacao.sqlite3`.
 
 ## Fluxo local recomendado
 

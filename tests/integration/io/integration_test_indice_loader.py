@@ -1,9 +1,10 @@
 import pandas as pd
 import pytest
 
-from src.config import INDICE_PATH, SQLITE_PATH
+from src.config import INDICE_PATH
 from src.controllers import ImagemController
 from src.io import indice_loader
+from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
 
 
@@ -26,8 +27,17 @@ def test_carregar_indice_excel_retorna_imagens_com_tags() -> None:
     ]
 
 
-def test_imagem_controller_sincroniza_excel_para_sqlite() -> None:
-    sqlite_path = SQLITE_PATH
+def test_imagem_controller_sincroniza_excel_para_sqlite(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    resolver = PathResolver.from_config().with_overrides(sqlite_path=sqlite_path)
+
+    monkeypatch.setattr(
+        "src.controllers.imagem_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
 
     ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(sqlite_path).list()
@@ -67,8 +77,6 @@ def test_imagem_controller_falha_quando_faltam_colunas_no_excel(
         }
     )
     df.to_excel(indice_invalido, index=False)
-
-    from src.io.path_resolver import PathResolver
 
     resolver = PathResolver.from_config().with_overrides(
         indice_path=str(indice_invalido),

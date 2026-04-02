@@ -4,23 +4,23 @@ import pytest
 
 from src.analysis.collector import MetricsCollector
 from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES, SEGMENTACAO_BINARIZATION_STRATEGIES
-from src.controllers import AvaliacaoController, BinarizacaoController, ImagemController
+from src.controllers import AvaliacaoController, ImagemController
 from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
 
 
-def test_avaliacao_controller_processa_pipeline_e_persiste_metricas_brutas(
+def test_avaliacao_controller_consume_mock_generated_e_persiste_metricas_brutas(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     entrada_modelos = Path("tests/mock_generated/segmentacoes_brutas")
-    saida_modelos = tmp_path / "segmentacoes_binarizadas"
-    saida_ground_truth = tmp_path / "ground_truth_binarizada"
+    entrada_ground_truth = Path("tests/mock_generated/ground_truth_binarizada")
+    entrada_segmentacoes_binarizadas = Path("tests/mock_generated/segmentacoes_binarizadas")
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
         segmentacoes_brutas_dir=str(entrada_modelos),
-        segmentacoes_binarizadas_dir=str(saida_modelos),
-        ground_truth_binarizada_dir=str(saida_ground_truth),
+        segmentacoes_binarizadas_dir=str(entrada_segmentacoes_binarizadas),
+        ground_truth_binarizada_dir=str(entrada_ground_truth),
         sqlite_path=sqlite_path,
     )
 
@@ -29,16 +29,8 @@ def test_avaliacao_controller_processa_pipeline_e_persiste_metricas_brutas(
         lambda: resolver,
     )
     monkeypatch.setattr(
-        "src.controllers.binarizacao_controller.PathResolver.from_config",
-        lambda: resolver,
-    )
-    monkeypatch.setattr(
         "src.controllers.avaliacao_controller.PathResolver.from_config",
         lambda: resolver,
-    )
-    monkeypatch.setattr(
-        "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
-        MODELOS_PARA_AVALIACAO,
     )
     monkeypatch.setattr(
         "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
@@ -51,8 +43,6 @@ def test_avaliacao_controller_processa_pipeline_e_persiste_metricas_brutas(
 
     ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
-    BinarizacaoController().processar_ground_truth_configurada(imagens=linhas)
-    BinarizacaoController().processar_segmentacoes_configuradas(imagens=linhas)
 
     stats = AvaliacaoController().processar_imagens(imagens=linhas)
     imagens = ImagemRepository(resolver.sqlite_path).list()
@@ -62,6 +52,12 @@ def test_avaliacao_controller_processa_pipeline_e_persiste_metricas_brutas(
     assert stats.ok == len(linhas) * NUM_EXECUCOES * len(SEGMENTACAO_BINARIZATION_STRATEGIES)
     assert stats.erro == 0
     assert stats.skip == 0
+    assert len(df) == (
+        len(linhas)
+        * NUM_EXECUCOES
+        * len(MODELOS_PARA_AVALIACAO)
+        * len(SEGMENTACAO_BINARIZATION_STRATEGIES)
+    )
     assert all(imagem.ground_truth_binarizada is not None for imagem in imagens)
     assert all(
         0.0 <= segmentacao_bruta.auprc <= 1.0
