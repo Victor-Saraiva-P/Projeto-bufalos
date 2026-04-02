@@ -122,7 +122,11 @@ Se, durante a implementacao, um teste precisar ser alterado apos esse commit, a 
 
 Convencoes esperadas:
 
+- commits devem seguir o padrao recente do `master`;
+- commits devem ser escritos em portugues;
+- commits devem comecar com um verbo de acao curto, como `Adiciona`, `Atualiza`, `Ajusta`, `Integra`, `Mantem`, `Sincroniza` ou `Refina`;
 - commits devem manter mensagens curtas e com um objetivo claro;
+- commits nao devem usar prefixes artificiais como `feat:`, `fix:`, `docs:` ou equivalentes;
 - pull requests devem ser abertos sempre como draft por padrao;
 - titulo e corpo do pull request devem estar em portugues;
 - o titulo do pull request deve abranger o conjunto real de mudancas introduzidas;

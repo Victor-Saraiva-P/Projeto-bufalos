@@ -707,13 +707,21 @@ Quando uma decisao tecnica impactar o pipeline:
 
 Padrao recente do historico:
 
-- mensagens curtas no imperativo;
+- mensagens em portugues;
+- verbo de acao curto no inicio, como `Adiciona`, `Atualiza`, `Ajusta`, `Integra`, `Mantem`, `Sincroniza` ou `Refina`;
+- mensagens curtas;
 - um objetivo claro por commit.
+
+Regra operacional:
+
+- novos commits devem seguir o padrao observado nos ultimos commits da branch principal;
+- nao usar prefixes artificiais como `feat:`, `fix:`, `docs:` ou equivalentes.
 
 Exemplos:
 
-- `Refatora pipeline de binarizacao e logging`
-- `Remove modulo legado de logs de segmentacao`
+- `Adiciona execucoes ao pipeline e ajusta testes`
+- `Integra execucoes aos logs do pipeline`
+- `Atualiza notebook 03 de avaliacao`
 
 Pull requests devem:
 
