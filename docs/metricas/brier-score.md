@@ -1,12 +1,9 @@
 # Brier Score
 
-## Status neste worktree
+## Status no repositorio
 
-Este documento descreve a metrica planejada para o branch
-`feat/brier-score-metric-tdd`.
-
-Neste momento, a proposta esta coberta por testes e documentacao, mas ainda nao foi
-implementada no pipeline principal.
+O `Brier Score` esta implementado na pipeline principal como metrica de
+segmentacao bruta com score continuo.
 
 ## O que a metrica significa
 
@@ -50,15 +47,15 @@ Como o dataset e desbalanceado, o fundo domina a contagem total de pixels. Por i
 o Brier Score nao deve ser lido sozinho. Ele e mais util quando analisado junto da
 AUPRC, que continua sendo a metrica mais sensivel ao positivo raro.
 
-## Contrato esperado para a implementacao futura
+## Contrato usado no projeto
 
-Os testes TDD deste branch assumem o seguinte contrato:
+No projeto atual:
 
 - a metrica concreta se chama `BrierScore`;
 - ela pertence ao grupo `src.metricas.segmentacao_bruta`;
-- a entidade `SegmentacaoBruta` passa a persistir o campo `brier_score`;
+- a entidade `SegmentacaoBruta` persiste o campo `brier_score`;
 - o valor deve ficar no intervalo `[0, 1]`;
 - `BrierScore` recebe `score_mask` ja normalizado em `[0, 1]`;
 - a normalizacao de mascaras em escala `0-255` deve acontecer em
   `carregar_score_mask_predita()`, antes de o pipeline repassar o dado para
-  `AUPRC` e `BrierScore`.
+  `AUPRC`, `SoftDice` e `BrierScore`.

@@ -41,6 +41,7 @@ Estrutura principal:
 ```text
 config.toml
 config.test.toml
+config.e2e.toml
 tests/
   conftest.py
   mock_data/
@@ -96,6 +97,13 @@ Pastas atuais:
 ### `tests/e2e/`
 
 Reserva os testes ponta a ponta, normalmente mais caros e menos adequados para execucao em todas as iteracoes locais ou no CI rapido.
+
+No projeto, eles tambem funcionam como uma execucao reduzida e inspecionavel da pipeline:
+
+- usam `config.e2e.toml` como override dedicado;
+- escrevem os artefatos em `tests/e2e_generated/`;
+- limpam a saida persistente no inicio de cada teste;
+- preservam a ultima execucao no filesystem para inspecao manual.
 
 ### `tests/fixtures/`
 
@@ -200,7 +208,50 @@ Com isso:
 - `config.toml` funciona como base;
 - `config.test.toml` sobrescreve apenas o que muda para a suite, principalmente paths e subconjunto de modelos.
 
-Exemplo enxuto de override:
+## Configuracao do e2e
+
+Os testes de `tests/e2e/` usam um override proprio em `config.e2e.toml`.
+
+Objetivo:
+
+- separar a configuracao da suite rapida da configuracao ponta a ponta;
+- fazer o e2e gerar uma pequena execucao real da pipeline em um caminho previsivel;
+- permitir verificacao manual dos artefatos ao fim da execucao.
+
+Comportamento adotado:
+
+- o teste define `BUFALOS_CONFIG_PATH=config.e2e.toml` apenas durante o caso `e2e`;
+- o loader oficial continua sendo `src/config.py`;
+- a saida persistente do e2e fica em `tests/e2e_generated/`;
+- o diretorio e limpo no inicio de cada teste e mantido ao final para inspecao manual.
+
+Exemplo enxuto do override `e2e`:
+
+```toml
+[paths]
+data_dir = "tests/mock_data"
+generated_dir = "tests/e2e_generated"
+images_dir = "tests/mock_data/images"
+ground_truth_brutos_dir = "tests/mock_data/ground_truth_brutos"
+segmentacoes_brutas_dir = "tests/e2e_generated/segmentacoes_brutas"
+segmentacoes_binarizadas_dir = "tests/e2e_generated/segmentacoes_binarizadas"
+ground_truth_binarizada_dir = "tests/e2e_generated/ground_truth_binarizada"
+evaluation_dir = "tests/e2e_generated/evaluation"
+indice_file = "tests/mock_data/Indice.xlsx"
+sqlite_file = "tests/e2e_generated/bufalos-e2e.sqlite3"
+
+[execution]
+num_execucoes = 3
+
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
+
+[models]
+u2netp = "cpu"
+```
+
+Exemplo enxuto do override da suite:
 
 ```toml
 [paths]
@@ -216,7 +267,7 @@ indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
 [execution]
-num_execucoes = 1
+num_execucoes = 3
 
 [binarization]
 ground_truth_strategy = "GaussianaOpening"
@@ -245,6 +296,14 @@ Execucao rapida sem `e2e`:
 ```bash
 pytest -m "not e2e"
 ```
+
+Execucao do e2e com saida inspecionavel:
+
+```bash
+pytest tests/e2e/e2e_test_notebooks.py -m e2e
+```
+
+Depois da execucao, os artefatos ficam em `tests/e2e_generated/`.
 
 ## Coverage
 

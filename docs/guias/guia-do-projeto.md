@@ -88,6 +88,23 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+### Regra para novo worktree
+
+Sempre que um novo `worktree` for criado, refaca o setup local dentro dele.
+
+Fluxo esperado:
+
+```bash
+mise exec python@3.13 -- python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+Nao reutilize a `.venv` de outro `worktree`.
+
+Todas as execucoes de `pytest`, notebooks e scripts devem acontecer com a
+`.venv` do `worktree` corrente ativada.
+
 ## Como rodar o projeto
 
 Todos os comandos abaixo assumem que voce esta na raiz do repositorio e com o ambiente ativado:

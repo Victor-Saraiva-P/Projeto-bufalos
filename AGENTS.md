@@ -13,6 +13,8 @@ Regra do projeto:
 - Durante o desenvolvimento, o trabalho deve acontecer em apenas um unico worktree por vez.
 - Nunca mexer em mais de um worktree ao mesmo tempo.
 - Se o usuario nao especificar qual worktree deve ser usado, e preciso perguntar antes de editar qualquer arquivo.
+- Sempre que um novo `worktree` for criado, o setup local deve ser repetido dentro dele com `mise`, criacao de `.venv`, ativacao do ambiente e `pip install -e .`.
+- Nunca assumir que a `.venv` de outro `worktree` serve para o atual.
 
 ## Visao Geral
 
@@ -105,6 +107,11 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+Regra para novo `worktree`:
+
+- repetir esse fluxo em cada `worktree` novo;
+- executar `pytest`, notebooks e scripts sempre com a `.venv` do `worktree` corrente ativada.
+
 Alternativa com `mise use`:
 
 ```bash
@@ -187,7 +194,9 @@ Metricas principais:
 - `area_diff_rel`: mede o erro relativo de area;
 - `perimetro_diff_rel`: mede o erro relativo de contorno.
 
-Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tambem passa a considerar `AUPRC` (`Area Under the Precision-Recall Curve`).
+Na etapa de binarizacao e analise de mascaras com score continuo, o projeto ja
+usa `AUPRC` (`Area Under the Precision-Recall Curve`), `Soft Dice` e
+`Brier Score`.
 
 Arquivos relevantes:
 
@@ -265,9 +274,25 @@ Quando usar `AUPRC`:
 
 Implementacao no projeto:
 
-- o calculo fica em `src/binarizacao/metricas/auprc.py`;
+- o calculo fica em `src/metricas/segmentacao_bruta/auprc.py`;
 - a interface recebe `score_mask` continuo e `ground_truth_mask` binario;
 - a metrica foi adicionada para o estagio de binarizacao, e nao como substituta direta das metricas agregadas finais do ranking de segmentacao.
+
+Metricas de segmentacao bruta com score continuo:
+
+- `AUPRC`: avalia ranking de scores entre pixels de bufalo e fundo;
+- `Soft Dice`: avalia cobertura e concentracao da massa de score em cima do
+  ground truth;
+- `Brier Score`: avalia erro probabilistico medio entre score previsto e ground
+  truth binario.
+
+Contrato atual dessas metricas:
+
+- recebem `score_mask` normalizado em `[0, 1]`;
+- recebem `ground_truth_mask` binario;
+- sao persistidas em `SegmentacaoBruta` como `auprc`, `soft_dice` e
+  `brier_score`;
+- sao expostas pelo coletor analitico para uso em notebooks e ranking.
 
 Formulas:
 
@@ -394,6 +419,70 @@ Consequencias:
 - o score continuo da mascara passa a ser aproveitado diretamente;
 - comparacoes entre estrategias de binarizacao podem considerar a qualidade da ordenacao dos pixels, e nao apenas a saida final apos threshold.
 
+### Escolha da metrica Soft Dice
+
+Decisao:
+
+- adotar `Soft Dice` como metrica de segmentacao bruta do projeto;
+- manter a leitura complementar entre ranking de scores, cobertura espacial e
+  erro probabilistico.
+
+Contexto:
+
+- as mascaras brutas carregam score continuo por pixel;
+- o projeto precisa diferenciar incerteza localizada na borda de vazamento de
+  confianca para o fundo;
+- tambem ha interesse em avaliar cobertura do animal antes de escolher um
+  threshold fixo.
+
+Motivo:
+
+- `Soft Dice` mede se a massa de score esta concentrada dentro do ground truth;
+- ele penaliza score alto no fundo;
+- ele penaliza cobertura incompleta do bufalo;
+- ele complementa a `AUPRC`, que mede melhor ranking de scores do que cobertura
+  espacial;
+- ele cria uma ponte util com a etapa binaria porque mascaras com bom `Soft
+  Dice` tendem a ser mais faceis de binarizar.
+
+Consequencias:
+
+- a entrada deve usar `score_mask` normalizado em `[0, 1]`;
+- o `ground_truth_mask` continua binario;
+- a leitura recomendada dos resultados e por imagem, com agregacao por mediana
+  e IQR, ou media e desvio padrao;
+- a metrica nao substitui analises de contorno na etapa binarizada;
+- comparacoes entre modelos devem seguir o mesmo protocolo de normalizacao.
+
+### Escolha da metrica Brier Score
+
+Decisao:
+
+- adotar `Brier Score` como metrica de segmentacao bruta em paralelo a
+  `AUPRC` e `Soft Dice`.
+
+Contexto:
+
+- `AUPRC` mede separacao entre pixels positivos e negativos;
+- `Soft Dice` mede cobertura e concentracao do score;
+- ainda faltava uma leitura de erro probabilistico da intensidade numerica da
+  confianca por pixel.
+
+Motivo:
+
+- `Brier Score` mede erro quadratico medio entre score previsto e ground truth
+  binario;
+- ele penaliza score alto no fundo e score baixo dentro do bufalo;
+- ele complementa as outras metricas de segmentacao bruta sem substitui-las.
+
+Consequencias:
+
+- a avaliacao de segmentacao bruta passa a usar `AUPRC`, `Soft Dice` e
+  `Brier Score`;
+- `score_mask` deve seguir normalizado em `[0, 1]`;
+- `SegmentacaoBruta` persiste `brier_score`;
+- o coletor analitico expõe a coluna `brier_score`.
+
 ### Mascaras do `rembg`
 
 Implementacao relacionada:
@@ -467,6 +556,7 @@ Estrutura principal:
 ```text
 config.toml
 config.test.toml
+config.e2e.toml
 tests/
   conftest.py
   mock_data/
@@ -525,6 +615,14 @@ Configuracao da suite:
 - `tests/conftest.py` define `BUFALOS_ENV=test` antes dos imports de `src.config`;
 - `config.test.toml` sobrescreve apenas paths e o subconjunto de modelos usados na suite.
 
+Configuracao do `e2e`:
+
+- o `e2e` usa um override proprio em `config.e2e.toml`;
+- os testes `e2e` carregam esse arquivo via `BUFALOS_CONFIG_PATH`;
+- a saida persistente fica em `tests/e2e_generated/`;
+- o diretorio e limpo no inicio de cada teste e mantido ao final para inspecao manual;
+- a intencao e que o `e2e` represente uma pequena execucao real da pipeline, auditavel tambem fora do `pytest`.
+
 Trecho esperado de configuracao:
 
 ```toml
@@ -540,6 +638,9 @@ evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
+[execution]
+num_execucoes = 3
+
 [binarization]
 ground_truth_strategy = "GaussianaOpening"
 segmentacao_strategies = ["GaussianaOpening"]
@@ -553,6 +654,7 @@ Fluxo local recomendado:
 - `pip install -e .`
 - `pytest`
 - `pytest -m "not e2e"`
+- `pytest tests/e2e/e2e_test_notebooks.py -m e2e`
 - `pytest --cov=src --cov-report=term-missing`
 - `pytest --cov=src --cov-report=html`
 
@@ -742,9 +844,14 @@ Leitura recomendada:
 1. `docs/guias/guia-do-projeto.md`
 2. `docs/guias/documentacao-do-repositorio.md`
 3. `docs/avaliacao/sistema-de-avaliacao.md`
-4. `docs/avaliacao/tags-de-imagem.md`
-5. `docs/guias/testes.md`
-6. `docs/guias/ci.md`
-7. `docs/decisoes-tecnicas/`
-8. `docs/metricas/`
-9. `docs/referencia/rembg/`
+4. `docs/metricas/auprc.md`
+5. `docs/metricas/soft-dice.md`
+6. `docs/metricas/brier-score.md`
+7. `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md`
+8. `docs/decisoes-tecnicas/escolha-da-metrica-soft-dice.md`
+9. `docs/decisoes-tecnicas/escolha-da-metrica-brier-score.md`
+10. `docs/avaliacao/tags-de-imagem.md`
+11. `docs/guias/testes.md`
+12. `docs/guias/ci.md`
+13. `docs/decisoes-tecnicas/`
+14. `docs/referencia/rembg/`

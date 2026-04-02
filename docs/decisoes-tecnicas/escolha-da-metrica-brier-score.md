@@ -42,10 +42,10 @@ Ele ajuda a capturar cenarios como:
 - o valor nao deve ser usado isoladamente, porque o desbalanceamento do dataset faz
   com que o fundo tenha peso dominante no erro medio.
 
-## Escopo deste branch
+## Estado atual
 
-Este branch segue TDD. Por isso:
+O `Brier Score` esta integrado a pipeline principal:
 
-- os testes primeiro definiram o contrato esperado;
-- a documentacao registrou a decisao tecnica;
-- a implementacao do pipeline fica para a proxima etapa.
+- o calculo acontece na avaliacao da segmentacao bruta;
+- `SegmentacaoBruta` persiste o campo `brier_score`;
+- o coletor analitico expõe a coluna para analise posterior.

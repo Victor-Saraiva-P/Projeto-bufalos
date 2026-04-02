@@ -51,8 +51,14 @@ Saida gerada:
 Observacao importante:
 
 - `SegmentacaoBruta`, `GroundTruthBinarizada` e `SegmentacaoBinarizada` representam resultados metricos completos; elas nao sao criadas nas etapas 01 e 02.
-- `SegmentacaoBruta` persiste a metrica `auprc`.
+- `SegmentacaoBruta` persiste `auprc`, `soft_dice` e `brier_score`.
 - `SegmentacaoBinarizada` persiste `area`, `perimetro` e `iou` por estrategia de binarizacao.
+
+Metricas de segmentacao bruta com score continuo:
+
+- `auprc`: mede separacao entre pixels de bufalo e fundo ao longo de varios limiares;
+- `soft_dice`: mede cobertura ponderada pela massa de score em cima do ground truth;
+- `brier_score`: mede erro probabilistico medio entre score previsto e ground truth binario.
 
 ## Como usar
 

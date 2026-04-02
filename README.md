@@ -20,6 +20,12 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+Importante para `worktree`:
+
+- cada novo `worktree` precisa repetir esse processo dentro do proprio diretorio;
+- nao assuma que a `.venv` de outro `worktree` vale para o atual;
+- antes de rodar `pytest`, notebooks ou scripts, ative a `.venv` do `worktree` corrente.
+
 Se voce nao tiver `mise`, pode usar diretamente:
 
 ```bash
@@ -63,6 +69,15 @@ pytest -m "not e2e"
 pytest --cov=src --cov-report=term-missing
 ```
 
+Para executar o `e2e` como uma pequena execucao inspecionavel da pipeline:
+
+```bash
+pytest tests/e2e/e2e_test_notebooks.py -m e2e
+```
+
+Os artefatos dessa execucao ficam em `tests/e2e_generated/`, seguindo
+`config.e2e.toml`.
+
 ## Guia Rapido
 
 Se voce quer:
@@ -71,8 +86,11 @@ Se voce quer:
 - entender a politica de sincronizacao entre `README.md`, `docs/` e `AGENTS.md`: veja `docs/guias/documentacao-do-repositorio.md`;
 - entender a suite automatizada: veja `docs/guias/testes.md`;
 - entender o CI: veja `docs/guias/ci.md`;
+- entender por que o `e2e` gera saidas persistentes: veja `docs/decisoes-tecnicas/e2e-com-saidas-persistentes.md`;
 - entender o sistema de avaliacao: veja `docs/avaliacao/sistema-de-avaliacao.md`;
 - entender a metrica AUPRC usada na binarizacao: veja `docs/metricas/auprc.md`;
+- entender a metrica Soft Dice usada para cobertura de score continuo: veja `docs/metricas/soft-dice.md`;
+- entender a metrica Brier Score usada para erro probabilistico do score continuo: veja `docs/metricas/brier-score.md`;
 - consultar as tags de curadoria: veja `docs/avaliacao/tags-de-imagem.md`;
 - consultar decisoes tecnicas do pipeline: veja `docs/decisoes-tecnicas/`;
 - consultar material de referencia do `rembg`: veja `docs/referencia/rembg/`.
@@ -108,8 +126,13 @@ docs/
     tags-de-imagem.md
   metricas/
     auprc.md
+    brier-score.md
+    soft-dice.md
   decisoes-tecnicas/
+    e2e-com-saidas-persistentes.md
     escolha-da-metrica-auprc.md
+    escolha-da-metrica-brier-score.md
+    escolha-da-metrica-soft-dice.md
     mascaras-do-rembg.md
     formato-das-mascaras.md
     u2net-cloth-seg.md
@@ -125,6 +148,7 @@ docs/
 2. leia `docs/guias/documentacao-do-repositorio.md` para entender a regra de sincronizacao documental;
 3. use `docs/avaliacao/sistema-de-avaliacao.md` para entender o pipeline de avaliacao;
 4. use `docs/metricas/auprc.md` e `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md` ao mexer na avaliacao de binarizacao;
-5. consulte `docs/avaliacao/tags-de-imagem.md` ao revisar ou interpretar imagens;
-6. use `docs/guias/testes.md` e `docs/guias/ci.md` ao mexer na suite;
-7. consulte `AGENTS.md` quando precisar do contexto consolidado em um unico arquivo.
+5. use `docs/metricas/soft-dice.md`, `docs/metricas/brier-score.md` e suas decisoes tecnicas ao mexer nas metricas de segmentacao bruta com score continuo;
+6. consulte `docs/avaliacao/tags-de-imagem.md` ao revisar ou interpretar imagens;
+7. use `docs/guias/testes.md`, `docs/guias/ci.md` e `docs/decisoes-tecnicas/e2e-com-saidas-persistentes.md` ao mexer na suite;
+8. consulte `AGENTS.md` quando precisar do contexto consolidado em um unico arquivo.
