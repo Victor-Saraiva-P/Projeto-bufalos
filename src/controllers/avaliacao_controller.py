@@ -266,6 +266,11 @@ class AvaliacaoController:
                 return False
             if segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA:
                 return False
+            if (
+                segmentacao_bruta.brier_score
+                <= SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO
+            ):
+                return False
             segmentacao_binarizada_atual = next(
                 (
                     segmentacao_binarizada
