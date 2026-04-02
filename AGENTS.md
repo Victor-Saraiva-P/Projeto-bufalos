@@ -211,6 +211,13 @@ Saida gerada:
 
 - `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
 
+Regra para mudancas de schema no SQLite:
+
+- o arquivo `generated/bufalos.sqlite3` e tratado como artefato descartavel;
+- nao e necessario criar arquivos de migracao;
+- nao e necessario manter logica de migracao incremental de schema;
+- quando o schema mudar, a pratica esperada e apagar o `.sqlite` e subir tudo de novo pelo fluxo normal do projeto.
+
 Regra de responsabilidade entre camadas:
 
 - notebooks 01 e 02 executam o pipeline por meio dos controllers em `src/controllers/`;
@@ -450,8 +457,10 @@ Principios:
 Abordagem de desenvolvimento:
 
 - o projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao;
-- o fluxo esperado e escrever primeiro o teste, confirmar a falha inicial, implementar a menor mudanca necessaria e refatorar com a suite verde;
+- o fluxo esperado e escrever primeiro o teste, confirmar a falha inicial, fazer um commit contendo apenas testes e documentacao da etapa TDD, implementar a menor mudanca necessaria e refatorar com a suite verde;
 - essa diretriz vale para novas funcionalidades e correcoes de bug quando o comportamento puder ser coberto por teste automatizado.
+- depois do commit da etapa vermelha, os testes nao devem ser alterados durante a implementacao, exceto quando houver erro real no contrato ou ajuste de escopo;
+- se um teste precisar mudar apos esse commit, a alteracao deve ser intencional, tecnicamente justificavel e facil de identificar no historico.
 
 Estrutura principal:
 
@@ -698,13 +707,21 @@ Quando uma decisao tecnica impactar o pipeline:
 
 Padrao recente do historico:
 
-- mensagens curtas no imperativo;
+- mensagens em portugues;
+- verbo de acao curto no inicio, como `Adiciona`, `Atualiza`, `Ajusta`, `Integra`, `Mantem`, `Sincroniza` ou `Refina`;
+- mensagens curtas;
 - um objetivo claro por commit.
+
+Regra operacional:
+
+- novos commits devem seguir o padrao observado nos ultimos commits da branch principal;
+- nao usar prefixes artificiais como `feat:`, `fix:`, `docs:` ou equivalentes.
 
 Exemplos:
 
-- `Refatora pipeline de binarizacao e logging`
-- `Remove modulo legado de logs de segmentacao`
+- `Adiciona execucoes ao pipeline e ajusta testes`
+- `Integra execucoes aos logs do pipeline`
+- `Atualiza notebook 03 de avaliacao`
 
 Pull requests devem:
 
@@ -713,6 +730,10 @@ Pull requests devem:
 - mencionar atualizacoes de documentacao;
 - incluir evidencia de teste, como `pytest ...`;
 - explicar o motivo se notebooks ou artefatos gerados forem alterados.
+- ser abertos sempre como draft por padrao;
+- usar titulo e corpo em portugues;
+- usar um titulo que abranja o conjunto real de mudancas do PR;
+- nao usar prefixos como `[codex]` no titulo.
 
 ## Mapa Da Documentacao Humana
 

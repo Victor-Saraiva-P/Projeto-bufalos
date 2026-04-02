@@ -310,6 +310,11 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )
     assert all(
+        0.0 <= segmentacao_bruta.brier_score <= 1.0
+        for imagem in imagens
+        for segmentacao_bruta in imagem.segmentacoes_brutas
+    )
+    assert all(
         {
             segmentacao_binarizada.estrategia_binarizacao
             for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas

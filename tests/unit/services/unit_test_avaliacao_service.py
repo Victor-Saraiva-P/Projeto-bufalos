@@ -30,20 +30,39 @@ class FakeIoU:
 
 
 class FakeAUPRC:
+    ultimo_score_mask: np.ndarray | None = None
+
     def __init__(self, *, modelo: str, **_kwargs):
         self.modelo = modelo
+        FakeAUPRC.ultimo_score_mask = np.asarray(_kwargs["score_mask"], dtype=np.float64)
 
     def calcular(self) -> float:
         return 0.9 if self.modelo == "u2netp" else 0.6
 
 
+class FakeBrierScore:
+    ultimo_score_mask: np.ndarray | None = None
+
+    def __init__(self, *, modelo: str, **_kwargs):
+        self.modelo = modelo
+        FakeBrierScore.ultimo_score_mask = np.asarray(
+            _kwargs["score_mask"], dtype=np.float64
+        )
+
+    def calcular(self) -> float:
+        return 0.08 if self.modelo == "u2netp" else 0.2
+
+
 def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    FakeAUPRC.ultimo_score_mask = None
+    FakeBrierScore.ultimo_score_mask = None
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     existente = SegmentacaoBruta(
@@ -51,6 +70,7 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
         nome_modelo="u2netp",
         execucao=1,
         auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
+        brier_score=SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO,
     )
     imagem.segmentacoes_brutas.append(existente)
 
@@ -81,6 +101,7 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     ]
     assert imagem_avaliada.segmentacoes_brutas[1] is existente
     assert existente.auprc == 0.9
+    assert existente.brier_score == 0.08
     assert len(existente.segmentacoes_binarizadas) == 1
     binarizada = existente.segmentacoes_binarizadas[0]
     assert isinstance(binarizada, SegmentacaoBinarizada)
@@ -89,15 +110,22 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     assert binarizada.area == 40.0
     assert binarizada.perimetro == 8.0
     assert binarizada.iou == 0.75
+    assert FakeAUPRC.ultimo_score_mask is not None
+    assert FakeBrierScore.ultimo_score_mask is not None
+    assert np.allclose(FakeAUPRC.ultimo_score_mask, np.full((2, 2), 0.4))
+    assert np.allclose(FakeBrierScore.ultimo_score_mask, np.full((2, 2), 0.4))
 
 
 def test_avaliar_separa_segmentacoes_da_mesma_imagem_por_execucao(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    FakeAUPRC.ultimo_score_mask = None
+    FakeBrierScore.ultimo_score_mask = None
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     service = AvaliacaoService()
@@ -125,10 +153,13 @@ def test_avaliar_separa_segmentacoes_da_mesma_imagem_por_execucao(
 def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    FakeAUPRC.ultimo_score_mask = None
+    FakeBrierScore.ultimo_score_mask = None
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     service = AvaliacaoService()
@@ -152,7 +183,39 @@ def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao
 
     assert len(imagem_avaliada.segmentacoes_brutas) == 1
     assert imagem_avaliada.segmentacoes_brutas[0].auprc == 0.9
+    assert imagem_avaliada.segmentacoes_brutas[0].brier_score == 0.08
     assert {
         segmentacao_binarizada.estrategia_binarizacao
         for segmentacao_binarizada in imagem_avaliada.segmentacoes_brutas[0].segmentacoes_binarizadas
     } == {"GaussianaOpening", "LimiarFixo"}
+
+
+def test_avaliar_repassa_score_mask_ja_normalizado_para_metricas_brutas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    FakeAUPRC.ultimo_score_mask = None
+    FakeBrierScore.ultimo_score_mask = None
+    monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
+    monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
+    monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
+
+    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+
+    AvaliacaoService().avaliar(
+        imagem=imagem,
+        ground_truth_mask=np.zeros((2, 2), dtype=np.uint8),
+        mascaras_modelo={"u2netp": np.ones((2, 2), dtype=np.uint8)},
+        score_masks_modelo={
+            "u2netp": np.array([[1.0, 128 / 255], [64 / 255, 0.0]], dtype=np.float64)
+        },
+        estrategia_binarizacao="GaussianaOpening",
+        execucao=1,
+    )
+
+    esperado = np.array([[1.0, 128 / 255], [64 / 255, 0.0]], dtype=np.float64)
+    assert FakeAUPRC.ultimo_score_mask is not None
+    assert FakeBrierScore.ultimo_score_mask is not None
+    assert np.allclose(FakeAUPRC.ultimo_score_mask, esperado)
+    assert np.allclose(FakeBrierScore.ultimo_score_mask, esperado)

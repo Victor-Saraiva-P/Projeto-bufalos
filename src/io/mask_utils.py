@@ -44,4 +44,4 @@ def carregar_score_mask_predita(
         nome_arquivo,
         execucao=execucao,
     )
-    return carregar_mascara_cinza(image_path)
+    return carregar_mascara_cinza(image_path) / 255.0

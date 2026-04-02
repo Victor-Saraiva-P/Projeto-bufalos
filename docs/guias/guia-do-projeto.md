@@ -106,8 +106,44 @@ Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
 
 1. escrever primeiro o teste que descreve o comportamento desejado;
 2. observar a falha inicial do teste;
-3. implementar a menor mudanca necessaria para fazer o teste passar;
-4. refatorar com a suite em estado verde.
+3. fazer um commit contendo apenas testes e documentacao da etapa TDD;
+4. implementar a menor mudanca necessaria para fazer o teste passar;
+5. refatorar com a suite em estado verde.
+
+Objetivo dessa regra:
+
+- preservar um ponto claro no historico com o contrato original dos testes;
+- permitir revisar depois se a implementacao respeitou os testes planejados;
+- facilitar a identificacao de alteracoes posteriores nos testes e a avaliacao se elas realmente fizeram sentido.
+
+Se, durante a implementacao, um teste precisar ser alterado apos esse commit, a mudanca deve ser rara, tecnicamente justificavel e facilmente identificavel no historico.
+
+## Commits e pull requests
+
+Convencoes esperadas:
+
+- commits devem seguir o padrao recente do `master`;
+- commits devem ser escritos em portugues;
+- commits devem comecar com um verbo de acao curto, como `Adiciona`, `Atualiza`, `Ajusta`, `Integra`, `Mantem`, `Sincroniza` ou `Refina`;
+- commits devem manter mensagens curtas e com um objetivo claro;
+- commits nao devem usar prefixes artificiais como `feat:`, `fix:`, `docs:` ou equivalentes;
+- pull requests devem ser abertos sempre como draft por padrao;
+- titulo e corpo do pull request devem estar em portugues;
+- o titulo do pull request deve abranger o conjunto real de mudancas introduzidas;
+- o titulo do pull request nao deve usar prefixos como `[codex]`;
+- o corpo do pull request deve resumir a mudanca, listar impacto relevante e registrar a validacao executada.
+
+## Regra para mudancas no SQLite
+
+O banco `generated/bufalos.sqlite3` e tratado como artefato descartavel do pipeline.
+
+Por isso:
+
+- nao e necessario criar arquivos de migracao;
+- nao e necessario manter logica de migracao incremental de schema;
+- quando o schema mudar, a pratica esperada e deletar o arquivo `.sqlite` e subir tudo de novo pelo fluxo normal do projeto.
+
+Essa regra vale tanto para o banco principal em `generated/` quanto para bancos SQLite recriados em testes locais.
 
 ### Anotador manual de tags
 
