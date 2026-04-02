@@ -8,7 +8,7 @@ from src.models import (
     SegmentacaoBinarizada,
     SegmentacaoBruta,
 )
-from src.metricas import AUPRC
+from src.metricas import AUPRC, SoftDice
 from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro
 
 
@@ -73,6 +73,7 @@ class AvaliacaoService:
         estrategia_binarizacao: str,
         segmentacao_bruta: SegmentacaoBruta | None = None,
     ) -> SegmentacaoBruta:
+        score_mask_normalizado = self._normalizar_score_mask(score_mask_modelo)
         area = Area(
             nome_arquivo=nome_arquivo,
             mask_array=mask_modelo,
@@ -91,7 +92,13 @@ class AvaliacaoService:
         ).calcular()
         auprc = AUPRC(
             nome_arquivo=nome_arquivo,
-            score_mask=score_mask_modelo,
+            score_mask=score_mask_normalizado,
+            ground_truth_mask=ground_truth_mask,
+            modelo=nome_modelo,
+        ).calcular()
+        soft_dice = SoftDice(
+            nome_arquivo=nome_arquivo,
+            score_mask=score_mask_normalizado,
             ground_truth_mask=ground_truth_mask,
             modelo=nome_modelo,
         ).calcular()
@@ -101,8 +108,10 @@ class AvaliacaoService:
             nome_modelo=nome_modelo,
             execucao=execucao,
             auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
+            soft_dice=SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO,
         )
         registro.auprc = float(auprc)
+        registro.soft_dice = float(soft_dice)
         self._atualizar_segmentacao_binarizada(
             registro=registro,
             estrategia_binarizacao=estrategia_binarizacao,
@@ -141,3 +150,17 @@ class AvaliacaoService:
         segmentacao_binarizada.area = area
         segmentacao_binarizada.perimetro = perimetro
         segmentacao_binarizada.iou = iou
+
+    @staticmethod
+    def _normalizar_score_mask(score_mask: np.ndarray) -> np.ndarray:
+        score_mask_array = np.asarray(score_mask, dtype=np.float64)
+        if score_mask_array.size == 0:
+            return score_mask_array
+
+        if np.all((score_mask_array >= 0.0) & (score_mask_array <= 1.0)):
+            return score_mask_array
+
+        if np.all((score_mask_array >= 0.0) & (score_mask_array <= 255.0)):
+            return score_mask_array / 255.0
+
+        return score_mask_array

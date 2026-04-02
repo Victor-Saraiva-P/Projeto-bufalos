@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 class SegmentacaoBruta(Base):
     AUPRC_NAO_CALCULADA = -1.0
+    SOFT_DICE_NAO_CALCULADO = -1.0
 
     __tablename__ = "segmentacao_bruta"
 
@@ -27,6 +28,7 @@ class SegmentacaoBruta(Base):
     nome_modelo: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
     execucao: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     auprc: Mapped[float] = mapped_column(Float, nullable=False)
+    soft_dice: Mapped[float] = mapped_column(Float, nullable=False)
 
     imagem: Mapped["Imagem"] = relationship("Imagem", back_populates="segmentacoes_brutas")
     segmentacoes_binarizadas: Mapped[list["SegmentacaoBinarizada"]] = relationship(
@@ -49,5 +51,6 @@ class SegmentacaoBruta(Base):
             f"nome_arquivo={self.nome_arquivo!r}, "
             f"nome_modelo={self.nome_modelo!r}, "
             f"execucao={self.execucao!r}, "
-            f"auprc={self.auprc!r})"
+            f"auprc={self.auprc!r}, "
+            f"soft_dice={self.soft_dice!r})"
         )

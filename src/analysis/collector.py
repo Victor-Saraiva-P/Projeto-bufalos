@@ -80,6 +80,8 @@ class MetricsCollector:
         for segmentacao_bruta in imagem_avaliada.segmentacoes_brutas:
             if (
                 segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
+                or segmentacao_bruta.soft_dice
+                <= SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO
             ):
                 modelos_com_erro.add(segmentacao_bruta.nome_modelo)
                 continue
@@ -112,7 +114,11 @@ class MetricsCollector:
                 continue
 
             for segmentacao_bruta in imagem.segmentacoes_brutas:
-                if segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA:
+                if (
+                    segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
+                    or segmentacao_bruta.soft_dice
+                    <= SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO
+                ):
                     continue
 
                 for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas:
@@ -148,6 +154,7 @@ class MetricsCollector:
                             "perimetro": perimetro,
                             "iou": iou,
                             "auprc": segmentacao_bruta.auprc,
+                            "soft_dice": segmentacao_bruta.soft_dice,
                             "area_gt": area_gt,
                             "perimetro_gt": perimetro_gt,
                             "area_diff_abs": area_diff_abs,
