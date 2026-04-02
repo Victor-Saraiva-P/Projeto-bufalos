@@ -106,8 +106,29 @@ Sempre que o comportamento for coberto por teste automatizado, a expectativa e:
 
 1. escrever primeiro o teste que descreve o comportamento desejado;
 2. observar a falha inicial do teste;
-3. implementar a menor mudanca necessaria para fazer o teste passar;
-4. refatorar com a suite em estado verde.
+3. fazer um commit contendo apenas testes e documentacao da etapa TDD;
+4. implementar a menor mudanca necessaria para fazer o teste passar;
+5. refatorar com a suite em estado verde.
+
+Objetivo dessa regra:
+
+- preservar um ponto claro no historico com o contrato original dos testes;
+- permitir revisar depois se a implementacao respeitou os testes planejados;
+- facilitar a identificacao de alteracoes posteriores nos testes e a avaliacao se elas realmente fizeram sentido.
+
+Se, durante a implementacao, um teste precisar ser alterado apos esse commit, a mudanca deve ser rara, tecnicamente justificavel e facilmente identificavel no historico.
+
+## Regra para mudancas no SQLite
+
+O banco `generated/bufalos.sqlite3` e tratado como artefato descartavel do pipeline.
+
+Por isso:
+
+- nao e necessario criar arquivos de migracao;
+- nao e necessario manter logica de migracao incremental de schema;
+- quando o schema mudar, a pratica esperada e deletar o arquivo `.sqlite` e subir tudo de novo pelo fluxo normal do projeto.
+
+Essa regra vale tanto para o banco principal em `generated/` quanto para bancos SQLite recriados em testes locais.
 
 ### Anotador manual de tags
 
