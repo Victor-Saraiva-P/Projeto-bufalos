@@ -1,12 +1,18 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 import os
 
 from src.binarizacao.binarizacao_base import BinarizationStrategy
+from src.binarizacao.registro import (
+    instanciar_estrategia_binarizacao,
+    instanciar_estrategias_binarizacao,
+)
 from src.config import (
+    GROUND_TRUTH_BINARIZATION_STRATEGY,
     MODELOS_PARA_AVALIACAO,
     NUM_EXECUCOES,
+    SEGMENTACAO_BINARIZATION_STRATEGIES,
 )
 from src.io.path_resolver import PathResolver
 from src.logs import (
@@ -26,6 +32,8 @@ class BinarizacaoController:
         self,
         imagem_repository: ImagemRepository | None = None,
         binarizacao_service: BinarizacaoService | None = None,
+        ground_truth_strategy: BinarizationStrategy | None = None,
+        segmentacao_strategies: Sequence[BinarizationStrategy] | None = None,
     ):
         self.path_resolver = PathResolver.from_config()
         self.imagem_repository = (
@@ -38,12 +46,23 @@ class BinarizacaoController:
             if binarizacao_service is not None
             else BinarizacaoService()
         )
+        self.ground_truth_strategy = (
+            ground_truth_strategy
+            if ground_truth_strategy is not None
+            else instanciar_estrategia_binarizacao(GROUND_TRUTH_BINARIZATION_STRATEGY)
+        )
+        self.segmentacao_strategies = (
+            list(segmentacao_strategies)
+            if segmentacao_strategies is not None
+            else instanciar_estrategias_binarizacao(SEGMENTACAO_BINARIZATION_STRATEGIES)
+        )
 
     def processar_ground_truth(
         self,
-        strategy: BinarizationStrategy,
+        strategy: BinarizationStrategy | None = None,
         imagens: Iterable[Imagem] | None = None,
     ) -> EstatisticasBinarizacao:
+        strategy = strategy or self.ground_truth_strategy
         linhas = (
             list(imagens)
             if imagens is not None
@@ -69,10 +88,20 @@ class BinarizacaoController:
                 etapa="ground_truth",
                 identificador=f"{idx}/{len(linhas)}",
                 stats=stats,
+                estrategia_binarizacao=strategy.nome_pasta,
             )
 
-        imprimir_resumo_binarizacao("ground_truth", stats)
+        imprimir_resumo_binarizacao(f"ground_truth {strategy.nome_pasta}", stats)
         return stats
+
+    def processar_ground_truth_configurada(
+        self,
+        imagens: Iterable[Imagem] | None = None,
+    ) -> EstatisticasBinarizacao:
+        return self.processar_ground_truth(
+            strategy=self.ground_truth_strategy,
+            imagens=imagens,
+        )
 
     def processar_segmentacoes(
         self,
@@ -87,7 +116,10 @@ class BinarizacaoController:
         modelos = dict(MODELOS_PARA_AVALIACAO)
         resumos: dict[str, EstatisticasBinarizacao] = {}
 
-        print("Binarizando mascaras dos modelos")
+        print(
+            "Binarizando mascaras dos modelos com a estrategia "
+            f"{strategy.nome_pasta}"
+        )
 
         for nome_modelo in modelos:
             stats = EstatisticasBinarizacao(total=len(linhas) * NUM_EXECUCOES)
@@ -133,15 +165,33 @@ class BinarizacaoController:
                         stats=stats_execucao,
                         nome_modelo=nome_modelo,
                         execucao=execucao,
+                        estrategia_binarizacao=strategy.nome_pasta,
                     )
                 imprimir_resumo_binarizacao_execucao(
                     nome_modelo,
                     execucao,
                     stats_execucao,
+                    estrategia_binarizacao=strategy.nome_pasta,
                 )
-            imprimir_resumo_binarizacao_modelo(nome_modelo, stats)
+            imprimir_resumo_binarizacao_modelo(
+                nome_modelo,
+                stats,
+                estrategia_binarizacao=strategy.nome_pasta,
+            )
 
         return resumos
+
+    def processar_segmentacoes_configuradas(
+        self,
+        imagens: Iterable[Imagem] | None = None,
+    ) -> dict[str, dict[str, EstatisticasBinarizacao]]:
+        return {
+            strategy.nome_pasta: self.processar_segmentacoes(
+                strategy=strategy,
+                imagens=imagens,
+            )
+            for strategy in self.segmentacao_strategies
+        }
 
     def _diretorio_modelo(self, nome_modelo: str, execucao: int) -> str:
         return os.path.join(

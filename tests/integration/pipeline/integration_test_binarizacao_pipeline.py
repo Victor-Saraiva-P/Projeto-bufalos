@@ -2,8 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from src.binarizacao import GaussianOpeningBinarizationStrategy
-from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
+from src.config import (
+    GROUND_TRUTH_BINARIZATION_STRATEGY,
+    MODELOS_PARA_AVALIACAO,
+    NUM_EXECUCOES,
+    SEGMENTACAO_BINARIZATION_STRATEGIES,
+)
 from src.controllers import BinarizacaoController, ImagemController
 from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
@@ -31,10 +35,7 @@ def test_binarizacao_controller_processa_ground_truth_e_gera_pngs(
 
     ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
-    stats = BinarizacaoController().processar_ground_truth(
-        GaussianOpeningBinarizationStrategy(),
-        imagens=linhas,
-    )
+    stats = BinarizacaoController().processar_ground_truth_configurada(imagens=linhas)
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
     saidas_geradas = sorted(saida_ground_truth.glob("*.png"))
@@ -56,7 +57,6 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
 ) -> None:
     entrada_modelos = Path("tests/mock_generated/segmentacoes_brutas")
     saida_modelos = tmp_path / "segmentacoes_binarizadas"
-    strategy = GaussianOpeningBinarizationStrategy()
     sqlite_path = str(tmp_path / "bufalos.sqlite3")
     resolver = PathResolver.from_config().with_overrides(
         segmentacoes_brutas_dir=str(entrada_modelos),
@@ -80,29 +80,29 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     ImagemController().sincronizar_indice_excel()
     linhas = ImagemRepository(resolver.sqlite_path).list()
 
-    resumos = BinarizacaoController().processar_segmentacoes(
-        strategy,
-        imagens=linhas,
-    )
+    resumos = BinarizacaoController().processar_segmentacoes_configuradas(imagens=linhas)
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
-    assert set(resumos) == set(MODELOS_PARA_AVALIACAO)
-    for nome_modelo in MODELOS_PARA_AVALIACAO:
-        stats = resumos[nome_modelo]
-        assert stats.total == len(linhas) * NUM_EXECUCOES
-        assert stats.processadas == len(linhas) * NUM_EXECUCOES
-        assert stats.ok == len(linhas) * NUM_EXECUCOES
-        assert stats.skip == 0
-        assert stats.erro == 0
-        for execucao in range(1, NUM_EXECUCOES + 1):
-            saidas_geradas = sorted(
-                (
-                    saida_modelos
-                    / f"execucao_{execucao}"
-                    / strategy.nome_pasta
-                    / nome_modelo
-                ).glob("*.png")
-            )
-            assert len(saidas_geradas) == len(linhas)
+    assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GaussianaOpening"
+    assert set(resumos) == set(SEGMENTACAO_BINARIZATION_STRATEGIES)
+    for strategy_name in SEGMENTACAO_BINARIZATION_STRATEGIES:
+        assert set(resumos[strategy_name]) == set(MODELOS_PARA_AVALIACAO)
+        for nome_modelo in MODELOS_PARA_AVALIACAO:
+            stats = resumos[strategy_name][nome_modelo]
+            assert stats.total == len(linhas) * NUM_EXECUCOES
+            assert stats.processadas == len(linhas) * NUM_EXECUCOES
+            assert stats.ok == len(linhas) * NUM_EXECUCOES
+            assert stats.skip == 0
+            assert stats.erro == 0
+            for execucao in range(1, NUM_EXECUCOES + 1):
+                saidas_geradas = sorted(
+                    (
+                        saida_modelos
+                        / f"execucao_{execucao}"
+                        / strategy_name
+                        / nome_modelo
+                    ).glob("*.png")
+                )
+                assert len(saidas_geradas) == len(linhas)
     assert imagem_persistida is not None
     assert imagem_persistida.segmentacoes_brutas == []

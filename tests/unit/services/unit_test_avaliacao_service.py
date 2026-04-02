@@ -120,3 +120,39 @@ def test_avaliar_separa_segmentacoes_da_mesma_imagem_por_execucao(
         segmentacao.segmentacoes_binarizadas[0].execucao == segmentacao.execucao
         for segmentacao in imagem_avaliada.segmentacoes_brutas
     )
+
+
+def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
+    monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
+    monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+
+    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    service = AvaliacaoService()
+    parametros = {
+        "imagem": imagem,
+        "ground_truth_mask": np.zeros((2, 2), dtype=np.uint8),
+        "mascaras_modelo": {"u2netp": np.ones((2, 2), dtype=np.uint8)},
+        "score_masks_modelo": {"u2netp": np.full((2, 2), 0.8, dtype=np.float64)},
+    }
+
+    service.avaliar(
+        **parametros,
+        estrategia_binarizacao="GaussianaOpening",
+        execucao=1,
+    )
+    imagem_avaliada = service.avaliar(
+        **parametros,
+        estrategia_binarizacao="LimiarFixo",
+        execucao=1,
+    )
+
+    assert len(imagem_avaliada.segmentacoes_brutas) == 1
+    assert imagem_avaliada.segmentacoes_brutas[0].auprc == 0.9
+    assert {
+        segmentacao_binarizada.estrategia_binarizacao
+        for segmentacao_binarizada in imagem_avaliada.segmentacoes_brutas[0].segmentacoes_binarizadas
+    } == {"GaussianaOpening", "LimiarFixo"}

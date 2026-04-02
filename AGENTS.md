@@ -214,7 +214,7 @@ Saida gerada:
 Regra de responsabilidade entre camadas:
 
 - notebooks 01 e 02 executam o pipeline por meio dos controllers em `src/controllers/`;
-- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias configuradas;
 - services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 - `Segmentacao`, `GroundTruthBinarizada` e `Binarizacao` so devem nascer quando as metricas completas forem calculadas.
 
@@ -530,6 +530,10 @@ ground_truth_binarizada_dir = "tests/generated/ground_truth_binarizada"
 evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
+
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
 
 [models]
 u2netp = "cpu"

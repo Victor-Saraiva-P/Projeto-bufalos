@@ -176,15 +176,15 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 O fluxo de execucao do projeto esta organizado em quatro notebooks:
 
 - `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as segmentacoes brutas dos modelos em `generated/segmentacoes_brutas/execucao_N/`;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/segmentacoes_binarizadas/execucao_N/` e `generated/ground_truth_binarizada/`;
-- `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza as mascaras de referencia com a strategy configurada para ground truth e gera mascaras previstas em `generated/segmentacoes_binarizadas/execucao_N/` para todas as strategies configuradas;
+- `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite para todas as strategies configuradas;
 - `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.
 
 Nos notebooks 01 e 02, a execucao operacional acontece por meio dos controllers em `src/controllers/`.
 
 Regra de responsabilidade:
 
-- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias configuradas;
 - services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 
 Para abrir o ambiente de notebooks:

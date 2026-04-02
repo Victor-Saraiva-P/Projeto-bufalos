@@ -169,7 +169,7 @@ tests/mock_generated/
       u2netp/
   segmentacoes_binarizadas/
     execucao_1/
-      GaussianaOpening/
+      <estrategia>/
         u2netp/
 ```
 
@@ -208,11 +208,15 @@ evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
-[models]
-u2netp = "cpu"
-
 [execution]
 num_execucoes = 1
+
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
+
+[models]
+u2netp = "cpu"
 ```
 
 ## Fluxo local recomendado

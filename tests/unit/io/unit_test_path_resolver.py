@@ -1,6 +1,10 @@
+import pytest
+
 from src.config import (
+    GROUND_TRUTH_BINARIZATION_STRATEGY,
     IMAGES_DIR,
     INDICE_PATH,
+    SEGMENTACAO_BINARIZATION_STRATEGIES,
     SEGMENTACOES_BINARIZADAS_DIR,
     SEGMENTACOES_BRUTAS_DIR,
     SQLITE_PATH,
@@ -44,9 +48,23 @@ def test_caminho_segmentacao_avaliacao_usa_ground_truth_para_modelo_especial() -
         "u2netp",
         "bufalo_001",
         execucao=1,
+        nome_binarizacao=SEGMENTACAO_BINARIZATION_STRATEGIES[0],
     ) == (
         "/tmp/seg_bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png"
     )
+
+
+def test_caminho_segmentacao_avaliacao_exige_nome_binarizacao_para_modelo() -> None:
+    resolver = PathResolver.from_config().with_overrides(
+        segmentacoes_binarizadas_dir="/tmp/seg_bin",
+    )
+
+    with pytest.raises(ValueError, match="nome_binarizacao"):
+        resolver.caminho_segmentacao_avaliacao(
+            "u2netp",
+            "bufalo_001",
+            execucao=1,
+        )
 
 
 def test_caminho_segmentacao_binarizada_aceita_nome_binarizacao_explicitamente() -> None:
@@ -60,6 +78,11 @@ def test_caminho_segmentacao_binarizada_aceita_nome_binarizacao_explicitamente()
         execucao=1,
         nome_binarizacao="MinhaBinarizacao",
     ) == "/tmp/seg_bin/execucao_1/MinhaBinarizacao/u2netp/bufalo_001.png"
+
+
+def test_config_expoe_estrategias_binarizacao() -> None:
+    assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GaussianaOpening"
+    assert SEGMENTACAO_BINARIZATION_STRATEGIES == ["GaussianaOpening"]
 
 
 def test_caminho_segmentacao_bruta_inclui_execucao() -> None:

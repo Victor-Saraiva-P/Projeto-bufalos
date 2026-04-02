@@ -13,5 +13,9 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 [execution]
 num_execucoes = 3
 
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
+
 [models]
 u2netp = "cpu"

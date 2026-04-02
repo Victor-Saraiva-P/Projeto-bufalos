@@ -99,12 +99,21 @@ def plot_image_grid(
             ]
 
             try:
-                nome_binarizacao = None
-                execucao = 1
-                if not model_data.empty and "estrategia_binarizacao" in model_data.columns:
-                    nome_binarizacao = str(model_data.iloc[0]["estrategia_binarizacao"])
-                if not model_data.empty and "execucao" in model_data.columns:
-                    execucao = int(model_data.iloc[0]["execucao"])
+                if model_data.empty:
+                    axes[row_idx, col_idx].set_title(f"{modelo}\nN/A", fontsize=7)
+                    axes[row_idx, col_idx].axis("off")
+                    continue
+
+                nome_binarizacao = (
+                    str(model_data.iloc[0]["estrategia_binarizacao"])
+                    if "estrategia_binarizacao" in model_data.columns
+                    else ""
+                )
+                execucao = (
+                    int(model_data.iloc[0]["execucao"])
+                    if "execucao" in model_data.columns
+                    else 1
+                )
                 seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                     modelo,
                     nome_arquivo,
@@ -114,38 +123,34 @@ def plot_image_grid(
                 seg_img = Image.open(seg_path).convert("L")
                 axes[row_idx, col_idx].imshow(seg_img, cmap="gray")
 
-                # Formatar TODAS as métricas (principal primeiro)
-                if not model_data.empty:
-                    row_data = model_data.iloc[0]
+                row_data = model_data.iloc[0]
 
-                    # Função auxiliar para formatar métricas
-                    def format_metric(name, value):
-                        if name == "iou":
-                            return f"IoU: {value:.3f}"
-                        elif name == "auprc":
-                            return f"AUPRC: {value:.3f}"
-                        elif name == "area_similarity":
-                            return f"Área: {value * 100:.1f}%"
-                        elif name == "perimetro_similarity":
-                            return f"Per: {value * 100:.1f}%"
-                        return f"{value:.2f}"
+                # Função auxiliar para formatar métricas
+                def format_metric(name, value):
+                    if name == "iou":
+                        return f"IoU: {value:.3f}"
+                    elif name == "auprc":
+                        return f"AUPRC: {value:.3f}"
+                    elif name == "area_similarity":
+                        return f"Área: {value * 100:.1f}%"
+                    elif name == "perimetro_similarity":
+                        return f"Per: {value * 100:.1f}%"
+                    return f"{value:.2f}"
 
-                    # Montar string com métrica principal primeiro
-                    metrics_order = [metric_name]
-                    for m in ["iou", "auprc", "area_similarity", "perimetro_similarity"]:
-                        if m != metric_name and m in row_data.index:
-                            metrics_order.append(m)
+                # Montar string com métrica principal primeiro
+                metrics_order = [metric_name]
+                for m in ["iou", "auprc", "area_similarity", "perimetro_similarity"]:
+                    if m != metric_name and m in row_data.index:
+                        metrics_order.append(m)
 
-                    metric_lines = [
-                        format_metric(m, row_data[m]) for m in metrics_order
-                    ]
-                    metric_str = "\n".join(metric_lines)
+                metric_lines = [
+                    format_metric(m, row_data[m]) for m in metrics_order
+                ]
+                metric_str = "\n".join(metric_lines)
 
-                    axes[row_idx, col_idx].set_title(
-                        f"{modelo}\n{metric_str}", fontsize=6
-                    )
-                else:
-                    axes[row_idx, col_idx].set_title(f"{modelo}\nN/A", fontsize=7)
+                axes[row_idx, col_idx].set_title(
+                    f"{modelo}\n{metric_str}", fontsize=6
+                )
 
             except Exception as e:
                 axes[row_idx, col_idx].text(

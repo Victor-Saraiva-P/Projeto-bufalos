@@ -22,6 +22,18 @@ class FakePathResolver(PathResolver):
     pass
 
 
+@dataclass(frozen=True)
+class FakeNamedStrategy:
+    nome: str
+
+    @property
+    def nome_pasta(self) -> str:
+        return self.nome
+
+    def binarizar(self, image):
+        return image
+
+
 @dataclass
 class FakeBinarizacaoService:
     resultados: dict[str, str]
@@ -135,3 +147,62 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
         "/pred/bin/execucao_2/GaussianaOpening/u2netp/bufalo_001.png",
     ]
     assert imagens[0].segmentacoes_brutas == []
+
+
+def test_processar_segmentacoes_configuradas_itera_todas_as_estrategias(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    imagens = [Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)]
+    repository = FakeImagemRepository(imagens)
+    strategies = [
+        FakeNamedStrategy("GaussianaOpening"),
+            FakeNamedStrategy("LimiarFixo"),
+    ]
+    service = FakeBinarizacaoService(
+        resultados={
+            "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png": "ok",
+            "/pred/bin/execucao_1/LimiarFixo/u2netp/bufalo_001.png": "ok",
+        }
+    )
+    resolver = FakePathResolver(
+        data_dir="/data",
+        generated_dir="/generated",
+        images_dir="/orig",
+        ground_truth_brutos_dir="/gt/raw",
+        segmentacoes_brutas_dir="/pred/raw",
+        segmentacoes_binarizadas_dir="/pred/bin",
+        ground_truth_binarizada_dir="/gt/bin",
+        evaluation_dir="/eval",
+        indice_path="/data/Indice.xlsx",
+        sqlite_path="/tmp/bufalos.sqlite3",
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.PathResolver.from_config",
+        lambda: resolver,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.os.path.isdir",
+        lambda _path: True,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2netp": "cpu"},
+    )
+    monkeypatch.setattr("src.controllers.binarizacao_controller.NUM_EXECUCOES", 1)
+    controller = BinarizacaoController(
+        imagem_repository=repository,
+        binarizacao_service=service,
+        segmentacao_strategies=strategies,
+    )
+
+    resumos = controller.processar_segmentacoes_configuradas(imagens=imagens)
+
+    assert set(resumos) == {"GaussianaOpening", "LimiarFixo"}
+    assert all(
+        resumos[nome]["u2netp"].ok == 1
+        for nome in {"GaussianaOpening", "LimiarFixo"}
+    )
+    assert service.processados == [
+        "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png",
+        "/pred/bin/execucao_1/LimiarFixo/u2netp/bufalo_001.png",
+    ]

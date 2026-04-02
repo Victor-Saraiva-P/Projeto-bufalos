@@ -10,7 +10,10 @@ from typing import Optional
 import pandas as pd
 from tqdm.auto import tqdm
 
-from src.controllers.avaliacao_controller import AvaliacaoController
+from src.controllers.avaliacao_controller import (
+    AvaliacaoController,
+    MascaraBinarizadaNaoEncontradaError,
+)
 from src.models import Imagem, SegmentacaoBruta
 from src.repositories import ImagemRepository
 
@@ -49,6 +52,8 @@ class MetricsCollector:
         for imagem in tqdm(indice, desc="Processando imagens"):
             try:
                 self._calculate_metrics_for_image(imagem, modelos_com_erro)
+            except MascaraBinarizadaNaoEncontradaError:
+                raise
             except Exception as e:
                 print(f"\n⚠ Erro ao processar {imagem.nome_arquivo}: {e}")
                 continue
@@ -73,15 +78,24 @@ class MetricsCollector:
         imagem_avaliada = self.avaliacao_controller.processar_imagem(imagem)
 
         for segmentacao_bruta in imagem_avaliada.segmentacoes_brutas:
-            segmentacao_binarizada = self._selecionar_segmentacao_binarizada(segmentacao_bruta)
             if (
                 segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
-                or segmentacao_binarizada is None
-                or segmentacao_binarizada.area is None
-                or segmentacao_binarizada.perimetro is None
-                or segmentacao_binarizada.iou is None
             ):
                 modelos_com_erro.add(segmentacao_bruta.nome_modelo)
+                continue
+
+            if not segmentacao_bruta.segmentacoes_binarizadas:
+                modelos_com_erro.add(segmentacao_bruta.nome_modelo)
+                continue
+
+            for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas:
+                if (
+                    segmentacao_binarizada.area is None
+                    or segmentacao_binarizada.perimetro is None
+                    or segmentacao_binarizada.iou is None
+                ):
+                    modelos_com_erro.add(segmentacao_bruta.nome_modelo)
+                    break
 
     @staticmethod
     def _build_metrics_dataframe(imagens: list[Imagem]) -> pd.DataFrame:
@@ -98,63 +112,49 @@ class MetricsCollector:
                 continue
 
             for segmentacao_bruta in imagem.segmentacoes_brutas:
-                segmentacao_binarizada = MetricsCollector._selecionar_segmentacao_binarizada(
-                    segmentacao_bruta
-                )
-
-                if (
-                    segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
-                    or segmentacao_binarizada is None
-                    or segmentacao_binarizada.area is None
-                    or segmentacao_binarizada.perimetro is None
-                    or segmentacao_binarizada.iou is None
-                ):
+                if segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA:
                     continue
 
-                area = segmentacao_binarizada.area
-                perimetro = segmentacao_binarizada.perimetro
-                iou = segmentacao_binarizada.iou
+                for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas:
+                    if (
+                        segmentacao_binarizada.area is None
+                        or segmentacao_binarizada.perimetro is None
+                        or segmentacao_binarizada.iou is None
+                    ):
+                        continue
 
-                area_diff_abs = abs(area - area_gt)
-                perimetro_diff_abs = abs(perimetro - perimetro_gt)
-                area_similarity = 1.0 - (area_diff_abs / area_gt) if area_gt > 0 else 0.0
-                perimetro_similarity = (
-                    1.0 - (perimetro_diff_abs / perimetro_gt)
-                    if perimetro_gt > 0
-                    else 0.0
-                )
+                    area = segmentacao_binarizada.area
+                    perimetro = segmentacao_binarizada.perimetro
+                    iou = segmentacao_binarizada.iou
 
-                registros.append(
-                    {
-                        "nome_arquivo": imagem.nome_arquivo,
-                        "modelo": segmentacao_bruta.nome_modelo,
-                        "execucao": segmentacao_bruta.execucao,
-                        "estrategia_binarizacao": segmentacao_binarizada.estrategia_binarizacao,
-                        "area": area,
-                        "perimetro": perimetro,
-                        "iou": iou,
-                        "auprc": segmentacao_bruta.auprc,
-                        "area_gt": area_gt,
-                        "perimetro_gt": perimetro_gt,
-                        "area_diff_abs": area_diff_abs,
-                        "area_similarity": max(0.0, area_similarity),
-                        "perimetro_diff_abs": perimetro_diff_abs,
-                        "perimetro_similarity": max(0.0, perimetro_similarity),
-                    }
-                )
+                    area_diff_abs = abs(area - area_gt)
+                    perimetro_diff_abs = abs(perimetro - perimetro_gt)
+                    area_similarity = (
+                        1.0 - (area_diff_abs / area_gt) if area_gt > 0 else 0.0
+                    )
+                    perimetro_similarity = (
+                        1.0 - (perimetro_diff_abs / perimetro_gt)
+                        if perimetro_gt > 0
+                        else 0.0
+                    )
+
+                    registros.append(
+                        {
+                            "nome_arquivo": imagem.nome_arquivo,
+                            "modelo": segmentacao_bruta.nome_modelo,
+                            "execucao": segmentacao_bruta.execucao,
+                            "estrategia_binarizacao": segmentacao_binarizada.estrategia_binarizacao,
+                            "area": area,
+                            "perimetro": perimetro,
+                            "iou": iou,
+                            "auprc": segmentacao_bruta.auprc,
+                            "area_gt": area_gt,
+                            "perimetro_gt": perimetro_gt,
+                            "area_diff_abs": area_diff_abs,
+                            "area_similarity": max(0.0, area_similarity),
+                            "perimetro_diff_abs": perimetro_diff_abs,
+                            "perimetro_similarity": max(0.0, perimetro_similarity),
+                        }
+                    )
 
         return pd.DataFrame(registros)
-
-    @staticmethod
-    def _selecionar_segmentacao_binarizada(segmentacao_bruta):
-        return next(
-            (
-                segmentacao_binarizada
-                for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
-                if (
-                    segmentacao_binarizada.estrategia_binarizacao
-                    == AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO
-                )
-            ),
-            None,
-        )

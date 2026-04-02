@@ -3,10 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import os
 
-from src.binarizacao.estrategias.gaussiana import GaussianOpeningBinarizationStrategy
 from src.config import IMAGES_TYPE, REMBG_IMAGE_TYPE
-
-_NOME_PASTA_BINARIZACAO_PADRAO = GaussianOpeningBinarizationStrategy().nome_pasta
 
 
 @dataclass(frozen=True)
@@ -87,17 +84,12 @@ class PathResolver:
         nome_modelo: str,
         nome_arquivo: str,
         execucao: int,
-        nome_binarizacao: str | None = None,
+        nome_binarizacao: str,
     ) -> str:
-        nome_pasta_binarizacao = (
-            nome_binarizacao
-            if nome_binarizacao is not None
-            else _NOME_PASTA_BINARIZACAO_PADRAO
-        )
         return os.path.join(
             self.segmentacoes_binarizadas_dir,
             self.nome_pasta_execucao(execucao),
-            nome_pasta_binarizacao,
+            nome_binarizacao,
             nome_modelo,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )
@@ -114,6 +106,10 @@ class PathResolver:
 
         if execucao is None:
             raise ValueError("execucao e obrigatoria para segmentacoes previstas.")
+        if nome_binarizacao is None:
+            raise ValueError(
+                "nome_binarizacao e obrigatorio para segmentacoes previstas."
+            )
 
         return self.caminho_segmentacao_binarizada(
             nome_modelo,

@@ -3,8 +3,12 @@ from pathlib import Path
 import pytest
 import numpy as np
 
-from src.binarizacao import GaussianOpeningBinarizationStrategy
-from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
+from src.config import (
+    GROUND_TRUTH_BINARIZATION_STRATEGY,
+    MODELOS_PARA_AVALIACAO,
+    NUM_EXECUCOES,
+    SEGMENTACAO_BINARIZATION_STRATEGIES,
+)
 from src.controllers import (
     AvaliacaoController,
     BinarizacaoController,
@@ -36,6 +40,10 @@ def _modelos_e2e() -> dict[str, str]:
 
 def _iterar_execucoes() -> range:
     return range(1, NUM_EXECUCOES + 1)
+
+
+def _estrategias_segmentacao_e2e() -> list[str]:
+    return list(SEGMENTACAO_BINARIZATION_STRATEGIES)
 
 
 def _patch_ambiente_e2e(
@@ -140,10 +148,9 @@ def _executar_fluxo_notebook_02() -> tuple[PathResolver, dict[str, str], list]:
     imagem_controller = ImagemController()
     imagem_controller.verificar_segmentacoes()
 
-    strategy = GaussianOpeningBinarizationStrategy()
     binarizacao_controller = BinarizacaoController()
-    binarizacao_controller.processar_ground_truth(strategy=strategy)
-    binarizacao_controller.processar_segmentacoes(strategy=strategy)
+    binarizacao_controller.processar_ground_truth_configurada()
+    binarizacao_controller.processar_segmentacoes_configuradas()
 
     return resolver, modelos, linhas
 
@@ -213,18 +220,18 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
     _patch_ambiente_e2e(monkeypatch, resolver, modelos)
 
     resolver, modelos, linhas = _executar_fluxo_notebook_02()
-    strategy = GaussianOpeningBinarizationStrategy()
 
     saidas_ground_truth = sorted(Path(resolver.ground_truth_binarizada_dir).glob("*.png"))
     saidas_por_modelo_execucao = {
-        (nome_modelo, execucao): sorted(
+        (estrategia, nome_modelo, execucao): sorted(
             (
                 Path(resolver.segmentacoes_binarizadas_dir)
                 / f"execucao_{execucao}"
-                / strategy.nome_pasta
+                / estrategia
                 / nome_modelo
             ).glob("*.png")
         )
+        for estrategia in _estrategias_segmentacao_e2e()
         for nome_modelo in modelos
         for execucao in _iterar_execucoes()
     }
@@ -264,8 +271,12 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for execucao in _iterar_execucoes()
     }
 
-    assert stats.total == len(linhas) * len(_iterar_execucoes())
-    assert stats.ok == len(linhas) * len(_iterar_execucoes())
+    assert stats.total == (
+        len(linhas) * len(_iterar_execucoes()) * len(_estrategias_segmentacao_e2e())
+    )
+    assert stats.ok == (
+        len(linhas) * len(_iterar_execucoes()) * len(_estrategias_segmentacao_e2e())
+    )
     assert stats.erro == 0
     assert stats.skip == 0
 
@@ -299,11 +310,11 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )
     assert all(
-        any(
+        {
             segmentacao_binarizada.estrategia_binarizacao
-            == AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO
             for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
-        )
+        }
+        == set(_estrategias_segmentacao_e2e())
         for imagem in imagens
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )

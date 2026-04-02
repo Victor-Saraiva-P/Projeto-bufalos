@@ -25,6 +25,8 @@ rembg = ".png"
 sigma = 1.0
 threshold = 127
 kernel_size = 3
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
 
 [execution]
 num_execucoes = 3
