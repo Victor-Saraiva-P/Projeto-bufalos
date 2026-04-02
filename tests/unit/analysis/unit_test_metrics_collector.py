@@ -7,7 +7,7 @@ from src.models import (
 )
 
 
-def test_build_metrics_dataframe_inclui_auprc() -> None:
+def test_build_metrics_dataframe_inclui_metricas_brutas() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
@@ -19,6 +19,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
         nome_modelo="u2netp",
         execucao=1,
         auprc=0.92,
+        soft_dice=0.81,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(
@@ -53,6 +54,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
         "perimetro",
         "iou",
         "auprc",
+        "soft_dice",
         "area_gt",
         "perimetro_gt",
         "area_diff_abs",
@@ -64,9 +66,10 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
     assert set(df["estrategia_binarizacao"]) == {"GaussianaOpening", "LimiarFixo"}
     assert set(df["execucao"]) == {1}
     assert set(df["auprc"]) == {0.92}
+    assert set(df["soft_dice"]) == {0.81}
 
 
-def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valida() -> None:
+def test_build_metrics_dataframe_descarta_segmentacao_sem_metricas_brutas_validas() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
@@ -77,7 +80,8 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valida() -> None
         nome_arquivo="bufalo_001",
         nome_modelo="u2netp",
         execucao=1,
-        auprc=-1.0,
+        auprc=0.92,
+        soft_dice=-1.0,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(

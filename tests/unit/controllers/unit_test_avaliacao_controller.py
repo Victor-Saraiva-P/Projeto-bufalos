@@ -103,9 +103,11 @@ class FakeAvaliacaoService:
                 nome_modelo="u2netp",
                 execucao=execucao,
                 auprc=0.9,
+                soft_dice=0.82,
             )
             imagem.segmentacoes_brutas.append(segmentacao)
         segmentacao.auprc = 0.9
+        segmentacao.soft_dice = 0.82
         binarizada = next(
             (
                 existente
@@ -217,6 +219,7 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
         1,
         2,
     ]
+    assert all(segmentacao.soft_dice == 0.82 for segmentacao in imagem_avaliada.segmentacoes_brutas)
     assert all(
         {binarizada.estrategia_binarizacao for binarizada in segmentacao.segmentacoes_binarizadas}
         == {"GaussianaOpening", "LimiarFixo"}
@@ -245,6 +248,7 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         nome_modelo="u2netp",
         execucao=1,
         auprc=0.9,
+        soft_dice=0.83,
     )
     segmentacao_skip.segmentacoes_binarizadas.append(
         SegmentacaoBinarizada(
@@ -273,6 +277,7 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         nome_modelo="u2netp",
         execucao=2,
         auprc=0.91,
+        soft_dice=0.84,
     )
     segmentacao_skip_execucao_2.segmentacoes_binarizadas.append(
         SegmentacaoBinarizada(
@@ -331,6 +336,83 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     assert stats.ok == 4
     assert stats.skip == 4
     assert stats.erro == 0
+
+
+def test_processar_imagens_nao_considera_execucao_sem_soft_dice_como_avaliada(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repository = FakeImagemRepository()
+    service = FakeAvaliacaoService()
+    controller = AvaliacaoController(
+        imagem_repository=repository,
+        ground_truth_binarizada_repository=FakeGroundTruthBinarizadaRepository(),
+        segmentacao_binarizada_repository=FakeBinarizacaoRepository(),
+        segmentacao_bruta_repository=FakeSegmentacaoRepository(),
+        avaliacao_service=service,
+    )
+    imagem = Imagem(nome_arquivo="reavaliar", fazenda="A", peso=1.0)
+    imagem.ground_truth_binarizada = GroundTruthBinarizada(
+        nome_arquivo="reavaliar",
+        area=10.0,
+        perimetro=20.0,
+    )
+    segmentacao = SegmentacaoBruta(
+        nome_arquivo="reavaliar",
+        nome_modelo="u2netp",
+        execucao=1,
+        auprc=0.9,
+        soft_dice=-1.0,
+    )
+    segmentacao.segmentacoes_binarizadas = [
+        SegmentacaoBinarizada(
+            nome_arquivo="reavaliar",
+            nome_modelo="u2netp",
+            execucao=1,
+            estrategia_binarizacao="GaussianaOpening",
+            area=5.0,
+            perimetro=7.0,
+            iou=0.8,
+        ),
+        SegmentacaoBinarizada(
+            nome_arquivo="reavaliar",
+            nome_modelo="u2netp",
+            execucao=1,
+            estrategia_binarizacao="LimiarFixo",
+            area=5.1,
+            perimetro=7.1,
+            iou=0.79,
+        ),
+    ]
+    imagem.segmentacoes_brutas = [segmentacao]
+    repository.imagens = [imagem]
+
+    processadas: list[str] = []
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
+        {"u2netp": "cpu"},
+    )
+    monkeypatch.setattr("src.controllers.avaliacao_controller.NUM_EXECUCOES", 1)
+
+    def fake_processar_imagem(
+        imagem: Imagem,
+        execucao: int | None = None,
+        estrategias_binarizacao=None,
+    ) -> Imagem:
+        estrategia = estrategias_binarizacao[0] if estrategias_binarizacao is not None else "todas"
+        processadas.append(f"{imagem.nome_arquivo}:{execucao}:{estrategia}")
+        return imagem
+
+    monkeypatch.setattr(controller, "processar_imagem", fake_processar_imagem)
+    controller.estrategias_binarizacao = ["GaussianaOpening", "LimiarFixo"]
+
+    stats = controller.processar_imagens()
+
+    assert processadas == [
+        "reavaliar:1:GaussianaOpening",
+        "reavaliar:1:LimiarFixo",
+    ]
+    assert stats.ok == 2
+    assert stats.skip == 0
 
 
 def test_processar_imagem_falha_quando_estrategia_configurada_nao_tem_saida(

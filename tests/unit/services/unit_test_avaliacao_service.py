@@ -37,6 +37,14 @@ class FakeAUPRC:
         return 0.9 if self.modelo == "u2netp" else 0.6
 
 
+class FakeSoftDice:
+    def __init__(self, *, modelo: str, **_kwargs):
+        self.modelo = modelo
+
+    def calcular(self) -> float:
+        return 0.85 if self.modelo == "u2netp" else 0.55
+
+
 def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -44,6 +52,7 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     existente = SegmentacaoBruta(
@@ -51,6 +60,7 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
         nome_modelo="u2netp",
         execucao=1,
         auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
+        soft_dice=-1.0,
     )
     imagem.segmentacoes_brutas.append(existente)
 
@@ -81,6 +91,7 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     ]
     assert imagem_avaliada.segmentacoes_brutas[1] is existente
     assert existente.auprc == 0.9
+    assert existente.soft_dice == 0.85
     assert len(existente.segmentacoes_binarizadas) == 1
     binarizada = existente.segmentacoes_binarizadas[0]
     assert isinstance(binarizada, SegmentacaoBinarizada)
@@ -98,6 +109,7 @@ def test_avaliar_separa_segmentacoes_da_mesma_imagem_por_execucao(
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     service = AvaliacaoService()
@@ -129,6 +141,7 @@ def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
 
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     service = AvaliacaoService()
@@ -152,6 +165,7 @@ def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao
 
     assert len(imagem_avaliada.segmentacoes_brutas) == 1
     assert imagem_avaliada.segmentacoes_brutas[0].auprc == 0.9
+    assert imagem_avaliada.segmentacoes_brutas[0].soft_dice == 0.85
     assert {
         segmentacao_binarizada.estrategia_binarizacao
         for segmentacao_binarizada in imagem_avaliada.segmentacoes_brutas[0].segmentacoes_binarizadas

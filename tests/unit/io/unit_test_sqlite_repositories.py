@@ -73,6 +73,7 @@ def test_segmentacao_bruta_repository_save_persiste_segmentacao_bruta(tmp_path) 
             nome_modelo="u2netp",
             execucao=1,
             auprc=0.8,
+            soft_dice=0.7,
         )
     )
 
@@ -83,6 +84,7 @@ def test_segmentacao_bruta_repository_save_persiste_segmentacao_bruta(tmp_path) 
     assert imagem_persistida.segmentacoes_brutas[0].nome_modelo == "u2netp"
     assert imagem_persistida.segmentacoes_brutas[0].execucao == 1
     assert imagem_persistida.segmentacoes_brutas[0].auprc == 0.8
+    assert imagem_persistida.segmentacoes_brutas[0].soft_dice == 0.7
     assert segmentacao_repository.get("1166_Calcula_506", "u2netp", 1) is not None
 
 
@@ -98,6 +100,7 @@ def test_segmentacao_bruta_repository_distingue_execucoes_da_mesma_imagem(tmp_pa
             nome_modelo="u2netp",
             execucao=1,
             auprc=0.8,
+            soft_dice=0.7,
         )
     )
     segmentacao_repository.save(
@@ -106,6 +109,7 @@ def test_segmentacao_bruta_repository_distingue_execucoes_da_mesma_imagem(tmp_pa
             nome_modelo="u2netp",
             execucao=2,
             auprc=0.9,
+            soft_dice=0.75,
         )
     )
 
@@ -114,9 +118,12 @@ def test_segmentacao_bruta_repository_distingue_execucoes_da_mesma_imagem(tmp_pa
         nome_modelo="u2netp",
     )
 
-    assert [(segmentacao.execucao, segmentacao.auprc) for segmentacao in segmentacoes] == [
-        (1, 0.8),
-        (2, 0.9),
+    assert [
+        (segmentacao.execucao, segmentacao.auprc, segmentacao.soft_dice)
+        for segmentacao in segmentacoes
+    ] == [
+        (1, 0.8, 0.7),
+        (2, 0.9, 0.75),
     ]
 
 
@@ -133,6 +140,7 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
             nome_modelo="u2netp",
             execucao=1,
             auprc=0.95,
+            soft_dice=0.88,
         )
     )
     binarizacao_repository.save(
@@ -204,6 +212,7 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
             nome_modelo="u2netp",
             execucao=1,
             auprc=1.0,
+            soft_dice=0.94,
         )
     )
     binarizacao_repository.save(
@@ -236,6 +245,10 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
         == 1.0
     )
     assert (
+        imagem_persistida.segmentacoes_brutas[0].soft_dice
+        == 0.94
+    )
+    assert (
         imagem_persistida.segmentacoes_brutas[0]
         .segmentacoes_binarizadas[0]
         .iou
@@ -247,6 +260,7 @@ def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:
     assert not GroundTruthBinarizada.__table__.c.area.nullable
     assert not GroundTruthBinarizada.__table__.c.perimetro.nullable
     assert not SegmentacaoBruta.__table__.c.auprc.nullable
+    assert not SegmentacaoBruta.__table__.c.soft_dice.nullable
     assert not SegmentacaoBinarizada.__table__.c.area.nullable
     assert not SegmentacaoBinarizada.__table__.c.perimetro.nullable
     assert not SegmentacaoBinarizada.__table__.c.iou.nullable
@@ -266,6 +280,7 @@ def test_segmentacao_binarizada_repository_rejeita_segmentacao_parcial(tmp_path)
             nome_modelo="u2netp",
             execucao=1,
             auprc=0.7,
+            soft_dice=0.65,
         )
     )
 
@@ -296,6 +311,25 @@ def test_segmentacao_bruta_repository_rejeita_auprc_nula(tmp_path) -> None:
                 nome_modelo="u2netp",
                 execucao=1,
                 auprc=None,  # type: ignore[arg-type]
+                soft_dice=0.6,
+            )
+        )
+
+
+def test_segmentacao_bruta_repository_rejeita_soft_dice_nulo(tmp_path) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    imagem_repository = ImagemRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoBrutaRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
+
+    with pytest.raises(IntegrityError):
+        segmentacao_repository.save(
+            SegmentacaoBruta(
+                nome_arquivo="1166_Calcula_506",
+                nome_modelo="u2netp",
+                execucao=1,
+                auprc=0.6,
+                soft_dice=None,  # type: ignore[arg-type]
             )
         )
 
@@ -321,6 +355,7 @@ def test_imagem_repository_replace_all_recria_schema_e_remove_dados_derivados(tm
             nome_modelo="u2netp",
             execucao=1,
             auprc=0.5,
+            soft_dice=0.45,
         )
     )
 

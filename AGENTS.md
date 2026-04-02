@@ -187,7 +187,12 @@ Metricas principais:
 - `area_diff_rel`: mede o erro relativo de area;
 - `perimetro_diff_rel`: mede o erro relativo de contorno.
 
-Na etapa de binarizacao e analise de mascaras com score continuo, o projeto tambem passa a considerar `AUPRC` (`Area Under the Precision-Recall Curve`).
+Na etapa de binarizacao e analise de mascaras com score continuo, o projeto ja
+usa `AUPRC` (`Area Under the Precision-Recall Curve`).
+
+Existe tambem uma decisao tecnica registrada para introduzir `Soft Dice` como
+proxima metrica de segmentacao bruta. Nesta etapa, o repositorio documenta o
+contrato esperado e adiciona testes antes da implementacao, seguindo TDD.
 
 Arquivos relevantes:
 
@@ -258,9 +263,20 @@ Quando usar `AUPRC`:
 
 Implementacao no projeto:
 
-- o calculo fica em `src/binarizacao/metricas/auprc.py`;
+- o calculo fica em `src/metricas/segmentacao_bruta/auprc.py`;
 - a interface recebe `score_mask` continuo e `ground_truth_mask` binario;
 - a metrica foi adicionada para o estagio de binarizacao, e nao como substituta direta das metricas agregadas finais do ranking de segmentacao.
+
+Contrato planejado para `Soft Dice`:
+
+- mede quanta massa de score foi colocada em cima do ground truth;
+- deve receber `score_mask` normalizado em `[0, 1]` e `ground_truth_mask` binario;
+- valor proximo de `1.0`: score alto concentrado no bufalo e score baixo no fundo;
+- valor menor: vazamento no fundo, cobertura incompleta do animal ou ambos;
+- complementa a `AUPRC`: `AUPRC` avalia ranking de scores, enquanto `Soft Dice`
+  avalia cobertura e concentracao do score;
+- o ponto de extensao planejado para a implementacao e
+  `src/metricas/segmentacao_bruta/soft_dice.py`.
 
 Formulas:
 
@@ -386,6 +402,41 @@ Consequencias:
 - a avaliacao fica mais alinhada ao desbalanceamento real entre bufalo e fundo;
 - o score continuo da mascara passa a ser aproveitado diretamente;
 - comparacoes entre estrategias de binarizacao podem considerar a qualidade da ordenacao dos pixels, e nao apenas a saida final apos threshold.
+
+### Escolha da metrica Soft Dice
+
+Decisao:
+
+- adotar `Soft Dice` como a proxima metrica planejada para segmentacao bruta;
+- nesta etapa do TDD, registrar o contrato em documentacao e testes antes da
+  implementacao.
+
+Contexto:
+
+- as mascaras brutas carregam score continuo por pixel;
+- o projeto precisa diferenciar incerteza localizada na borda de vazamento de
+  confianca para o fundo;
+- tambem ha interesse em avaliar cobertura do animal antes de escolher um
+  threshold fixo.
+
+Motivo:
+
+- `Soft Dice` mede se a massa de score esta concentrada dentro do ground truth;
+- ele penaliza score alto no fundo;
+- ele penaliza cobertura incompleta do bufalo;
+- ele complementa a `AUPRC`, que mede melhor ranking de scores do que cobertura
+  espacial;
+- ele cria uma ponte util com a etapa binaria porque mascaras com bom `Soft
+  Dice` tendem a ser mais faceis de binarizar.
+
+Consequencias:
+
+- a entrada deve usar `score_mask` normalizado em `[0, 1]`;
+- o `ground_truth_mask` continua binario;
+- a leitura recomendada dos resultados e por imagem, com agregacao por mediana
+  e IQR, ou media e desvio padrao;
+- a metrica nao substitui analises de contorno na etapa binarizada;
+- comparacoes entre modelos devem seguir o mesmo protocolo de normalizacao.
 
 ### Mascaras do `rembg`
 
@@ -721,9 +772,12 @@ Leitura recomendada:
 1. `docs/guias/guia-do-projeto.md`
 2. `docs/guias/documentacao-do-repositorio.md`
 3. `docs/avaliacao/sistema-de-avaliacao.md`
-4. `docs/avaliacao/tags-de-imagem.md`
-5. `docs/guias/testes.md`
-6. `docs/guias/ci.md`
-7. `docs/decisoes-tecnicas/`
-8. `docs/metricas/`
-9. `docs/referencia/rembg/`
+4. `docs/metricas/auprc.md`
+5. `docs/metricas/soft-dice.md`
+6. `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md`
+7. `docs/decisoes-tecnicas/escolha-da-metrica-soft-dice.md`
+8. `docs/avaliacao/tags-de-imagem.md`
+9. `docs/guias/testes.md`
+10. `docs/guias/ci.md`
+11. `docs/decisoes-tecnicas/`
+12. `docs/referencia/rembg/`
