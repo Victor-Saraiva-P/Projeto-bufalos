@@ -8,7 +8,7 @@ from src.models import (
     SegmentacaoBinarizada,
     SegmentacaoBruta,
 )
-from src.metricas import AUPRC, SoftDice
+from src.metricas import AUPRC, BrierScore, SoftDice
 from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro
 
 
@@ -102,6 +102,12 @@ class AvaliacaoService:
             ground_truth_mask=ground_truth_mask,
             modelo=nome_modelo,
         ).calcular()
+        brier_score = BrierScore(
+            nome_arquivo=nome_arquivo,
+            score_mask=score_mask_normalizado,
+            ground_truth_mask=ground_truth_mask,
+            modelo=nome_modelo,
+        ).calcular()
 
         registro = segmentacao_bruta or SegmentacaoBruta(
             nome_arquivo=nome_arquivo,
@@ -109,9 +115,11 @@ class AvaliacaoService:
             execucao=execucao,
             auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
             soft_dice=SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO,
+            brier_score=SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO,
         )
         registro.auprc = float(auprc)
         registro.soft_dice = float(soft_dice)
+        registro.brier_score = float(brier_score)
         self._atualizar_segmentacao_binarizada(
             registro=registro,
             estrategia_binarizacao=estrategia_binarizacao,

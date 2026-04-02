@@ -23,6 +23,7 @@ class SegmentacaoBrutaRepository:
             execucao=segmentacao.execucao,
             auprc=segmentacao.auprc,
             soft_dice=segmentacao.soft_dice,
+            brier_score=segmentacao.brier_score,
         )
         with self.sessionmaker() as session:
             merged = session.merge(persistivel)

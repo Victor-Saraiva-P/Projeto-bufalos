@@ -9,7 +9,7 @@ from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
 
 
-def test_avaliacao_controller_processa_pipeline_e_persiste_soft_dice(
+def test_avaliacao_controller_processa_pipeline_e_persiste_metricas_brutas(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -66,8 +66,11 @@ def test_avaliacao_controller_processa_pipeline_e_persiste_soft_dice(
     assert all(
         0.0 <= segmentacao_bruta.auprc <= 1.0
         and 0.0 <= segmentacao_bruta.soft_dice <= 1.0
+        and 0.0 <= segmentacao_bruta.brier_score <= 1.0
         for imagem in imagens
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )
+    assert "brier_score" in df.columns
     assert "soft_dice" in df.columns
+    assert set(df["brier_score"].between(0.0, 1.0)) == {True}
     assert set(df["soft_dice"].between(0.0, 1.0)) == {True}

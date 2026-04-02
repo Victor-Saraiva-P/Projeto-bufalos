@@ -2,11 +2,8 @@
 
 ## Decisao
 
-Adotar `Soft Dice` como a proxima metrica planejada para o grupo de
-segmentacao bruta do projeto.
-
-Nesta etapa do TDD, a decisao fica registrada em documentacao e testes. A
-implementacao vem depois.
+Adotar `Soft Dice` como metrica de segmentacao bruta do projeto, em paralelo a
+`AUPRC` e `Brier Score`.
 
 ## Contexto
 

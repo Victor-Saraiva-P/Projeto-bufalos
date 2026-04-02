@@ -266,9 +266,11 @@ class AvaliacaoController:
                 return False
             if segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA:
                 return False
+            if segmentacao_bruta.soft_dice <= SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO:
+                return False
             if (
-                segmentacao_bruta.soft_dice
-                <= SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO
+                segmentacao_bruta.brier_score
+                <= SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO
             ):
                 return False
             segmentacao_binarizada_atual = next(

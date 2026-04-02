@@ -104,10 +104,12 @@ class FakeAvaliacaoService:
                 execucao=execucao,
                 auprc=0.9,
                 soft_dice=0.82,
+                brier_score=0.08,
             )
             imagem.segmentacoes_brutas.append(segmentacao)
         segmentacao.auprc = 0.9
         segmentacao.soft_dice = 0.82
+        segmentacao.brier_score = 0.08
         binarizada = next(
             (
                 existente
@@ -219,7 +221,12 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
         1,
         2,
     ]
-    assert all(segmentacao.soft_dice == 0.82 for segmentacao in imagem_avaliada.segmentacoes_brutas)
+    assert all(
+        segmentacao.soft_dice == 0.82 for segmentacao in imagem_avaliada.segmentacoes_brutas
+    )
+    assert {segmentacao.brier_score for segmentacao in imagem_avaliada.segmentacoes_brutas} == {
+        0.08
+    }
     assert all(
         {binarizada.estrategia_binarizacao for binarizada in segmentacao.segmentacoes_binarizadas}
         == {"GaussianaOpening", "LimiarFixo"}
@@ -249,6 +256,7 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         execucao=1,
         auprc=0.9,
         soft_dice=0.83,
+        brier_score=0.08,
     )
     segmentacao_skip.segmentacoes_binarizadas.append(
         SegmentacaoBinarizada(
@@ -278,6 +286,7 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         execucao=2,
         auprc=0.91,
         soft_dice=0.84,
+        brier_score=0.07,
     )
     segmentacao_skip_execucao_2.segmentacoes_binarizadas.append(
         SegmentacaoBinarizada(
@@ -361,7 +370,8 @@ def test_processar_imagens_nao_considera_execucao_sem_soft_dice_como_avaliada(
         nome_modelo="u2netp",
         execucao=1,
         auprc=0.9,
-        soft_dice=-1.0,
+        soft_dice=SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO,
+        brier_score=0.08,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(
@@ -413,6 +423,51 @@ def test_processar_imagens_nao_considera_execucao_sem_soft_dice_como_avaliada(
     ]
     assert stats.ok == 2
     assert stats.skip == 0
+
+
+def test_execucao_estrategia_ja_avaliada_exige_brier_score_valido() -> None:
+    controller = AvaliacaoController(
+        imagem_repository=FakeImagemRepository(),
+        ground_truth_binarizada_repository=FakeGroundTruthBinarizadaRepository(),
+        segmentacao_binarizada_repository=FakeBinarizacaoRepository(),
+        segmentacao_bruta_repository=FakeSegmentacaoRepository(),
+        avaliacao_service=FakeAvaliacaoService(),
+    )
+    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.ground_truth_binarizada = GroundTruthBinarizada(
+        nome_arquivo="bufalo_001",
+        area=10.0,
+        perimetro=20.0,
+    )
+    segmentacao = SegmentacaoBruta(
+        nome_arquivo="bufalo_001",
+        nome_modelo="u2netp",
+        execucao=1,
+        auprc=0.9,
+        soft_dice=0.82,
+        brier_score=SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO,
+    )
+    segmentacao.segmentacoes_binarizadas.append(
+        SegmentacaoBinarizada(
+            nome_arquivo="bufalo_001",
+            nome_modelo="u2netp",
+            execucao=1,
+            estrategia_binarizacao="GaussianaOpening",
+            area=5.0,
+            perimetro=7.0,
+            iou=0.8,
+        )
+    )
+    imagem.segmentacoes_brutas = [segmentacao]
+
+    resultado = controller._execucao_estrategia_ja_avaliada(
+        imagem=imagem,
+        nomes_modelo=["u2netp"],
+        execucao=1,
+        estrategia_binarizacao="GaussianaOpening",
+    )
+
+    assert resultado is False
 
 
 def test_processar_imagem_falha_quando_estrategia_configurada_nao_tem_saida(

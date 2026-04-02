@@ -22,10 +22,17 @@ Fluxo esperado:
 
 1. escrever ou ajustar um teste que descreva o comportamento desejado;
 2. executar o teste e confirmar a falha inicial;
-3. implementar a menor mudanca necessaria para fazer o teste passar;
-4. refatorar preservando a suite verde.
+3. fazer um commit contendo apenas testes e documentacao da etapa TDD, preservando o estado inicial com falha;
+4. implementar a menor mudanca necessaria para fazer o teste passar;
+5. refatorar preservando a suite verde.
 
 Essa diretriz vale tanto para novas funcionalidades quanto para correcoes de bug, desde que o comportamento seja testavel de forma automatizada.
+
+Regra adicional para auditoria do TDD:
+
+- o commit intermediario deve deixar claro qual era o contrato de teste antes da implementacao;
+- depois desse commit, os testes nao devem ser alterados durante a implementacao, exceto quando houver erro real no contrato ou ajuste de escopo;
+- se um teste precisar ser alterado apos o commit da etapa vermelha, a mudanca deve ser intencional, fazer sentido tecnicamente e ficar facil de identificar no historico.
 
 ## Estrutura atual
 

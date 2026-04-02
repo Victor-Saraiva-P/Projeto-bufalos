@@ -195,11 +195,8 @@ Metricas principais:
 - `perimetro_diff_rel`: mede o erro relativo de contorno.
 
 Na etapa de binarizacao e analise de mascaras com score continuo, o projeto ja
-usa `AUPRC` (`Area Under the Precision-Recall Curve`).
-
-Existe tambem uma decisao tecnica registrada para introduzir `Soft Dice` como
-proxima metrica de segmentacao bruta. Nesta etapa, o repositorio documenta o
-contrato esperado e adiciona testes antes da implementacao, seguindo TDD.
+usa `AUPRC` (`Area Under the Precision-Recall Curve`), `Soft Dice` e
+`Brier Score`.
 
 Arquivos relevantes:
 
@@ -222,6 +219,13 @@ Arquivos relevantes:
 Saida gerada:
 
 - `generated/bufalos.sqlite3`: banco SQLite usado como fonte de verdade da avaliacao.
+
+Regra para mudancas de schema no SQLite:
+
+- o arquivo `generated/bufalos.sqlite3` e tratado como artefato descartavel;
+- nao e necessario criar arquivos de migracao;
+- nao e necessario manter logica de migracao incremental de schema;
+- quando o schema mudar, a pratica esperada e apagar o `.sqlite` e subir tudo de novo pelo fluxo normal do projeto.
 
 Regra de responsabilidade entre camadas:
 
@@ -274,16 +278,21 @@ Implementacao no projeto:
 - a interface recebe `score_mask` continuo e `ground_truth_mask` binario;
 - a metrica foi adicionada para o estagio de binarizacao, e nao como substituta direta das metricas agregadas finais do ranking de segmentacao.
 
-Contrato planejado para `Soft Dice`:
+Metricas de segmentacao bruta com score continuo:
 
-- mede quanta massa de score foi colocada em cima do ground truth;
-- deve receber `score_mask` normalizado em `[0, 1]` e `ground_truth_mask` binario;
-- valor proximo de `1.0`: score alto concentrado no bufalo e score baixo no fundo;
-- valor menor: vazamento no fundo, cobertura incompleta do animal ou ambos;
-- complementa a `AUPRC`: `AUPRC` avalia ranking de scores, enquanto `Soft Dice`
-  avalia cobertura e concentracao do score;
-- o ponto de extensao planejado para a implementacao e
-  `src/metricas/segmentacao_bruta/soft_dice.py`.
+- `AUPRC`: avalia ranking de scores entre pixels de bufalo e fundo;
+- `Soft Dice`: avalia cobertura e concentracao da massa de score em cima do
+  ground truth;
+- `Brier Score`: avalia erro probabilistico medio entre score previsto e ground
+  truth binario.
+
+Contrato atual dessas metricas:
+
+- recebem `score_mask` normalizado em `[0, 1]`;
+- recebem `ground_truth_mask` binario;
+- sao persistidas em `SegmentacaoBruta` como `auprc`, `soft_dice` e
+  `brier_score`;
+- sao expostas pelo coletor analitico para uso em notebooks e ranking.
 
 Formulas:
 
@@ -414,9 +423,9 @@ Consequencias:
 
 Decisao:
 
-- adotar `Soft Dice` como a proxima metrica planejada para segmentacao bruta;
-- nesta etapa do TDD, registrar o contrato em documentacao e testes antes da
-  implementacao.
+- adotar `Soft Dice` como metrica de segmentacao bruta do projeto;
+- manter a leitura complementar entre ranking de scores, cobertura espacial e
+  erro probabilistico.
 
 Contexto:
 
@@ -444,6 +453,35 @@ Consequencias:
   e IQR, ou media e desvio padrao;
 - a metrica nao substitui analises de contorno na etapa binarizada;
 - comparacoes entre modelos devem seguir o mesmo protocolo de normalizacao.
+
+### Escolha da metrica Brier Score
+
+Decisao:
+
+- adotar `Brier Score` como metrica de segmentacao bruta em paralelo a
+  `AUPRC` e `Soft Dice`.
+
+Contexto:
+
+- `AUPRC` mede separacao entre pixels positivos e negativos;
+- `Soft Dice` mede cobertura e concentracao do score;
+- ainda faltava uma leitura de erro probabilistico da intensidade numerica da
+  confianca por pixel.
+
+Motivo:
+
+- `Brier Score` mede erro quadratico medio entre score previsto e ground truth
+  binario;
+- ele penaliza score alto no fundo e score baixo dentro do bufalo;
+- ele complementa as outras metricas de segmentacao bruta sem substitui-las.
+
+Consequencias:
+
+- a avaliacao de segmentacao bruta passa a usar `AUPRC`, `Soft Dice` e
+  `Brier Score`;
+- `score_mask` deve seguir normalizado em `[0, 1]`;
+- `SegmentacaoBruta` persiste `brier_score`;
+- o coletor analitico expõe a coluna `brier_score`.
 
 ### Mascaras do `rembg`
 
@@ -508,8 +546,10 @@ Principios:
 Abordagem de desenvolvimento:
 
 - o projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao;
-- o fluxo esperado e escrever primeiro o teste, confirmar a falha inicial, implementar a menor mudanca necessaria e refatorar com a suite verde;
+- o fluxo esperado e escrever primeiro o teste, confirmar a falha inicial, fazer um commit contendo apenas testes e documentacao da etapa TDD, implementar a menor mudanca necessaria e refatorar com a suite verde;
 - essa diretriz vale para novas funcionalidades e correcoes de bug quando o comportamento puder ser coberto por teste automatizado.
+- depois do commit da etapa vermelha, os testes nao devem ser alterados durante a implementacao, exceto quando houver erro real no contrato ou ajuste de escopo;
+- se um teste precisar mudar apos esse commit, a alteracao deve ser intencional, tecnicamente justificavel e facil de identificar no historico.
 
 Estrutura principal:
 
@@ -769,13 +809,21 @@ Quando uma decisao tecnica impactar o pipeline:
 
 Padrao recente do historico:
 
-- mensagens curtas no imperativo;
+- mensagens em portugues;
+- verbo de acao curto no inicio, como `Adiciona`, `Atualiza`, `Ajusta`, `Integra`, `Mantem`, `Sincroniza` ou `Refina`;
+- mensagens curtas;
 - um objetivo claro por commit.
+
+Regra operacional:
+
+- novos commits devem seguir o padrao observado nos ultimos commits da branch principal;
+- nao usar prefixes artificiais como `feat:`, `fix:`, `docs:` ou equivalentes.
 
 Exemplos:
 
-- `Refatora pipeline de binarizacao e logging`
-- `Remove modulo legado de logs de segmentacao`
+- `Adiciona execucoes ao pipeline e ajusta testes`
+- `Integra execucoes aos logs do pipeline`
+- `Atualiza notebook 03 de avaliacao`
 
 Pull requests devem:
 
@@ -784,6 +832,10 @@ Pull requests devem:
 - mencionar atualizacoes de documentacao;
 - incluir evidencia de teste, como `pytest ...`;
 - explicar o motivo se notebooks ou artefatos gerados forem alterados.
+- ser abertos sempre como draft por padrao;
+- usar titulo e corpo em portugues;
+- usar um titulo que abranja o conjunto real de mudancas do PR;
+- nao usar prefixos como `[codex]` no titulo.
 
 ## Mapa Da Documentacao Humana
 
@@ -794,10 +846,12 @@ Leitura recomendada:
 3. `docs/avaliacao/sistema-de-avaliacao.md`
 4. `docs/metricas/auprc.md`
 5. `docs/metricas/soft-dice.md`
-6. `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md`
-7. `docs/decisoes-tecnicas/escolha-da-metrica-soft-dice.md`
-8. `docs/avaliacao/tags-de-imagem.md`
-9. `docs/guias/testes.md`
-10. `docs/guias/ci.md`
-11. `docs/decisoes-tecnicas/`
-12. `docs/referencia/rembg/`
+6. `docs/metricas/brier-score.md`
+7. `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md`
+8. `docs/decisoes-tecnicas/escolha-da-metrica-soft-dice.md`
+9. `docs/decisoes-tecnicas/escolha-da-metrica-brier-score.md`
+10. `docs/avaliacao/tags-de-imagem.md`
+11. `docs/guias/testes.md`
+12. `docs/guias/ci.md`
+13. `docs/decisoes-tecnicas/`
+14. `docs/referencia/rembg/`

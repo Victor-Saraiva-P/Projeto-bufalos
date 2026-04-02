@@ -2,11 +2,10 @@
 
 ## Status no repositorio
 
-O `Soft Dice` foi aprovado como a proxima metrica de segmentacao bruta a entrar
-no projeto.
+O `Soft Dice` esta implementado na pipeline principal como metrica de
+segmentacao bruta com score continuo.
 
-Nesta etapa, a documentacao fixa o comportamento esperado e os testes definem o
-contrato antes da implementacao.
+No projeto, ele complementa a `AUPRC` e o `Brier Score`.
 
 ## O que a metrica significa
 

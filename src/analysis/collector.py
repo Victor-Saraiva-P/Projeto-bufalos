@@ -82,6 +82,8 @@ class MetricsCollector:
                 segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
                 or segmentacao_bruta.soft_dice
                 <= SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO
+                or segmentacao_bruta.brier_score
+                <= SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO
             ):
                 modelos_com_erro.add(segmentacao_bruta.nome_modelo)
                 continue
@@ -118,6 +120,8 @@ class MetricsCollector:
                     segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
                     or segmentacao_bruta.soft_dice
                     <= SegmentacaoBruta.SOFT_DICE_NAO_CALCULADO
+                    or segmentacao_bruta.brier_score
+                    <= SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO
                 ):
                     continue
 
@@ -155,6 +159,7 @@ class MetricsCollector:
                             "iou": iou,
                             "auprc": segmentacao_bruta.auprc,
                             "soft_dice": segmentacao_bruta.soft_dice,
+                            "brier_score": segmentacao_bruta.brier_score,
                             "area_gt": area_gt,
                             "perimetro_gt": perimetro_gt,
                             "area_diff_abs": area_diff_abs,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.config import SQLITE_PATH
@@ -23,7 +23,6 @@ def criar_tabelas_sqlite(sqlite_path: str = SQLITE_PATH) -> None:
 
     engine = criar_engine_sqlite(sqlite_path)
     Base.metadata.create_all(engine)
-    _migrar_segmentacao_bruta(engine)
 
 
 def recriar_tabelas_sqlite(sqlite_path: str = SQLITE_PATH) -> None:
@@ -33,24 +32,6 @@ def recriar_tabelas_sqlite(sqlite_path: str = SQLITE_PATH) -> None:
     engine = criar_engine_sqlite(sqlite_path)
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
-
-
-def _migrar_segmentacao_bruta(engine) -> None:
-    inspetor = inspect(engine)
-    if not inspetor.has_table("segmentacao_bruta"):
-        return
-
-    colunas = {coluna["name"] for coluna in inspetor.get_columns("segmentacao_bruta")}
-    if "soft_dice" in colunas:
-        return
-
-    with engine.begin() as conexao:
-        conexao.execute(
-            text(
-                "ALTER TABLE segmentacao_bruta "
-                "ADD COLUMN soft_dice FLOAT NOT NULL DEFAULT -1.0"
-            )
-        )
 
 
 def criar_sessionmaker_sqlite(sqlite_path: str = SQLITE_PATH) -> sessionmaker[Session]:

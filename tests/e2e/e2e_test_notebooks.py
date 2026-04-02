@@ -377,6 +377,7 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
     )
     assert all(
         0.0 <= segmentacao_bruta.soft_dice <= 1.0
+        and 0.0 <= segmentacao_bruta.brier_score <= 1.0
         for imagem in imagens
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )
