@@ -73,7 +73,6 @@ class AvaliacaoService:
         estrategia_binarizacao: str,
         segmentacao_bruta: SegmentacaoBruta | None = None,
     ) -> SegmentacaoBruta:
-        score_mask_normalizado = self._normalizar_score_mask(score_mask_modelo)
         area = Area(
             nome_arquivo=nome_arquivo,
             mask_array=mask_modelo,
@@ -92,13 +91,13 @@ class AvaliacaoService:
         ).calcular()
         auprc = AUPRC(
             nome_arquivo=nome_arquivo,
-            score_mask=score_mask_normalizado,
+            score_mask=score_mask_modelo,
             ground_truth_mask=ground_truth_mask,
             modelo=nome_modelo,
         ).calcular()
         brier_score = BrierScore(
             nome_arquivo=nome_arquivo,
-            score_mask=score_mask_normalizado,
+            score_mask=score_mask_modelo,
             ground_truth_mask=ground_truth_mask,
             modelo=nome_modelo,
         ).calcular()
@@ -150,17 +149,3 @@ class AvaliacaoService:
         segmentacao_binarizada.area = area
         segmentacao_binarizada.perimetro = perimetro
         segmentacao_binarizada.iou = iou
-
-    @staticmethod
-    def _normalizar_score_mask(score_mask: np.ndarray) -> np.ndarray:
-        score_mask_array = np.asarray(score_mask, dtype=np.float64)
-        if score_mask_array.size == 0:
-            return score_mask_array
-
-        if np.all((score_mask_array >= 0.0) & (score_mask_array <= 1.0)):
-            return score_mask_array
-
-        if np.all((score_mask_array >= 0.0) & (score_mask_array <= 255.0)):
-            return score_mask_array / 255.0
-
-        return score_mask_array

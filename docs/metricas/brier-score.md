@@ -59,5 +59,6 @@ Os testes TDD deste branch assumem o seguinte contrato:
 - a entidade `SegmentacaoBruta` passa a persistir o campo `brier_score`;
 - o valor deve ficar no intervalo `[0, 1]`;
 - `BrierScore` recebe `score_mask` ja normalizado em `[0, 1]`;
-- a normalizacao de mascaras em escala `0-255` deve acontecer no
-  `AvaliacaoService`, antes de chamar `AUPRC` e `BrierScore`.
+- a normalizacao de mascaras em escala `0-255` deve acontecer em
+  `carregar_score_mask_predita()`, antes de o pipeline repassar o dado para
+  `AUPRC` e `BrierScore`.

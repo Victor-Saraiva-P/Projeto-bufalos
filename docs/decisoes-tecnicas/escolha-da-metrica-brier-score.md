@@ -35,8 +35,8 @@ Ele ajuda a capturar cenarios como:
 - a avaliacao de segmentacao bruta passa a ter duas leituras complementares:
   separacao via AUPRC e erro probabilistico via Brier Score;
 - o calculo deve receber `score_mask` normalizado em `[0, 1]`;
-- a normalizacao de mascaras `0-255` deve acontecer na camada de servico,
-  seguindo o mesmo padrao adotado para o Soft Dice;
+- a normalizacao de mascaras `0-255` deve acontecer no carregamento da mascara
+  predita, para evitar ambiguidade entre probabilidade real e PNG 8-bit escuro;
 - a camada de persistencia precisara armazenar `brier_score` em `SegmentacaoBruta`;
 - o coletor analitico devera expor a nova coluna para analise posterior;
 - o valor nao deve ser usado isoladamente, porque o desbalanceamento do dataset faz

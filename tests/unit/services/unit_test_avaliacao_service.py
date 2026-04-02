@@ -82,8 +82,8 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
             "modnet": np.ones((2, 2), dtype=np.uint8),
         },
         score_masks_modelo={
-            "u2netp": np.full((2, 2), 204, dtype=np.float64),
-            "modnet": np.full((2, 2), 102, dtype=np.float64),
+            "u2netp": np.full((2, 2), 0.8, dtype=np.float64),
+            "modnet": np.full((2, 2), 0.4, dtype=np.float64),
         },
         estrategia_binarizacao="GaussianaOpening",
         execucao=1,
@@ -133,7 +133,7 @@ def test_avaliar_separa_segmentacoes_da_mesma_imagem_por_execucao(
         "imagem": imagem,
         "ground_truth_mask": np.zeros((2, 2), dtype=np.uint8),
         "mascaras_modelo": {"u2netp": np.ones((2, 2), dtype=np.uint8)},
-        "score_masks_modelo": {"u2netp": np.full((2, 2), 204, dtype=np.float64)},
+        "score_masks_modelo": {"u2netp": np.full((2, 2), 0.8, dtype=np.float64)},
         "estrategia_binarizacao": "GaussianaOpening",
     }
 
@@ -167,7 +167,7 @@ def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao
         "imagem": imagem,
         "ground_truth_mask": np.zeros((2, 2), dtype=np.uint8),
         "mascaras_modelo": {"u2netp": np.ones((2, 2), dtype=np.uint8)},
-        "score_masks_modelo": {"u2netp": np.full((2, 2), 204, dtype=np.float64)},
+        "score_masks_modelo": {"u2netp": np.full((2, 2), 0.8, dtype=np.float64)},
     }
 
     service.avaliar(
@@ -190,7 +190,7 @@ def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao
     } == {"GaussianaOpening", "LimiarFixo"}
 
 
-def test_avaliar_normaliza_score_mask_de_0_a_255_antes_de_calcular_metricas_brutas(
+def test_avaliar_repassa_score_mask_ja_normalizado_para_metricas_brutas(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     FakeAUPRC.ultimo_score_mask = None
@@ -208,7 +208,7 @@ def test_avaliar_normaliza_score_mask_de_0_a_255_antes_de_calcular_metricas_brut
         ground_truth_mask=np.zeros((2, 2), dtype=np.uint8),
         mascaras_modelo={"u2netp": np.ones((2, 2), dtype=np.uint8)},
         score_masks_modelo={
-            "u2netp": np.array([[255, 128], [64, 0]], dtype=np.float64)
+            "u2netp": np.array([[1.0, 128 / 255], [64 / 255, 0.0]], dtype=np.float64)
         },
         estrategia_binarizacao="GaussianaOpening",
         execucao=1,
