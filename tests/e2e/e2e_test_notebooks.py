@@ -1,14 +1,11 @@
+from dataclasses import dataclass
+import os
 from pathlib import Path
+import shutil
+import tomllib
 
 import pytest
 import numpy as np
-
-from src.config import (
-    GROUND_TRUTH_BINARIZATION_STRATEGY,
-    MODELOS_PARA_AVALIACAO,
-    NUM_EXECUCOES,
-    SEGMENTACAO_BINARIZATION_STRATEGIES,
-)
 from src.controllers import (
     AvaliacaoController,
     BinarizacaoController,
@@ -18,66 +15,137 @@ from src.controllers import (
 from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
 
+E2E_CONFIG_PATH = "config.e2e.toml"
+REPO_ROOT = Path(__file__).resolve().parents[2]
 
-def _resolver_e2e(tmp_path: Path) -> PathResolver:
-    e2e_generated_dir = tmp_path / "e2e_generated"
 
-    return PathResolver.from_config().with_overrides(
-        generated_dir=str(e2e_generated_dir),
-        segmentacoes_brutas_dir=str(e2e_generated_dir / "segmentacoes_brutas"),
-        segmentacoes_binarizadas_dir=str(
-            e2e_generated_dir / "segmentacoes_binarizadas"
+@dataclass(frozen=True)
+class E2EContext:
+    resolver: PathResolver
+    modelos: dict[str, str]
+    num_execucoes: int
+    ground_truth_strategy: str
+    segmentacao_strategies: list[str]
+
+
+def _resolver_caminho(path_value: str) -> str:
+    path = Path(path_value).expanduser()
+    if path.is_absolute():
+        return str(path)
+    return str((REPO_ROOT / path).resolve())
+
+
+def _carregar_contexto_e2e() -> E2EContext:
+    config_path = REPO_ROOT / E2E_CONFIG_PATH
+    config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    paths = config["paths"]
+
+    return E2EContext(
+        resolver=PathResolver(
+            data_dir=_resolver_caminho(paths["data_dir"]),
+            generated_dir=_resolver_caminho(paths["generated_dir"]),
+            images_dir=_resolver_caminho(paths["images_dir"]),
+            ground_truth_brutos_dir=_resolver_caminho(paths["ground_truth_brutos_dir"]),
+            segmentacoes_brutas_dir=_resolver_caminho(paths["segmentacoes_brutas_dir"]),
+            segmentacoes_binarizadas_dir=_resolver_caminho(
+                paths["segmentacoes_binarizadas_dir"]
+            ),
+            ground_truth_binarizada_dir=_resolver_caminho(
+                paths["ground_truth_binarizada_dir"]
+            ),
+            evaluation_dir=_resolver_caminho(paths["evaluation_dir"]),
+            indice_path=_resolver_caminho(paths["indice_file"]),
+            sqlite_path=_resolver_caminho(paths["sqlite_file"]),
         ),
-        ground_truth_binarizada_dir=str(e2e_generated_dir / "ground_truth_binarizada"),
-        evaluation_dir=str(e2e_generated_dir / "evaluation"),
-        sqlite_path=str(e2e_generated_dir / "bufalos-e2e.sqlite3"),
+        modelos=dict(config["models"]),
+        num_execucoes=config["execution"]["num_execucoes"],
+        ground_truth_strategy=config["binarization"]["ground_truth_strategy"],
+        segmentacao_strategies=list(config["binarization"]["segmentacao_strategies"]),
     )
 
 
-def _modelos_e2e() -> dict[str, str]:
-    return dict(MODELOS_PARA_AVALIACAO)
+def _limpar_saida_e2e(resolver: PathResolver) -> None:
+    generated_dir = Path(resolver.generated_dir)
+    shutil.rmtree(generated_dir, ignore_errors=True)
+    generated_dir.mkdir(parents=True, exist_ok=True)
 
 
-def _iterar_execucoes() -> range:
-    return range(1, NUM_EXECUCOES + 1)
+def _iterar_execucoes(num_execucoes: int) -> range:
+    return range(1, num_execucoes + 1)
 
 
-def _estrategias_segmentacao_e2e() -> list[str]:
-    return list(SEGMENTACAO_BINARIZATION_STRATEGIES)
+@pytest.fixture
+def e2e_context(monkeypatch: pytest.MonkeyPatch) -> E2EContext:
+    override_original = os.environ.get("BUFALOS_CONFIG_PATH")
+
+    try:
+        os.environ["BUFALOS_CONFIG_PATH"] = E2E_CONFIG_PATH
+        contexto = _carregar_contexto_e2e()
+        _limpar_saida_e2e(contexto.resolver)
+        _patch_ambiente_e2e(monkeypatch, contexto)
+        yield contexto
+    finally:
+        if override_original is None:
+            os.environ.pop("BUFALOS_CONFIG_PATH", None)
+        else:
+            os.environ["BUFALOS_CONFIG_PATH"] = override_original
 
 
 def _patch_ambiente_e2e(
     monkeypatch: pytest.MonkeyPatch,
-    resolver: PathResolver,
-    modelos: dict[str, str],
+    contexto: E2EContext,
 ) -> None:
     monkeypatch.setattr(
         "src.controllers.imagem_controller.PathResolver.from_config",
-        lambda: resolver,
+        lambda: contexto.resolver,
     )
     monkeypatch.setattr(
         "src.controllers.segmentacao_controller.PathResolver.from_config",
-        lambda: resolver,
+        lambda: contexto.resolver,
     )
     monkeypatch.setattr(
         "src.controllers.binarizacao_controller.PathResolver.from_config",
-        lambda: resolver,
+        lambda: contexto.resolver,
     )
     monkeypatch.setattr(
         "src.controllers.avaliacao_controller.PathResolver.from_config",
-        lambda: resolver,
+        lambda: contexto.resolver,
     )
     monkeypatch.setattr(
         "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
-        modelos,
+        contexto.modelos,
+    )
+    monkeypatch.setattr(
+        "src.controllers.segmentacao_controller.NUM_EXECUCOES",
+        contexto.num_execucoes,
     )
     monkeypatch.setattr(
         "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
-        modelos,
+        contexto.modelos,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.NUM_EXECUCOES",
+        contexto.num_execucoes,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.GROUND_TRUTH_BINARIZATION_STRATEGY",
+        contexto.ground_truth_strategy,
+    )
+    monkeypatch.setattr(
+        "src.controllers.binarizacao_controller.SEGMENTACAO_BINARIZATION_STRATEGIES",
+        contexto.segmentacao_strategies,
     )
     monkeypatch.setattr(
         "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
-        modelos,
+        contexto.modelos,
+    )
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.NUM_EXECUCOES",
+        contexto.num_execucoes,
+    )
+    monkeypatch.setattr(
+        "src.controllers.avaliacao_controller.SEGMENTACAO_BINARIZATION_STRATEGIES",
+        contexto.segmentacao_strategies,
     )
     monkeypatch.setattr(
         "src.metricas.segmentacao_binarizada.perimetro.cv2.CHAIN_APPROX_NONE",
@@ -127,7 +195,7 @@ def _fake_arc_length(contour: np.ndarray, closed: bool = True) -> float:
     return perimetro
 
 
-def _executar_fluxo_notebook_01() -> tuple[PathResolver, dict[str, str], list]:
+def _executar_fluxo_notebook_01(contexto: E2EContext) -> list:
     imagem_controller = ImagemController()
     imagem_controller.sincronizar_indice_excel()
     imagem_controller.verificar_pngs_corrompidos()
@@ -139,11 +207,11 @@ def _executar_fluxo_notebook_01() -> tuple[PathResolver, dict[str, str], list]:
     except Exception as erro:
         pytest.skip(f"Ambiente sem suporte para executar rembg real: {erro}")
 
-    return segmentacao_controller.path_resolver, _modelos_e2e(), linhas
+    return linhas
 
 
-def _executar_fluxo_notebook_02() -> tuple[PathResolver, dict[str, str], list]:
-    resolver, modelos, linhas = _executar_fluxo_notebook_01()
+def _executar_fluxo_notebook_02(contexto: E2EContext) -> list:
+    linhas = _executar_fluxo_notebook_01(contexto)
 
     imagem_controller = ImagemController()
     imagem_controller.verificar_segmentacoes()
@@ -152,22 +220,20 @@ def _executar_fluxo_notebook_02() -> tuple[PathResolver, dict[str, str], list]:
     binarizacao_controller.processar_ground_truth_configurada()
     binarizacao_controller.processar_segmentacoes_configuradas()
 
-    return resolver, modelos, linhas
+    return linhas
 
 
 @pytest.mark.e2e
 def test_notebook_01_gera_segmentacoes(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    e2e_context: E2EContext,
 ) -> None:
     try:
         import rembg  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    resolver = _resolver_e2e(tmp_path)
-    modelos = _modelos_e2e()
-    _patch_ambiente_e2e(monkeypatch, resolver, modelos)
+    resolver = e2e_context.resolver
+    modelos = e2e_context.modelos
 
     imagem_controller = ImagemController()
     imagem_controller.sincronizar_indice_excel()
@@ -188,16 +254,16 @@ def test_notebook_01_gera_segmentacoes(
             ).glob("*.png")
         )
         for nome_modelo in modelos
-        for execucao in _iterar_execucoes()
+        for execucao in _iterar_execucoes(e2e_context.num_execucoes)
     }
 
     assert resumo_integridade.total_png == 0
     assert len(linhas) == 5
     assert set(resumos) == set(modelos)
     for nome_modelo in modelos:
-        assert resumos[nome_modelo].total == len(linhas) * NUM_EXECUCOES
-        assert resumos[nome_modelo].processadas == len(linhas) * NUM_EXECUCOES
-        assert resumos[nome_modelo].ok == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].total == len(linhas) * e2e_context.num_execucoes
+        assert resumos[nome_modelo].processadas == len(linhas) * e2e_context.num_execucoes
+        assert resumos[nome_modelo].ok == len(linhas) * e2e_context.num_execucoes
         assert resumos[nome_modelo].erro == 0
         assert resumos[nome_modelo].skip == 0
     assert all(
@@ -207,19 +273,16 @@ def test_notebook_01_gera_segmentacoes(
 
 @pytest.mark.e2e
 def test_notebook_02_binariza_ground_truth_e_segmentacoes(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    e2e_context: E2EContext,
 ) -> None:
     try:
         import rembg  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    resolver = _resolver_e2e(tmp_path)
-    modelos = _modelos_e2e()
-    _patch_ambiente_e2e(monkeypatch, resolver, modelos)
-
-    resolver, modelos, linhas = _executar_fluxo_notebook_02()
+    resolver = e2e_context.resolver
+    modelos = e2e_context.modelos
+    linhas = _executar_fluxo_notebook_02(e2e_context)
 
     saidas_ground_truth = sorted(Path(resolver.ground_truth_binarizada_dir).glob("*.png"))
     saidas_por_modelo_execucao = {
@@ -231,11 +294,13 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
                 / nome_modelo
             ).glob("*.png")
         )
-        for estrategia in _estrategias_segmentacao_e2e()
+        for estrategia in e2e_context.segmentacao_strategies
         for nome_modelo in modelos
-        for execucao in _iterar_execucoes()
+        for execucao in _iterar_execucoes(e2e_context.num_execucoes)
     }
-    imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
+    imagem_persistida = ImagemRepository(resolver.sqlite_path).get(
+        linhas[0].nome_arquivo
+    )
 
     assert len(saidas_ground_truth) == len(linhas)
     assert all(
@@ -248,19 +313,16 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
 
 @pytest.mark.e2e
 def test_notebook_03_calcula_e_persiste_avaliacoes(
-    monkeypatch: pytest.MonkeyPatch,
-    tmp_path: Path,
+    e2e_context: E2EContext,
 ) -> None:
     try:
         import rembg  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    resolver = _resolver_e2e(tmp_path)
-    modelos = _modelos_e2e()
-    _patch_ambiente_e2e(monkeypatch, resolver, modelos)
-
-    resolver, modelos, linhas = _executar_fluxo_notebook_02()
+    resolver = e2e_context.resolver
+    modelos = e2e_context.modelos
+    linhas = _executar_fluxo_notebook_02(e2e_context)
 
     avaliacao_controller = AvaliacaoController()
     stats = avaliacao_controller.processar_imagens()
@@ -268,14 +330,18 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
     pares_esperados = {
         (nome_modelo, execucao)
         for nome_modelo in modelos
-        for execucao in _iterar_execucoes()
+        for execucao in _iterar_execucoes(e2e_context.num_execucoes)
     }
 
     assert stats.total == (
-        len(linhas) * len(_iterar_execucoes()) * len(_estrategias_segmentacao_e2e())
+        len(linhas)
+        * len(_iterar_execucoes(e2e_context.num_execucoes))
+        * len(e2e_context.segmentacao_strategies)
     )
     assert stats.ok == (
-        len(linhas) * len(_iterar_execucoes()) * len(_estrategias_segmentacao_e2e())
+        len(linhas)
+        * len(_iterar_execucoes(e2e_context.num_execucoes))
+        * len(e2e_context.segmentacao_strategies)
     )
     assert stats.erro == 0
     assert stats.skip == 0
@@ -319,7 +385,7 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
             segmentacao_binarizada.estrategia_binarizacao
             for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
         }
-        == set(_estrategias_segmentacao_e2e())
+        == set(e2e_context.segmentacao_strategies)
         for imagem in imagens
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )

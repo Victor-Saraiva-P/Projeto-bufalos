@@ -1,0 +1,21 @@
+[paths]
+data_dir = "tests/mock_data"
+generated_dir = "tests/e2e_generated"
+images_dir = "tests/mock_data/images"
+ground_truth_brutos_dir = "tests/mock_data/ground_truth_brutos"
+segmentacoes_brutas_dir = "tests/e2e_generated/segmentacoes_brutas"
+segmentacoes_binarizadas_dir = "tests/e2e_generated/segmentacoes_binarizadas"
+ground_truth_binarizada_dir = "tests/e2e_generated/ground_truth_binarizada"
+evaluation_dir = "tests/e2e_generated/evaluation"
+indice_file = "tests/mock_data/Indice.xlsx"
+sqlite_file = "tests/e2e_generated/bufalos-e2e.sqlite3"
+
+[execution]
+num_execucoes = 3
+
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
+
+[models]
+u2netp = "cpu"

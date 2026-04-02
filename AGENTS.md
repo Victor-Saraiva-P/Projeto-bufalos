@@ -509,6 +509,7 @@ Estrutura principal:
 ```text
 config.toml
 config.test.toml
+config.e2e.toml
 tests/
   conftest.py
   mock_data/
@@ -567,6 +568,14 @@ Configuracao da suite:
 - `tests/conftest.py` define `BUFALOS_ENV=test` antes dos imports de `src.config`;
 - `config.test.toml` sobrescreve apenas paths e o subconjunto de modelos usados na suite.
 
+Configuracao do `e2e`:
+
+- o `e2e` usa um override proprio em `config.e2e.toml`;
+- os testes `e2e` carregam esse arquivo via `BUFALOS_CONFIG_PATH`;
+- a saida persistente fica em `tests/e2e_generated/`;
+- o diretorio e limpo no inicio de cada teste e mantido ao final para inspecao manual;
+- a intencao e que o `e2e` represente uma pequena execucao real da pipeline, auditavel tambem fora do `pytest`.
+
 Trecho esperado de configuracao:
 
 ```toml
@@ -582,6 +591,9 @@ evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
+[execution]
+num_execucoes = 3
+
 [binarization]
 ground_truth_strategy = "GaussianaOpening"
 segmentacao_strategies = ["GaussianaOpening"]
@@ -595,6 +607,7 @@ Fluxo local recomendado:
 - `pip install -e .`
 - `pytest`
 - `pytest -m "not e2e"`
+- `pytest tests/e2e/e2e_test_notebooks.py -m e2e`
 - `pytest --cov=src --cov-report=term-missing`
 - `pytest --cov=src --cov-report=html`
 

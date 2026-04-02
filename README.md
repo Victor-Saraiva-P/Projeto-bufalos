@@ -63,6 +63,15 @@ pytest -m "not e2e"
 pytest --cov=src --cov-report=term-missing
 ```
 
+Para executar o `e2e` como uma pequena execucao inspecionavel da pipeline:
+
+```bash
+pytest tests/e2e/e2e_test_notebooks.py -m e2e
+```
+
+Os artefatos dessa execucao ficam em `tests/e2e_generated/`, seguindo
+`config.e2e.toml`.
+
 ## Guia Rapido
 
 Se voce quer:
@@ -71,6 +80,7 @@ Se voce quer:
 - entender a politica de sincronizacao entre `README.md`, `docs/` e `AGENTS.md`: veja `docs/guias/documentacao-do-repositorio.md`;
 - entender a suite automatizada: veja `docs/guias/testes.md`;
 - entender o CI: veja `docs/guias/ci.md`;
+- entender por que o `e2e` gera saidas persistentes: veja `docs/decisoes-tecnicas/e2e-com-saidas-persistentes.md`;
 - entender o sistema de avaliacao: veja `docs/avaliacao/sistema-de-avaliacao.md`;
 - entender a metrica AUPRC usada na binarizacao: veja `docs/metricas/auprc.md`;
 - entender a metrica Soft Dice planejada para segmentacao bruta com score continuo: veja `docs/metricas/soft-dice.md`;
@@ -111,6 +121,7 @@ docs/
     auprc.md
     soft-dice.md
   decisoes-tecnicas/
+    e2e-com-saidas-persistentes.md
     escolha-da-metrica-auprc.md
     escolha-da-metrica-soft-dice.md
     mascaras-do-rembg.md
@@ -130,5 +141,5 @@ docs/
 4. use `docs/metricas/auprc.md` e `docs/decisoes-tecnicas/escolha-da-metrica-auprc.md` ao mexer na avaliacao de binarizacao;
 5. use `docs/metricas/soft-dice.md` e `docs/decisoes-tecnicas/escolha-da-metrica-soft-dice.md` ao iniciar a introducao do `Soft Dice`;
 6. consulte `docs/avaliacao/tags-de-imagem.md` ao revisar ou interpretar imagens;
-7. use `docs/guias/testes.md` e `docs/guias/ci.md` ao mexer na suite;
+7. use `docs/guias/testes.md`, `docs/guias/ci.md` e `docs/decisoes-tecnicas/e2e-com-saidas-persistentes.md` ao mexer na suite;
 8. consulte `AGENTS.md` quando precisar do contexto consolidado em um unico arquivo.
