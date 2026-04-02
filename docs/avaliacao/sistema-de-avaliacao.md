@@ -50,7 +50,9 @@ Saida gerada:
 
 Observacao importante:
 
-- `Segmentacao`, `GroundTruthBinarizada` e `Binarizacao` representam resultados metricos completos; elas nao sao criadas nas etapas 01 e 02.
+- `SegmentacaoBruta`, `GroundTruthBinarizada` e `SegmentacaoBinarizada` representam resultados metricos completos; elas nao sao criadas nas etapas 01 e 02.
+- `SegmentacaoBruta` persiste a metrica `auprc`.
+- `SegmentacaoBinarizada` persiste `area`, `perimetro` e `iou` por estrategia de binarizacao.
 
 ## Como usar
 
@@ -171,11 +173,11 @@ Isso sobrescreve os registros de avaliacao no banco:
 
 Arquitetura da persistencia:
 
-- `src/models/` define as entidades persistidas (`Imagem`, `GroundTruthBinarizada`, `Segmentacao`, `Binarizacao`, `Tag`);
+- `src/models/` define as entidades persistidas (`Imagem`, `GroundTruthBinarizada`, `SegmentacaoBruta`, `SegmentacaoBinarizada`, `Tag`);
 - `src/repositories/` encapsula o CRUD dessas entidades;
 - `src/logs/` centraliza os logs compartilhados do pipeline;
 - `src/controllers/avaliacao_controller.py` coordena o processamento de cada imagem;
-- `src/services/avaliacao_service.py` calcula as metricas e preenche `Segmentacao` e `GroundTruthBinarizada` antes da persistencia.
+- `src/services/avaliacao_service.py` calcula as metricas e preenche `SegmentacaoBruta`, `SegmentacaoBinarizada` e `GroundTruthBinarizada` antes da persistencia.
 
 ## Leitura dos resultados
 

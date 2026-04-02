@@ -4,6 +4,7 @@ import numpy as np
 from PIL import Image
 from scipy.ndimage import binary_opening, gaussian_filter
 
+from src.binarizacao.binarizacao_base import gerar_nome_pasta_binarizacao
 from src.config import (
     BINARIZATION_KERNEL_SIZE,
     BINARIZATION_SIGMA,
@@ -16,6 +17,14 @@ class GaussianOpeningBinarizationStrategy:
     sigma: float = BINARIZATION_SIGMA
     threshold: float = BINARIZATION_THRESHOLD
     kernel_size: int = BINARIZATION_KERNEL_SIZE
+
+    @property
+    def nome(self) -> str:
+        return "GaussianaOpening"
+
+    @property
+    def nome_pasta(self) -> str:
+        return gerar_nome_pasta_binarizacao(self.nome)
 
     def binarizar(self, image: Image.Image) -> Image.Image:
         image_gray = image.convert("L")

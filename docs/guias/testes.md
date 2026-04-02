@@ -140,7 +140,7 @@ Estrutura atual:
 tests/mock_data/
   Indice.xlsx
   images/
-  ground_truth_raw/
+  ground_truth_brutos/
 ```
 
 Objetivos desse dataset:
@@ -163,11 +163,14 @@ Estrutura atual:
 
 ```text
 tests/mock_generated/
-  ground_truth_binary/
-  predicted_masks_raw/
-    u2netp/
-  predicted_masks_binary/
-    u2netp/
+  ground_truth_binarizada/
+  segmentacoes_brutas/
+    execucao_1/
+      u2netp/
+  segmentacoes_binarizadas/
+    execucao_1/
+      <estrategia>/
+        u2netp/
 ```
 
 Objetivos desse conjunto:
@@ -197,13 +200,20 @@ Exemplo enxuto de override:
 data_dir = "tests/mock_data"
 generated_dir = "tests/generated"
 images_dir = "tests/mock_data/images"
-ground_truth_raw_dir = "tests/mock_data/ground_truth_raw"
-predicted_masks_raw_dir = "tests/generated/predicted_masks_raw"
-predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
-ground_truth_binary_dir = "tests/generated/ground_truth_binary"
+ground_truth_brutos_dir = "tests/mock_data/ground_truth_brutos"
+segmentacoes_brutas_dir = "tests/generated/segmentacoes_brutas"
+segmentacoes_binarizadas_dir = "tests/generated/segmentacoes_binarizadas"
+ground_truth_binarizada_dir = "tests/generated/ground_truth_binarizada"
 evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
+
+[execution]
+num_execucoes = 1
+
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
 
 [models]
 u2netp = "cpu"

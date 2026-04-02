@@ -8,7 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from src.sqlite.sqlite_base import Base
 
 if TYPE_CHECKING:
-    from src.models.segmentacao_model import Segmentacao
+    from src.models.segmentacao_model import SegmentacaoBruta
     from src.models.ground_truth_binarizada_model import GroundTruthBinarizada
     from src.models.tag_model import Tag
 
@@ -26,8 +26,8 @@ class Imagem(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
-    segmentacoes: Mapped[list["Segmentacao"]] = relationship(
-        "Segmentacao",
+    segmentacoes_brutas: Mapped[list["SegmentacaoBruta"]] = relationship(
+        "SegmentacaoBruta",
         back_populates="imagem",
         cascade="all, delete-orphan",
     )
@@ -40,6 +40,14 @@ class Imagem(Base):
     @property
     def nomes_tags(self) -> list[str]:
         return sorted(tag.nome_tag for tag in self.tags)
+
+    @property
+    def segmentacoes(self) -> list["SegmentacaoBruta"]:
+        return self.segmentacoes_brutas
+
+    @segmentacoes.setter
+    def segmentacoes(self, value: list["SegmentacaoBruta"]) -> None:
+        self.segmentacoes_brutas = value
 
     def __repr__(self) -> str:
         return (

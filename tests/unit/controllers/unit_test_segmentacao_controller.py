@@ -29,7 +29,7 @@ class FakeSegmentacaoService:
 
     def __post_init__(self) -> None:
         self.sessoes: list[tuple[str, list[str]]] = []
-        self.chamadas: list[tuple[str, str]] = []
+        self.chamadas: list[tuple[str, str, str]] = []
 
     def criar_sessao_segmentacao(self, nome_modelo: str, providers: list[str]):
         self.sessoes.append((nome_modelo, providers))
@@ -45,7 +45,7 @@ class FakeSegmentacaoService:
         output_path: str,
         rembg_session,
     ) -> ResultadoSegmentacaoArquivo:
-        self.chamadas.append((nome_arquivo, nome_modelo))
+        self.chamadas.append((nome_arquivo, nome_modelo, output_path))
         return self.resultados[nome_arquivo]
 
 def test_processar_imagens_nao_persiste_segmentacoes_parciais(
@@ -68,10 +68,10 @@ def test_processar_imagens_nao_persiste_segmentacoes_parciais(
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt",
-        predicted_masks_raw_dir="/pred",
-        predicted_masks_binary_dir="/pred_bin",
-        ground_truth_binary_dir="/gt_bin",
+        ground_truth_brutos_dir="/gt",
+        segmentacoes_brutas_dir="/pred",
+        segmentacoes_binarizadas_dir="/pred_bin",
+        ground_truth_binarizada_dir="/gt_bin",
         evaluation_dir="/eval",
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -88,6 +88,7 @@ def test_processar_imagens_nao_persiste_segmentacoes_parciais(
         "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
         {"u2net": "cpu"},
     )
+    monkeypatch.setattr("src.controllers.segmentacao_controller.NUM_EXECUCOES", 2)
     controller = SegmentacaoController(
         imagem_repository=repository,
         segmentacao_service=service,
@@ -96,13 +97,22 @@ def test_processar_imagens_nao_persiste_segmentacoes_parciais(
     resumos = controller.processar_imagens(imagens=imagens)
 
     assert isinstance(resumos["u2net"], EstatisticasProcessamentoComEta)
-    assert resumos["u2net"].ok == 1
-    assert resumos["u2net"].skip == 1
-    assert resumos["u2net"].erro == 1
+    assert resumos["u2net"].total == 6
+    assert resumos["u2net"].ok == 2
+    assert resumos["u2net"].skip == 2
+    assert resumos["u2net"].erro == 2
     assert service.sessoes == [("u2net", ["CPUExecutionProvider"])]
-    assert imagens[0].segmentacoes == []
-    assert imagens[1].segmentacoes == []
-    assert imagens[2].segmentacoes == []
+    assert (
+        "/pred/execucao_1/u2net/bufalo_001.png"
+        in {chamada[2] for chamada in service.chamadas}
+    )
+    assert (
+        "/pred/execucao_2/u2net/bufalo_001.png"
+        in {chamada[2] for chamada in service.chamadas}
+    )
+    assert imagens[0].segmentacoes_brutas == []
+    assert imagens[1].segmentacoes_brutas == []
+    assert imagens[2].segmentacoes_brutas == []
 
 
 def test_processar_imagens_busca_imagens_no_repositorio_quando_nao_recebe_lista(
@@ -117,10 +127,10 @@ def test_processar_imagens_busca_imagens_no_repositorio_quando_nao_recebe_lista(
         data_dir="/data",
         generated_dir="/generated",
         images_dir="/orig",
-        ground_truth_raw_dir="/gt",
-        predicted_masks_raw_dir="/pred",
-        predicted_masks_binary_dir="/pred_bin",
-        ground_truth_binary_dir="/gt_bin",
+        ground_truth_brutos_dir="/gt",
+        segmentacoes_brutas_dir="/pred",
+        segmentacoes_binarizadas_dir="/pred_bin",
+        ground_truth_binarizada_dir="/gt_bin",
         evaluation_dir="/eval",
         indice_path="/data/Indice.xlsx",
         sqlite_path="/tmp/bufalos.sqlite3",
@@ -137,6 +147,7 @@ def test_processar_imagens_busca_imagens_no_repositorio_quando_nao_recebe_lista(
         "src.controllers.segmentacao_controller.MODELOS_PARA_AVALIACAO",
         {"u2net": "cpu"},
     )
+    monkeypatch.setattr("src.controllers.segmentacao_controller.NUM_EXECUCOES", 1)
     controller = SegmentacaoController(
         imagem_repository=repository,
         segmentacao_service=service,

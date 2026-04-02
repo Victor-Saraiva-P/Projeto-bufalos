@@ -78,7 +78,7 @@ def plot_image_grid(
 
         # Coluna 1: Ground Truth
         try:
-            gt_path = _PATH_RESOLVER.caminho_ground_truth_binaria(nome_arquivo)
+            gt_path = _PATH_RESOLVER.caminho_ground_truth_binarizada(nome_arquivo)
             gt_img = Image.open(gt_path).convert("L")
             axes[row_idx, 1].imshow(gt_img, cmap="gray")
             axes[row_idx, 1].set_title("GT", fontsize=8)
@@ -99,43 +99,58 @@ def plot_image_grid(
             ]
 
             try:
-                seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
+                if model_data.empty:
+                    axes[row_idx, col_idx].set_title(f"{modelo}\nN/A", fontsize=7)
+                    axes[row_idx, col_idx].axis("off")
+                    continue
+
+                nome_binarizacao = (
+                    str(model_data.iloc[0]["estrategia_binarizacao"])
+                    if "estrategia_binarizacao" in model_data.columns
+                    else ""
+                )
+                execucao = (
+                    int(model_data.iloc[0]["execucao"])
+                    if "execucao" in model_data.columns
+                    else 1
+                )
+                seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                     modelo,
                     nome_arquivo,
+                    execucao=execucao,
+                    nome_binarizacao=nome_binarizacao,
                 )
                 seg_img = Image.open(seg_path).convert("L")
                 axes[row_idx, col_idx].imshow(seg_img, cmap="gray")
 
-                # Formatar TODAS as métricas (principal primeiro)
-                if not model_data.empty:
-                    row_data = model_data.iloc[0]
+                row_data = model_data.iloc[0]
 
-                    # Função auxiliar para formatar métricas
-                    def format_metric(name, value):
-                        if name == "iou":
-                            return f"IoU: {value:.3f}"
-                        elif name == "area_similarity":
-                            return f"Área: {value * 100:.1f}%"
-                        elif name == "perimetro_similarity":
-                            return f"Per: {value * 100:.1f}%"
-                        return f"{value:.2f}"
+                # Função auxiliar para formatar métricas
+                def format_metric(name, value):
+                    if name == "iou":
+                        return f"IoU: {value:.3f}"
+                    elif name == "auprc":
+                        return f"AUPRC: {value:.3f}"
+                    elif name == "area_similarity":
+                        return f"Área: {value * 100:.1f}%"
+                    elif name == "perimetro_similarity":
+                        return f"Per: {value * 100:.1f}%"
+                    return f"{value:.2f}"
 
-                    # Montar string com métrica principal primeiro
-                    metrics_order = [metric_name]
-                    for m in ["iou", "area_similarity", "perimetro_similarity"]:
-                        if m != metric_name:
-                            metrics_order.append(m)
+                # Montar string com métrica principal primeiro
+                metrics_order = [metric_name]
+                for m in ["iou", "auprc", "area_similarity", "perimetro_similarity"]:
+                    if m != metric_name and m in row_data.index:
+                        metrics_order.append(m)
 
-                    metric_lines = [
-                        format_metric(m, row_data[m]) for m in metrics_order
-                    ]
-                    metric_str = "\n".join(metric_lines)
+                metric_lines = [
+                    format_metric(m, row_data[m]) for m in metrics_order
+                ]
+                metric_str = "\n".join(metric_lines)
 
-                    axes[row_idx, col_idx].set_title(
-                        f"{modelo}\n{metric_str}", fontsize=6
-                    )
-                else:
-                    axes[row_idx, col_idx].set_title(f"{modelo}\nN/A", fontsize=7)
+                axes[row_idx, col_idx].set_title(
+                    f"{modelo}\n{metric_str}", fontsize=6
+                )
 
             except Exception as e:
                 axes[row_idx, col_idx].text(
@@ -201,7 +216,7 @@ def plot_single_image_comparison(
     # Ground Truth (centro superior)
     ax_gt = fig.add_subplot(gs[0, 1])
     try:
-        gt_path = _PATH_RESOLVER.caminho_ground_truth_binaria(nome_arquivo)
+        gt_path = _PATH_RESOLVER.caminho_ground_truth_binarizada(nome_arquivo)
         gt_img = Image.open(gt_path).convert("L")
         ax_gt.imshow(gt_img, cmap="gray")
         ax_gt.set_title("Ground Truth", fontsize=10)
@@ -218,9 +233,17 @@ def plot_single_image_comparison(
         ax = fig.add_subplot(gs[row_pos, col_pos])
 
         try:
-            seg_path = _PATH_RESOLVER.caminho_mascara_predita_binaria(
+            nome_binarizacao = (
+                str(row["estrategia_binarizacao"])
+                if "estrategia_binarizacao" in row.index
+                else None
+            )
+            execucao = int(row["execucao"]) if "execucao" in row.index else 1
+            seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                 str(row["modelo"]),
                 nome_arquivo,
+                execucao=execucao,
+                nome_binarizacao=nome_binarizacao,
             )
             seg_img = Image.open(seg_path).convert("L")
             ax.imshow(seg_img, cmap="gray")

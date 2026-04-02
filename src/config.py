@@ -75,6 +75,7 @@ _PATHS = _CONFIG["paths"]
 _COLUMNS = _CONFIG["columns"]
 _FILE_TYPES = _CONFIG["file_types"]
 _BINARIZATION = _CONFIG["binarization"]
+_EXECUTION = _CONFIG["execution"]
 _EVALUATION = _CONFIG["evaluation"]
 
 # Diretorios mais gerais
@@ -83,10 +84,14 @@ GENERATED_DIR = _resolver_caminho(_PATHS["generated_dir"])
 
 # Diretorios especificos
 IMAGES_DIR = _resolver_caminho(_PATHS["images_dir"])
-GROUND_TRUTH_RAW_DIR = _resolver_caminho(_PATHS["ground_truth_raw_dir"])
-PREDICTED_MASKS_RAW_DIR = _resolver_caminho(_PATHS["predicted_masks_raw_dir"])
-PREDICTED_MASKS_BINARY = _resolver_caminho(_PATHS["predicted_masks_binary_dir"])
-GROUND_TRUTH_BINARY = _resolver_caminho(_PATHS["ground_truth_binary_dir"])
+GROUND_TRUTH_BRUTOS_DIR = _resolver_caminho(_PATHS["ground_truth_brutos_dir"])
+SEGMENTACOES_BRUTAS_DIR = _resolver_caminho(_PATHS["segmentacoes_brutas_dir"])
+SEGMENTACOES_BINARIZADAS_DIR = _resolver_caminho(
+    _PATHS["segmentacoes_binarizadas_dir"]
+)
+GROUND_TRUTH_BINARIZADA_DIR = _resolver_caminho(
+    _PATHS["ground_truth_binarizada_dir"]
+)
 EVALUATION_DIR = _resolver_caminho(_PATHS["evaluation_dir"])
 
 # Caminhos de arquivos
@@ -107,9 +112,14 @@ REMBG_IMAGE_TYPE = _FILE_TYPES["rembg"]
 BINARIZATION_SIGMA = _BINARIZATION["sigma"]
 BINARIZATION_THRESHOLD = _BINARIZATION["threshold"]
 BINARIZATION_KERNEL_SIZE = _BINARIZATION["kernel_size"]
+GROUND_TRUTH_BINARIZATION_STRATEGY = _BINARIZATION["ground_truth_strategy"]
+SEGMENTACAO_BINARIZATION_STRATEGIES = list(_BINARIZATION["segmentacao_strategies"])
 
 # Deprecated - usar BINARIZATION_THRESHOLD
 LIMIAR_BINARIZACAO = BINARIZATION_THRESHOLD
+
+# Configuracao de execucao
+NUM_EXECUCOES = _EXECUTION["num_execucoes"]
 
 # Configuracoes declarativas
 MODELOS_PARA_AVALIACAO = _CONFIG["models"]

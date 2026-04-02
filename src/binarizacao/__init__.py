@@ -1,5 +1,10 @@
 from src.binarizacao.binarizacao_base import BinarizationStrategy
 from src.binarizacao.estrategias import GaussianOpeningBinarizationStrategy
+from src.binarizacao.registro import (
+    instanciar_estrategia_binarizacao,
+    instanciar_estrategias_binarizacao,
+    listar_nomes_estrategias_binarizacao,
+)
 from src.logs import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
@@ -11,7 +16,10 @@ __all__ = [
     "BinarizationStrategy",
     "EstatisticasBinarizacao",
     "GaussianOpeningBinarizationStrategy",
+    "instanciar_estrategia_binarizacao",
+    "instanciar_estrategias_binarizacao",
     "imprimir_resumo_binarizacao",
     "imprimir_resumo_binarizacao_modelo",
     "imprimir_status_binarizacao",
+    "listar_nomes_estrategias_binarizacao",
 ]

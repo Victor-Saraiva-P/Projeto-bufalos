@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from src.config import MODELOS_PARA_AVALIACAO
+from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
 from src.io.path_resolver import PathResolver
 from src.logs import (
     EstatisticasProcessamentoComEta,
+    imprimir_resumo_execucao_modelo,
     imprimir_resumo_modelo,
     imprimir_status,
 )
@@ -43,7 +44,7 @@ class SegmentacaoController:
             else self.imagem_repository.list()
         )
         modelos = dict(MODELOS_PARA_AVALIACAO)
-        total_previsto = len(modelos) * len(linhas)
+        total_previsto = len(modelos) * len(linhas) * NUM_EXECUCOES
         stats_geral = EstatisticasProcessamentoComEta(total=total_previsto)
         resumos_modelo: dict[str, EstatisticasProcessamentoComEta] = {}
         resolver_providers = obter_resolvedor_providers()
@@ -52,32 +53,49 @@ class SegmentacaoController:
             providers = resolver_providers(provider_config, nome_modelo)
             print(f"Iniciando modelo: {nome_modelo} (provider: {provider_config})")
 
-            stats_modelo = EstatisticasProcessamentoComEta(total=len(linhas))
+            stats_modelo = EstatisticasProcessamentoComEta(
+                total=len(linhas) * NUM_EXECUCOES
+            )
             resumos_modelo[nome_modelo] = stats_modelo
             rembg_session = self.segmentacao_service.criar_sessao_segmentacao(
                 nome_modelo,
                 providers,
             )
 
-            for imagem in linhas:
-                resultado = self.segmentacao_service.segmentar_arquivo(
-                    nome_arquivo=imagem.nome_arquivo,
-                    nome_modelo=nome_modelo,
-                    original_path=self.path_resolver.caminho_foto_original(
-                        imagem.nome_arquivo
-                    ),
-                    mascara_path=self.path_resolver.caminho_ground_truth(
-                        imagem.nome_arquivo
-                    ),
-                    output_path=self.path_resolver.caminho_mascara_predita(
-                        nome_modelo,
-                        imagem.nome_arquivo,
-                    ),
-                    rembg_session=rembg_session,
-                )
-                self._registrar_resultado(stats_geral, stats_modelo, resultado)
+            for execucao in range(1, NUM_EXECUCOES + 1):
+                stats_execucao = EstatisticasProcessamentoComEta(total=len(linhas))
+                for imagem in linhas:
+                    resultado = self.segmentacao_service.segmentar_arquivo(
+                        nome_arquivo=imagem.nome_arquivo,
+                        nome_modelo=nome_modelo,
+                        original_path=self.path_resolver.caminho_foto_original(
+                            imagem.nome_arquivo
+                        ),
+                        mascara_path=self.path_resolver.caminho_ground_truth_bruta(
+                            imagem.nome_arquivo
+                        ),
+                        output_path=self.path_resolver.caminho_segmentacao_bruta(
+                            nome_modelo,
+                            imagem.nome_arquivo,
+                            execucao=execucao,
+                        ),
+                        rembg_session=rembg_session,
+                    )
+                    self._registrar_resultado(
+                        stats_geral,
+                        stats_modelo,
+                        resultado,
+                        stats_execucao=stats_execucao,
+                    )
 
-                imprimir_status(stats_geral, stats_modelo, nome_modelo)
+                    imprimir_status(
+                        stats_geral,
+                        stats_modelo,
+                        stats_execucao,
+                        nome_modelo,
+                        execucao,
+                    )
+                imprimir_resumo_execucao_modelo(nome_modelo, execucao, stats_execucao)
 
             imprimir_resumo_modelo(nome_modelo, stats_modelo)
 
@@ -88,17 +106,24 @@ class SegmentacaoController:
         stats_geral: EstatisticasProcessamentoComEta,
         stats_modelo: EstatisticasProcessamentoComEta,
         resultado: ResultadoSegmentacaoArquivo,
+        stats_execucao: EstatisticasProcessamentoComEta | None = None,
     ) -> None:
         if resultado.status == "ok":
             duracao = resultado.duracao_inferencia or 0.0
             stats_geral.registrar_ok_com_duracao(duracao)
             stats_modelo.registrar_ok_com_duracao(duracao)
+            if stats_execucao is not None:
+                stats_execucao.registrar_ok_com_duracao(duracao)
             return
 
         if resultado.status == "skip":
             stats_geral.registrar_skip()
             stats_modelo.registrar_skip()
+            if stats_execucao is not None:
+                stats_execucao.registrar_skip()
             return
 
         stats_geral.registrar_erro()
         stats_modelo.registrar_erro()
+        if stats_execucao is not None:
+            stats_execucao.registrar_erro()

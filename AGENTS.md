@@ -59,20 +59,22 @@ Estrutura minima esperada em `data/`:
 
 ```text
 data/
-  ground_truth_raw/ # mascaras de referencia
-  images/           # imagens originais de entrada
-  Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
+  ground_truth_brutos/ # mascaras de referencia
+  images/              # imagens originais de entrada
+  Indice.xlsx          # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
 
 Saidas esperadas em `generated/`:
 
 ```text
 generated/
-  predicted_masks_raw/     # mascaras geradas pelos modelos
-  predicted_masks_binary/  # mascaras previstas apos binarizacao
-  ground_truth_binary/     # mascaras manuais apos binarizacao
-  evaluation/              # artefatos de avaliacao
-  bufalos.sqlite3          # fonte de verdade do pipeline
+  segmentacoes_brutas/
+    execucao_1/               # mascaras brutas geradas pelos modelos em cada execucao
+  segmentacoes_binarizadas/
+    execucao_1/               # mascaras apos binarizacao, agrupadas por estrategia e execucao
+  ground_truth_binarizada/    # mascaras manuais apos binarizacao
+  evaluation/                 # artefatos de avaliacao
+  bufalos.sqlite3             # fonte de verdade do pipeline
 ```
 
 ## Setup E Execucao Local
@@ -212,7 +214,7 @@ Saida gerada:
 Regra de responsabilidade entre camadas:
 
 - notebooks 01 e 02 executam o pipeline por meio dos controllers em `src/controllers/`;
-- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias configuradas;
 - services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 - `Segmentacao`, `GroundTruthBinarizada` e `Binarizacao` so devem nascer quando as metricas completas forem calculadas.
 
@@ -403,7 +405,7 @@ remove(
 )
 ```
 
-Isso faz a etapa de segmentacao gerar uma mascara em escala de cinza, salva em `generated/predicted_masks_raw/<modelo>/`, com formato `PNG`.
+Isso faz a etapa de segmentacao gerar uma mascara em escala de cinza, salva em `generated/segmentacoes_brutas/execucao_N/<modelo>/`, com formato `PNG`.
 
 Decisao:
 
@@ -521,13 +523,17 @@ Trecho esperado de configuracao:
 data_dir = "tests/mock_data"
 generated_dir = "tests/generated"
 images_dir = "tests/mock_data/images"
-ground_truth_raw_dir = "tests/mock_data/ground_truth_raw"
-predicted_masks_raw_dir = "tests/generated/predicted_masks_raw"
-predicted_masks_binary_dir = "tests/generated/predicted_masks_binary"
-ground_truth_binary_dir = "tests/generated/ground_truth_binary"
+ground_truth_brutos_dir = "tests/mock_data/ground_truth_brutos"
+segmentacoes_brutas_dir = "tests/generated/segmentacoes_brutas"
+segmentacoes_binarizadas_dir = "tests/generated/segmentacoes_binarizadas"
+ground_truth_binarizada_dir = "tests/generated/ground_truth_binarizada"
 evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
+
+[binarization]
+ground_truth_strategy = "GaussianaOpening"
+segmentacao_strategies = ["GaussianaOpening"]
 
 [models]
 u2netp = "cpu"

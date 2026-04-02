@@ -8,7 +8,7 @@ Estrutura minima na pasta `data`:
 
 ```text
 data/
-  ground_truth_raw/ # mascaras de referencia (segmentacao manual)
+  ground_truth_brutos/ # mascaras de referencia (segmentacao manual)
   images/           # imagens originais de entrada
   Indice.xlsx       # planilha usada no tagging e no bootstrap inicial do SQLite
 ```
@@ -17,9 +17,11 @@ Saidas geradas pelo projeto:
 
 ```text
 generated/
-  predicted_masks_raw/     # mascaras geradas pelos modelos
-  predicted_masks_binary/  # mascaras previstas apos binarizacao
-  ground_truth_binary/     # mascaras manuais apos binarizacao
+  segmentacoes_brutas/
+    execucao_1/               # mascaras brutas geradas pelos modelos em cada execucao
+  segmentacoes_binarizadas/
+    execucao_1/               # mascaras apos binarizacao, agrupadas por estrategia e execucao
+  ground_truth_binarizada/ # mascaras manuais apos binarizacao
   evaluation/              # artefatos de avaliacao
   bufalos.sqlite3          # fonte de verdade do pipeline
 ```
@@ -34,6 +36,7 @@ Organizacao do codigo em `src/`:
 - `src/controllers/` e `src/services/`: orquestracao dos fluxos e casos de uso do projeto;
 - `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
 - `src/metricas/`: contratos compartilhados de metricas;
+- `src/metricas/segmentacao_bruta/`: metricas sobre mascaras brutas com score continuo;
 - `src/metricas/segmentacao_binarizada/`: metricas concretas da segmentacao binarizada;
 - `src/analysis/` e `src/visualization/`: agregam, ranqueiam e apresentam os resultados;
 - `src/tagging/`: concentra os anotadores manuais de curadoria.
@@ -92,6 +95,8 @@ Todos os comandos abaixo assumem que voce esta na raiz do repositorio e com o am
 ```bash
 source .venv/bin/activate
 ```
+
+O numero de repeticoes do pipeline fica em `config.toml`, na chave `[execution].num_execucoes`.
 
 ## Abordagem de desenvolvimento
 
@@ -170,16 +175,16 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 O fluxo de execucao do projeto esta organizado em quatro notebooks:
 
-- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as mascaras previstas pelos modelos em `generated/predicted_masks_raw/`;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/`;
-- `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite;
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as segmentacoes brutas dos modelos em `generated/segmentacoes_brutas/execucao_N/`;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza as mascaras de referencia com a strategy configurada para ground truth e gera mascaras previstas em `generated/segmentacoes_binarizadas/execucao_N/` para todas as strategies configuradas;
+- `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite para todas as strategies configuradas;
 - `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.
 
 Nos notebooks 01 e 02, a execucao operacional acontece por meio dos controllers em `src/controllers/`.
 
 Regra de responsabilidade:
 
-- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias padrao;
+- controllers podem ler `src/config.py` e resolver caminhos, modelos e estrategias configuradas;
 - services nao devem depender de `config`; eles recebem esses dados ja resolvidos por parametro.
 
 Para abrir o ambiente de notebooks:

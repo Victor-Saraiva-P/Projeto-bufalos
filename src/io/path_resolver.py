@@ -11,10 +11,10 @@ class PathResolver:
     data_dir: str
     generated_dir: str
     images_dir: str
-    ground_truth_raw_dir: str
-    predicted_masks_raw_dir: str
-    predicted_masks_binary_dir: str
-    ground_truth_binary_dir: str
+    ground_truth_brutos_dir: str
+    segmentacoes_brutas_dir: str
+    segmentacoes_binarizadas_dir: str
+    ground_truth_binarizada_dir: str
     evaluation_dir: str
     indice_path: str
     sqlite_path: str
@@ -25,12 +25,12 @@ class PathResolver:
             DATA_DIR,
             EVALUATION_DIR,
             GENERATED_DIR,
-            GROUND_TRUTH_BINARY,
-            GROUND_TRUTH_RAW_DIR,
+            GROUND_TRUTH_BINARIZADA_DIR,
+            GROUND_TRUTH_BRUTOS_DIR,
             IMAGES_DIR,
             INDICE_PATH,
-            PREDICTED_MASKS_BINARY,
-            PREDICTED_MASKS_RAW_DIR,
+            SEGMENTACOES_BINARIZADAS_DIR,
+            SEGMENTACOES_BRUTAS_DIR,
             SQLITE_PATH,
         )
 
@@ -38,10 +38,10 @@ class PathResolver:
             data_dir=DATA_DIR,
             generated_dir=GENERATED_DIR,
             images_dir=IMAGES_DIR,
-            ground_truth_raw_dir=GROUND_TRUTH_RAW_DIR,
-            predicted_masks_raw_dir=PREDICTED_MASKS_RAW_DIR,
-            predicted_masks_binary_dir=PREDICTED_MASKS_BINARY,
-            ground_truth_binary_dir=GROUND_TRUTH_BINARY,
+            ground_truth_brutos_dir=GROUND_TRUTH_BRUTOS_DIR,
+            segmentacoes_brutas_dir=SEGMENTACOES_BRUTAS_DIR,
+            segmentacoes_binarizadas_dir=SEGMENTACOES_BINARIZADAS_DIR,
+            ground_truth_binarizada_dir=GROUND_TRUTH_BINARIZADA_DIR,
             evaluation_dir=EVALUATION_DIR,
             indice_path=INDICE_PATH,
             sqlite_path=SQLITE_PATH,
@@ -53,35 +53,67 @@ class PathResolver:
     def caminho_foto_original(self, nome_arquivo: str) -> str:
         return os.path.join(self.images_dir, f"{nome_arquivo}{IMAGES_TYPE}")
 
-    def caminho_ground_truth(self, nome_arquivo: str) -> str:
-        return os.path.join(self.ground_truth_raw_dir, f"{nome_arquivo}{IMAGES_TYPE}")
+    def caminho_ground_truth_bruta(self, nome_arquivo: str) -> str:
+        return os.path.join(self.ground_truth_brutos_dir, f"{nome_arquivo}{IMAGES_TYPE}")
 
-    def caminho_ground_truth_binaria(self, nome_arquivo: str) -> str:
+    def caminho_ground_truth_binarizada(self, nome_arquivo: str) -> str:
         return os.path.join(
-            self.ground_truth_binary_dir,
+            self.ground_truth_binarizada_dir,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )
 
-    def caminho_mascara_predita(self, nome_modelo: str, nome_arquivo: str) -> str:
-        return os.path.join(
-            self.predicted_masks_raw_dir,
-            nome_modelo,
-            f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
-        )
+    @staticmethod
+    def nome_pasta_execucao(execucao: int) -> str:
+        return f"execucao_{execucao}"
 
-    def caminho_mascara_predita_binaria(
+    def caminho_segmentacao_bruta(
         self,
         nome_modelo: str,
         nome_arquivo: str,
+        execucao: int,
     ) -> str:
         return os.path.join(
-            self.predicted_masks_binary_dir,
+            self.segmentacoes_brutas_dir,
+            self.nome_pasta_execucao(execucao),
             nome_modelo,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )
 
-    def caminho_mascara_avaliacao(self, nome_modelo: str, nome_arquivo: str) -> str:
-        if nome_modelo == "ground_truth":
-            return self.caminho_ground_truth_binaria(nome_arquivo)
+    def caminho_segmentacao_binarizada(
+        self,
+        nome_modelo: str,
+        nome_arquivo: str,
+        execucao: int,
+        nome_binarizacao: str,
+    ) -> str:
+        return os.path.join(
+            self.segmentacoes_binarizadas_dir,
+            self.nome_pasta_execucao(execucao),
+            nome_binarizacao,
+            nome_modelo,
+            f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
+        )
 
-        return self.caminho_mascara_predita_binaria(nome_modelo, nome_arquivo)
+    def caminho_segmentacao_avaliacao(
+        self,
+        nome_modelo: str,
+        nome_arquivo: str,
+        execucao: int | None = None,
+        nome_binarizacao: str | None = None,
+    ) -> str:
+        if nome_modelo == "ground_truth":
+            return self.caminho_ground_truth_binarizada(nome_arquivo)
+
+        if execucao is None:
+            raise ValueError("execucao e obrigatoria para segmentacoes previstas.")
+        if nome_binarizacao is None:
+            raise ValueError(
+                "nome_binarizacao e obrigatorio para segmentacoes previstas."
+            )
+
+        return self.caminho_segmentacao_binarizada(
+            nome_modelo,
+            nome_arquivo,
+            execucao=execucao,
+            nome_binarizacao=nome_binarizacao,
+        )
