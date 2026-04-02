@@ -20,6 +20,12 @@ source .venv/bin/activate
 pip install -e .
 ```
 
+Importante para `worktree`:
+
+- cada novo `worktree` precisa repetir esse processo dentro do proprio diretorio;
+- nao assuma que a `.venv` de outro `worktree` vale para o atual;
+- antes de rodar `pytest`, notebooks ou scripts, ative a `.venv` do `worktree` corrente.
+
 Se voce nao tiver `mise`, pode usar diretamente:
 
 ```bash

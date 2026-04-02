@@ -13,6 +13,8 @@ Regra do projeto:
 - Durante o desenvolvimento, o trabalho deve acontecer em apenas um unico worktree por vez.
 - Nunca mexer em mais de um worktree ao mesmo tempo.
 - Se o usuario nao especificar qual worktree deve ser usado, e preciso perguntar antes de editar qualquer arquivo.
+- Sempre que um novo `worktree` for criado, o setup local deve ser repetido dentro dele com `mise`, criacao de `.venv`, ativacao do ambiente e `pip install -e .`.
+- Nunca assumir que a `.venv` de outro `worktree` serve para o atual.
 
 ## Visao Geral
 
@@ -104,6 +106,11 @@ mise exec python@3.13 -- python -m venv .venv
 source .venv/bin/activate
 pip install -e .
 ```
+
+Regra para novo `worktree`:
+
+- repetir esse fluxo em cada `worktree` novo;
+- executar `pytest`, notebooks e scripts sempre com a `.venv` do `worktree` corrente ativada.
 
 Alternativa com `mise use`:
 

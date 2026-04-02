@@ -45,3 +45,5 @@ Regras operacionais:
 - nunca mexer em mais de um worktree ao mesmo tempo;
 - se o usuario nao especificar em qual worktree a mudanca deve ser feita, e preciso perguntar antes de editar qualquer arquivo;
 - so depois de o worktree estar explicitamente definido o desenvolvimento deve comecar.
+- ao criar um novo `worktree`, repetir o setup local dentro dele com `mise`, criacao da `.venv`, ativacao do ambiente e `pip install -e .`;
+- nao reutilizar a `.venv` de outro `worktree`, porque dependencias e interpretador precisam ficar coerentes com o diretorio atual.
