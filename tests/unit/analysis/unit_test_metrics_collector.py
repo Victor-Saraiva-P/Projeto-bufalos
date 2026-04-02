@@ -7,7 +7,7 @@ from src.models import (
 )
 
 
-def test_build_metrics_dataframe_inclui_auprc() -> None:
+def test_build_metrics_dataframe_inclui_auprc_e_brier_score() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
@@ -19,6 +19,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
         nome_modelo="u2netp",
         execucao=1,
         auprc=0.92,
+        brier_score=0.08,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(
@@ -53,6 +54,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
         "perimetro",
         "iou",
         "auprc",
+        "brier_score",
         "area_gt",
         "perimetro_gt",
         "area_diff_abs",
@@ -64,6 +66,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
     assert set(df["estrategia_binarizacao"]) == {"GaussianaOpening", "LimiarFixo"}
     assert set(df["execucao"]) == {1}
     assert set(df["auprc"]) == {0.92}
+    assert set(df["brier_score"]) == {0.08}
 
 
 def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valida() -> None:
@@ -78,6 +81,39 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valida() -> None
         nome_modelo="u2netp",
         execucao=1,
         auprc=-1.0,
+        brier_score=0.08,
+    )
+    segmentacao.segmentacoes_binarizadas = [
+        SegmentacaoBinarizada(
+            nome_arquivo="bufalo_001",
+            nome_modelo="u2netp",
+            execucao=1,
+            estrategia_binarizacao="GaussianaOpening",
+            area=90.0,
+            perimetro=38.0,
+            iou=0.8,
+        )
+    ]
+    imagem.segmentacoes_brutas = [segmentacao]
+
+    df = MetricsCollector._build_metrics_dataframe([imagem])
+
+    assert df.empty
+
+
+def test_build_metrics_dataframe_descarta_segmentacao_sem_brier_score_valido() -> None:
+    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.ground_truth_binarizada = GroundTruthBinarizada(
+        nome_arquivo="bufalo_001",
+        area=100.0,
+        perimetro=40.0,
+    )
+    segmentacao = SegmentacaoBruta(
+        nome_arquivo="bufalo_001",
+        nome_modelo="u2netp",
+        execucao=1,
+        auprc=0.92,
+        brier_score=SegmentacaoBruta.BRIER_SCORE_NAO_CALCULADO,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(
