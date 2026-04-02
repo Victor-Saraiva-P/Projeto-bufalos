@@ -40,8 +40,12 @@ def test_caminho_segmentacao_avaliacao_usa_ground_truth_para_modelo_especial() -
     assert resolver.caminho_segmentacao_avaliacao("ground_truth", "bufalo_001") == (
         "/tmp/gt/bufalo_001.png"
     )
-    assert resolver.caminho_segmentacao_avaliacao("u2netp", "bufalo_001") == (
-        "/tmp/seg_bin/GaussianaOpening/u2netp/bufalo_001.png"
+    assert resolver.caminho_segmentacao_avaliacao(
+        "u2netp",
+        "bufalo_001",
+        execucao=1,
+    ) == (
+        "/tmp/seg_bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png"
     )
 
 
@@ -53,5 +57,16 @@ def test_caminho_segmentacao_binarizada_aceita_nome_binarizacao_explicitamente()
     assert resolver.caminho_segmentacao_binarizada(
         "u2netp",
         "bufalo_001",
+        execucao=1,
         nome_binarizacao="MinhaBinarizacao",
-    ) == "/tmp/seg_bin/MinhaBinarizacao/u2netp/bufalo_001.png"
+    ) == "/tmp/seg_bin/execucao_1/MinhaBinarizacao/u2netp/bufalo_001.png"
+
+
+def test_caminho_segmentacao_bruta_inclui_execucao() -> None:
+    resolver = PathResolver.from_config().with_overrides(
+        segmentacoes_brutas_dir="/tmp/seg_brutas",
+    )
+
+    assert resolver.caminho_segmentacao_bruta("u2netp", "bufalo_001", execucao=2) == (
+        "/tmp/seg_brutas/execucao_2/u2netp/bufalo_001.png"
+    )

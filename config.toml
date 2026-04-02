@@ -26,6 +26,9 @@ sigma = 1.0
 threshold = 127
 kernel_size = 3
 
+[execution]
+num_execucoes = 3
+
 [models]
 u2net = "gpu"
 u2netp = "gpu"

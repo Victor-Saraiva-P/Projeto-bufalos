@@ -100,11 +100,15 @@ def plot_image_grid(
 
             try:
                 nome_binarizacao = None
+                execucao = 1
                 if not model_data.empty and "estrategia_binarizacao" in model_data.columns:
                     nome_binarizacao = str(model_data.iloc[0]["estrategia_binarizacao"])
+                if not model_data.empty and "execucao" in model_data.columns:
+                    execucao = int(model_data.iloc[0]["execucao"])
                 seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                     modelo,
                     nome_arquivo,
+                    execucao=execucao,
                     nome_binarizacao=nome_binarizacao,
                 )
                 seg_img = Image.open(seg_path).convert("L")
@@ -229,9 +233,11 @@ def plot_single_image_comparison(
                 if "estrategia_binarizacao" in row.index
                 else None
             )
+            execucao = int(row["execucao"]) if "execucao" in row.index else 1
             seg_path = _PATH_RESOLVER.caminho_segmentacao_binarizada(
                 str(row["modelo"]),
                 nome_arquivo,
+                execucao=execucao,
                 nome_binarizacao=nome_binarizacao,
             )
             seg_img = Image.open(seg_path).convert("L")

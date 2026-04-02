@@ -20,6 +20,7 @@ class AvaliacaoService:
         mascaras_modelo: dict[str, np.ndarray],
         score_masks_modelo: dict[str, np.ndarray],
         estrategia_binarizacao: str,
+        execucao: int,
     ) -> Imagem:
         area_ground_truth = Area(
             nome_arquivo=imagem.nome_arquivo,
@@ -39,23 +40,25 @@ class AvaliacaoService:
         )
 
         segmentacoes_brutas = {
-            segmentacao.nome_modelo: segmentacao
+            (segmentacao.nome_modelo, segmentacao.execucao): segmentacao
             for segmentacao in imagem.segmentacoes_brutas
         }
         for nome_modelo, mask_modelo in mascaras_modelo.items():
-            segmentacoes_brutas[nome_modelo] = self._avaliar_modelo(
+            chave = (nome_modelo, execucao)
+            segmentacoes_brutas[chave] = self._avaliar_modelo(
                 imagem.nome_arquivo,
                 nome_modelo,
+                execucao,
                 ground_truth_mask,
                 mask_modelo,
                 score_masks_modelo[nome_modelo],
                 estrategia_binarizacao,
-                segmentacoes_brutas.get(nome_modelo),
+                segmentacoes_brutas.get(chave),
             )
 
         imagem.segmentacoes_brutas = sorted(
             segmentacoes_brutas.values(),
-            key=lambda segmentacao: segmentacao.nome_modelo,
+            key=lambda segmentacao: (segmentacao.nome_modelo, segmentacao.execucao),
         )
         return imagem
 
@@ -63,6 +66,7 @@ class AvaliacaoService:
         self,
         nome_arquivo: str,
         nome_modelo: str,
+        execucao: int,
         ground_truth_mask: np.ndarray,
         mask_modelo: np.ndarray,
         score_mask_modelo: np.ndarray,
@@ -95,6 +99,7 @@ class AvaliacaoService:
         registro = segmentacao_bruta or SegmentacaoBruta(
             nome_arquivo=nome_arquivo,
             nome_modelo=nome_modelo,
+            execucao=execucao,
             auprc=SegmentacaoBruta.AUPRC_NAO_CALCULADA,
         )
         registro.auprc = float(auprc)
@@ -124,6 +129,7 @@ class AvaliacaoService:
             segmentacao_binarizada = SegmentacaoBinarizada(
                 nome_arquivo=registro.nome_arquivo,
                 nome_modelo=registro.nome_modelo,
+                execucao=registro.execucao,
                 estrategia_binarizacao=estrategia_binarizacao,
                 area=area,
                 perimetro=perimetro,

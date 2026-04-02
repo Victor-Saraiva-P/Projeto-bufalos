@@ -75,6 +75,7 @@ _PATHS = _CONFIG["paths"]
 _COLUMNS = _CONFIG["columns"]
 _FILE_TYPES = _CONFIG["file_types"]
 _BINARIZATION = _CONFIG["binarization"]
+_EXECUTION = _CONFIG["execution"]
 _EVALUATION = _CONFIG["evaluation"]
 
 # Diretorios mais gerais
@@ -114,6 +115,9 @@ BINARIZATION_KERNEL_SIZE = _BINARIZATION["kernel_size"]
 
 # Deprecated - usar BINARIZATION_THRESHOLD
 LIMIAR_BINARIZACAO = BINARIZATION_THRESHOLD
+
+# Configuracao de execucao
+NUM_EXECUCOES = _EXECUTION["num_execucoes"]
 
 # Configuracoes declarativas
 MODELOS_PARA_AVALIACAO = _CONFIG["models"]

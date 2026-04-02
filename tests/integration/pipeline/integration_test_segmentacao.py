@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from src.config import MODELOS_PARA_AVALIACAO
+from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
 from src.controllers import ImagemController, SegmentacaoController
 from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
@@ -48,16 +48,18 @@ def test_segmentacao_controller_processa_modelo_e_gera_arquivo(
     resumos = SegmentacaoController().processar_imagens(imagens=linhas)
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
-    nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
-    saidas_geradas = sorted((saida_modelo_dir / nome_modelo).glob("*.png"))
-
     assert len(linhas) == 5
-    assert list(resumos) == [nome_modelo]
-    assert resumos[nome_modelo].total == len(linhas)
-    assert resumos[nome_modelo].processadas == len(linhas)
-    assert resumos[nome_modelo].ok == len(linhas)
-    assert resumos[nome_modelo].erro == 0
-    assert resumos[nome_modelo].skip == 0
-    assert len(saidas_geradas) == len(linhas)
+    assert set(resumos) == set(MODELOS_PARA_AVALIACAO)
+    for nome_modelo in MODELOS_PARA_AVALIACAO:
+        assert resumos[nome_modelo].total == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].processadas == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].ok == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].erro == 0
+        assert resumos[nome_modelo].skip == 0
+        for execucao in range(1, NUM_EXECUCOES + 1):
+            saidas_geradas = sorted(
+                (saida_modelo_dir / f"execucao_{execucao}" / nome_modelo).glob("*.png")
+            )
+            assert len(saidas_geradas) == len(linhas)
     assert imagem_persistida is not None
     assert imagem_persistida.segmentacoes_brutas == []

@@ -20,7 +20,7 @@ remove(
 )
 ```
 
-Isso significa que a saida gerada nessa etapa e uma mascara em escala de cinza, salva em `generated/segmentacoes_brutas/<modelo>/`.
+Isso significa que a saida gerada nessa etapa e uma mascara em escala de cinza, salva em `generated/segmentacoes_brutas/execucao_N/<modelo>/`.
 
 O formato de arquivo configurado para essa saida e `PNG`, conforme `config.toml`.
 

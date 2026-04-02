@@ -1,11 +1,10 @@
 from pathlib import Path
-import shutil
 
 import pytest
 import numpy as np
 
 from src.binarizacao import GaussianOpeningBinarizationStrategy
-from src.config import MODELOS_PARA_AVALIACAO
+from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
 from src.controllers import (
     AvaliacaoController,
     BinarizacaoController,
@@ -16,9 +15,8 @@ from src.io.path_resolver import PathResolver
 from src.repositories import ImagemRepository
 
 
-def _resolver_e2e() -> PathResolver:
-    e2e_generated_dir = Path(__file__).resolve().parents[1] / "e2e_generated"
-    shutil.rmtree(e2e_generated_dir, ignore_errors=True)
+def _resolver_e2e(tmp_path: Path) -> PathResolver:
+    e2e_generated_dir = tmp_path / "e2e_generated"
 
     return PathResolver.from_config().with_overrides(
         generated_dir=str(e2e_generated_dir),
@@ -33,8 +31,11 @@ def _resolver_e2e() -> PathResolver:
 
 
 def _modelos_e2e() -> dict[str, str]:
-    nome_modelo = next(iter(MODELOS_PARA_AVALIACAO))
-    return {nome_modelo: MODELOS_PARA_AVALIACAO[nome_modelo]}
+    return dict(MODELOS_PARA_AVALIACAO)
+
+
+def _iterar_execucoes() -> range:
+    return range(1, NUM_EXECUCOES + 1)
 
 
 def _patch_ambiente_e2e(
@@ -148,13 +149,16 @@ def _executar_fluxo_notebook_02() -> tuple[PathResolver, dict[str, str], list]:
 
 
 @pytest.mark.e2e
-def test_notebook_01_gera_segmentacoes(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_notebook_01_gera_segmentacoes(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
     try:
         import rembg  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    resolver = _resolver_e2e()
+    resolver = _resolver_e2e(tmp_path)
     modelos = _modelos_e2e()
     _patch_ambiente_e2e(monkeypatch, resolver, modelos)
 
@@ -168,50 +172,68 @@ def test_notebook_01_gera_segmentacoes(monkeypatch: pytest.MonkeyPatch) -> None:
     except Exception as erro:
         pytest.skip(f"Ambiente sem suporte para executar rembg real: {erro}")
     linhas = ImagemRepository(resolver.sqlite_path).list()
-    nome_modelo = next(iter(modelos))
-    saidas_geradas = sorted(
-        (Path(resolver.segmentacoes_brutas_dir) / nome_modelo).glob("*.png")
-    )
+    saidas_por_modelo_execucao = {
+        (nome_modelo, execucao): sorted(
+            (
+                Path(resolver.segmentacoes_brutas_dir)
+                / f"execucao_{execucao}"
+                / nome_modelo
+            ).glob("*.png")
+        )
+        for nome_modelo in modelos
+        for execucao in _iterar_execucoes()
+    }
 
     assert resumo_integridade.total_png == 0
     assert len(linhas) == 5
-    assert len(saidas_geradas) == len(linhas)
-    assert resumos[nome_modelo].total == len(linhas)
-    assert resumos[nome_modelo].processadas == len(linhas)
-    assert resumos[nome_modelo].ok == len(linhas)
-    assert resumos[nome_modelo].erro == 0
-    assert resumos[nome_modelo].skip == 0
+    assert set(resumos) == set(modelos)
+    for nome_modelo in modelos:
+        assert resumos[nome_modelo].total == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].processadas == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].ok == len(linhas) * NUM_EXECUCOES
+        assert resumos[nome_modelo].erro == 0
+        assert resumos[nome_modelo].skip == 0
+    assert all(
+        len(saidas) == len(linhas) for saidas in saidas_por_modelo_execucao.values()
+    )
 
 
 @pytest.mark.e2e
 def test_notebook_02_binariza_ground_truth_e_segmentacoes(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     try:
         import rembg  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    resolver = _resolver_e2e()
+    resolver = _resolver_e2e(tmp_path)
     modelos = _modelos_e2e()
     _patch_ambiente_e2e(monkeypatch, resolver, modelos)
 
     resolver, modelos, linhas = _executar_fluxo_notebook_02()
-    nome_modelo = next(iter(modelos))
     strategy = GaussianOpeningBinarizationStrategy()
 
     saidas_ground_truth = sorted(Path(resolver.ground_truth_binarizada_dir).glob("*.png"))
-    saidas_modelo = sorted(
-        (
-            Path(resolver.segmentacoes_binarizadas_dir)
-            / strategy.nome_pasta
-            / nome_modelo
-        ).glob("*.png")
-    )
+    saidas_por_modelo_execucao = {
+        (nome_modelo, execucao): sorted(
+            (
+                Path(resolver.segmentacoes_binarizadas_dir)
+                / f"execucao_{execucao}"
+                / strategy.nome_pasta
+                / nome_modelo
+            ).glob("*.png")
+        )
+        for nome_modelo in modelos
+        for execucao in _iterar_execucoes()
+    }
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
     assert len(saidas_ground_truth) == len(linhas)
-    assert len(saidas_modelo) == len(linhas)
+    assert all(
+        len(saidas) == len(linhas) for saidas in saidas_por_modelo_execucao.values()
+    )
     assert imagem_persistida is not None
     assert imagem_persistida.ground_truth_binarizada is None
     assert imagem_persistida.segmentacoes_brutas == []
@@ -220,13 +242,14 @@ def test_notebook_02_binariza_ground_truth_e_segmentacoes(
 @pytest.mark.e2e
 def test_notebook_03_calcula_e_persiste_avaliacoes(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     try:
         import rembg  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("rembg nao esta instalado no ambiente.")
 
-    resolver = _resolver_e2e()
+    resolver = _resolver_e2e(tmp_path)
     modelos = _modelos_e2e()
     _patch_ambiente_e2e(monkeypatch, resolver, modelos)
 
@@ -235,7 +258,11 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
     avaliacao_controller = AvaliacaoController()
     stats = avaliacao_controller.processar_imagens()
     imagens = ImagemRepository(resolver.sqlite_path).list()
-    nome_modelo = next(iter(modelos))
+    pares_esperados = {
+        (nome_modelo, execucao)
+        for nome_modelo in modelos
+        for execucao in _iterar_execucoes()
+    }
 
     assert stats.total == len(linhas)
     assert stats.ok == len(linhas)
@@ -245,10 +272,11 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
     assert len(imagens) == len(linhas)
     assert all(imagem.ground_truth_binarizada is not None for imagem in imagens)
     assert all(
-        any(
-            segmentacao_bruta.nome_modelo == nome_modelo
+        {
+            (segmentacao_bruta.nome_modelo, segmentacao_bruta.execucao)
             for segmentacao_bruta in imagem.segmentacoes_brutas
-        )
+        }
+        == pares_esperados
         for imagem in imagens
     )
     assert all(

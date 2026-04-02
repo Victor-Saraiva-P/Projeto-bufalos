@@ -18,12 +18,14 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
     segmentacao = SegmentacaoBruta(
         nome_arquivo="bufalo_001",
         nome_modelo="u2netp",
+        execucao=1,
         auprc=0.92,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(
             nome_arquivo="bufalo_001",
             nome_modelo="u2netp",
+            execucao=1,
             estrategia_binarizacao=AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO,
             area=90.0,
             perimetro=38.0,
@@ -37,6 +39,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
     assert list(df.columns) == [
         "nome_arquivo",
         "modelo",
+        "execucao",
         "estrategia_binarizacao",
         "area",
         "perimetro",
@@ -49,6 +52,7 @@ def test_build_metrics_dataframe_inclui_auprc() -> None:
         "perimetro_diff_abs",
         "perimetro_similarity",
     ]
+    assert df.iloc[0]["execucao"] == 1
     assert df.iloc[0]["auprc"] == 0.92
 
 
@@ -62,12 +66,14 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valida() -> None
     segmentacao = SegmentacaoBruta(
         nome_arquivo="bufalo_001",
         nome_modelo="u2netp",
+        execucao=1,
         auprc=-1.0,
     )
     segmentacao.segmentacoes_binarizadas = [
         SegmentacaoBinarizada(
             nome_arquivo="bufalo_001",
             nome_modelo="u2netp",
+            execucao=1,
             estrategia_binarizacao=AvaliacaoController.ESTRATEGIA_BINARIZACAO_PADRAO,
             area=90.0,
             perimetro=38.0,

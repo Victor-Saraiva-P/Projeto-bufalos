@@ -17,8 +17,10 @@ Saidas geradas pelo projeto:
 
 ```text
 generated/
-  segmentacoes_brutas/        # mascaras brutas geradas pelos modelos
-  segmentacoes_binarizadas/   # mascaras apos binarizacao, agrupadas por estrategia
+  segmentacoes_brutas/
+    execucao_1/               # mascaras brutas geradas pelos modelos em cada execucao
+  segmentacoes_binarizadas/
+    execucao_1/               # mascaras apos binarizacao, agrupadas por estrategia e execucao
   ground_truth_binarizada/ # mascaras manuais apos binarizacao
   evaluation/              # artefatos de avaliacao
   bufalos.sqlite3          # fonte de verdade do pipeline
@@ -93,6 +95,8 @@ Todos os comandos abaixo assumem que voce esta na raiz do repositorio e com o am
 ```bash
 source .venv/bin/activate
 ```
+
+O numero de repeticoes do pipeline fica em `config.toml`, na chave `[execution].num_execucoes`.
 
 ## Abordagem de desenvolvimento
 
@@ -171,8 +175,8 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 O fluxo de execucao do projeto esta organizado em quatro notebooks:
 
-- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as segmentacoes brutas dos modelos em `generated/segmentacoes_brutas/`;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/`;
+- `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as segmentacoes brutas dos modelos em `generated/segmentacoes_brutas/execucao_N/`;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza mascaras previstas e mascaras de referencia em `generated/segmentacoes_binarizadas/execucao_N/` e `generated/ground_truth_binarizada/`;
 - `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite;
 - `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.
 

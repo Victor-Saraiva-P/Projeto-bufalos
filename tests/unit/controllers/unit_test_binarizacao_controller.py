@@ -86,7 +86,8 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
     repository = FakeImagemRepository(imagens)
     service = FakeBinarizacaoService(
         resultados={
-            "/pred/bin/GaussianaOpening/u2netp/bufalo_001.png": "ok"
+            "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png": "ok",
+            "/pred/bin/execucao_2/GaussianaOpening/u2netp/bufalo_001.png": "ok",
         }
     )
     resolver = FakePathResolver(
@@ -113,6 +114,7 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
         "src.controllers.binarizacao_controller.MODELOS_PARA_AVALIACAO",
         {"u2netp": "cpu"},
     )
+    monkeypatch.setattr("src.controllers.binarizacao_controller.NUM_EXECUCOES", 2)
     controller = BinarizacaoController(
         imagem_repository=repository,
         binarizacao_service=service,
@@ -124,7 +126,12 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
     )
 
     stats = resumos["u2netp"]
-    assert stats.ok == 1
+    assert stats.total == 2
+    assert stats.ok == 2
     assert stats.skip == 0
     assert stats.erro == 0
+    assert service.processados == [
+        "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png",
+        "/pred/bin/execucao_2/GaussianaOpening/u2netp/bufalo_001.png",
+    ]
     assert imagens[0].segmentacoes_brutas == []

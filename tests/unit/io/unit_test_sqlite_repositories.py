@@ -71,6 +71,7 @@ def test_segmentacao_bruta_repository_save_persiste_segmentacao_bruta(tmp_path) 
         SegmentacaoBruta(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             auprc=0.8,
         )
     )
@@ -80,8 +81,43 @@ def test_segmentacao_bruta_repository_save_persiste_segmentacao_bruta(tmp_path) 
     assert imagem_persistida is not None
     assert len(imagem_persistida.segmentacoes_brutas) == 1
     assert imagem_persistida.segmentacoes_brutas[0].nome_modelo == "u2netp"
+    assert imagem_persistida.segmentacoes_brutas[0].execucao == 1
     assert imagem_persistida.segmentacoes_brutas[0].auprc == 0.8
-    assert segmentacao_repository.get("1166_Calcula_506", "u2netp") is not None
+    assert segmentacao_repository.get("1166_Calcula_506", "u2netp", 1) is not None
+
+
+def test_segmentacao_bruta_repository_distingue_execucoes_da_mesma_imagem(tmp_path) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    imagem_repository = ImagemRepository(sqlite_path)
+    segmentacao_repository = SegmentacaoBrutaRepository(sqlite_path)
+    imagem_repository.replace_all(carregar_indice_excel(INDICE_PATH))
+
+    segmentacao_repository.save(
+        SegmentacaoBruta(
+            nome_arquivo="1166_Calcula_506",
+            nome_modelo="u2netp",
+            execucao=1,
+            auprc=0.8,
+        )
+    )
+    segmentacao_repository.save(
+        SegmentacaoBruta(
+            nome_arquivo="1166_Calcula_506",
+            nome_modelo="u2netp",
+            execucao=2,
+            auprc=0.9,
+        )
+    )
+
+    segmentacoes = segmentacao_repository.list(
+        nome_arquivo="1166_Calcula_506",
+        nome_modelo="u2netp",
+    )
+
+    assert [(segmentacao.execucao, segmentacao.auprc) for segmentacao in segmentacoes] == [
+        (1, 0.8),
+        (2, 0.9),
+    ]
 
 
 def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> None:
@@ -95,6 +131,7 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
         SegmentacaoBruta(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             auprc=0.95,
         )
     )
@@ -102,6 +139,7 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
         SegmentacaoBinarizada(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             estrategia_binarizacao="GaussianaOpening",
             area=9.0,
             perimetro=21.0,
@@ -109,7 +147,7 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
         )
     )
 
-    segmentacao = segmentacao_repository.get("1166_Calcula_506", "u2netp")
+    segmentacao = segmentacao_repository.get("1166_Calcula_506", "u2netp", 1)
 
     assert segmentacao is not None
     assert len(segmentacao.segmentacoes_binarizadas) == 1
@@ -117,11 +155,13 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
         segmentacao.segmentacoes_binarizadas[0].estrategia_binarizacao
         == "GaussianaOpening"
     )
+    assert segmentacao.segmentacoes_binarizadas[0].execucao == 1
     assert segmentacao.segmentacoes_binarizadas[0].area == 9.0
     assert (
         binarizacao_repository.get(
             "1166_Calcula_506",
             "u2netp",
+            1,
             "GaussianaOpening",
         )
         is not None
@@ -162,6 +202,7 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
         SegmentacaoBruta(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             auprc=1.0,
         )
     )
@@ -169,6 +210,7 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
         SegmentacaoBinarizada(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             estrategia_binarizacao="GaussianaOpening",
             area=9.0,
             perimetro=21.0,
@@ -180,8 +222,9 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
 
     assert imagem_persistida is not None
     assert [
-        registro.nome_modelo for registro in imagem_persistida.segmentacoes_brutas
-    ] == ["u2netp"]
+        (registro.nome_modelo, registro.execucao)
+        for registro in imagem_persistida.segmentacoes_brutas
+    ] == [("u2netp", 1)]
     assert (
         imagem_persistida.segmentacoes_brutas[0]
         .segmentacoes_binarizadas[0]
@@ -207,8 +250,8 @@ def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:
     assert not SegmentacaoBinarizada.__table__.c.area.nullable
     assert not SegmentacaoBinarizada.__table__.c.perimetro.nullable
     assert not SegmentacaoBinarizada.__table__.c.iou.nullable
-    assert "metrica_x" not in SegmentacaoBruta.__table__.c
-    assert "metrica_y" not in SegmentacaoBruta.__table__.c
+    assert "execucao" in SegmentacaoBruta.__table__.c
+    assert "execucao" in SegmentacaoBinarizada.__table__.c
 
 
 def test_segmentacao_binarizada_repository_rejeita_segmentacao_parcial(tmp_path) -> None:
@@ -221,6 +264,7 @@ def test_segmentacao_binarizada_repository_rejeita_segmentacao_parcial(tmp_path)
         SegmentacaoBruta(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             auprc=0.7,
         )
     )
@@ -230,6 +274,7 @@ def test_segmentacao_binarizada_repository_rejeita_segmentacao_parcial(tmp_path)
             SegmentacaoBinarizada(
                 nome_arquivo="1166_Calcula_506",
                 nome_modelo="u2netp",
+                execucao=1,
                 estrategia_binarizacao="GaussianaOpening",
                 area=1.0,
                 perimetro=2.0,
@@ -249,6 +294,7 @@ def test_segmentacao_bruta_repository_rejeita_auprc_nula(tmp_path) -> None:
             SegmentacaoBruta(
                 nome_arquivo="1166_Calcula_506",
                 nome_modelo="u2netp",
+                execucao=1,
                 auprc=None,  # type: ignore[arg-type]
             )
         )
@@ -273,6 +319,7 @@ def test_imagem_repository_replace_all_recria_schema_e_remove_dados_derivados(tm
         SegmentacaoBruta(
             nome_arquivo="1166_Calcula_506",
             nome_modelo="u2netp",
+            execucao=1,
             auprc=0.5,
         )
     )

@@ -10,5 +10,8 @@ evaluation_dir = "tests/generated/evaluation"
 indice_file = "tests/mock_data/Indice.xlsx"
 sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
+[execution]
+num_execucoes = 3
+
 [models]
 u2netp = "cpu"

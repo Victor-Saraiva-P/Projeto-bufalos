@@ -65,9 +65,19 @@ class PathResolver:
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )
 
-    def caminho_segmentacao_bruta(self, nome_modelo: str, nome_arquivo: str) -> str:
+    @staticmethod
+    def nome_pasta_execucao(execucao: int) -> str:
+        return f"execucao_{execucao}"
+
+    def caminho_segmentacao_bruta(
+        self,
+        nome_modelo: str,
+        nome_arquivo: str,
+        execucao: int,
+    ) -> str:
         return os.path.join(
             self.segmentacoes_brutas_dir,
+            self.nome_pasta_execucao(execucao),
             nome_modelo,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
         )
@@ -76,6 +86,7 @@ class PathResolver:
         self,
         nome_modelo: str,
         nome_arquivo: str,
+        execucao: int,
         nome_binarizacao: str | None = None,
     ) -> str:
         nome_pasta_binarizacao = (
@@ -85,6 +96,7 @@ class PathResolver:
         )
         return os.path.join(
             self.segmentacoes_binarizadas_dir,
+            self.nome_pasta_execucao(execucao),
             nome_pasta_binarizacao,
             nome_modelo,
             f"{nome_arquivo}{REMBG_IMAGE_TYPE}",
@@ -94,13 +106,18 @@ class PathResolver:
         self,
         nome_modelo: str,
         nome_arquivo: str,
+        execucao: int | None = None,
         nome_binarizacao: str | None = None,
     ) -> str:
         if nome_modelo == "ground_truth":
             return self.caminho_ground_truth_binarizada(nome_arquivo)
 
+        if execucao is None:
+            raise ValueError("execucao e obrigatoria para segmentacoes previstas.")
+
         return self.caminho_segmentacao_binarizada(
             nome_modelo,
             nome_arquivo,
+            execucao=execucao,
             nome_binarizacao=nome_binarizacao,
         )

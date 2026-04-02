@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Float, ForeignKeyConstraint, String
+from sqlalchemy import Float, ForeignKeyConstraint, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.sqlite.sqlite_base import Base
@@ -15,8 +15,12 @@ class SegmentacaoBinarizada(Base):
     __tablename__ = "segmentacao_binarizada"
     __table_args__ = (
         ForeignKeyConstraint(
-            ["nome_arquivo", "nome_modelo"],
-            ["segmentacao_bruta.nome_arquivo", "segmentacao_bruta.nome_modelo"],
+            ["nome_arquivo", "nome_modelo", "execucao"],
+            [
+                "segmentacao_bruta.nome_arquivo",
+                "segmentacao_bruta.nome_modelo",
+                "segmentacao_bruta.execucao",
+            ],
         ),
     )
 
@@ -28,6 +32,12 @@ class SegmentacaoBinarizada(Base):
     )
     nome_modelo: Mapped[str] = mapped_column(
         String,
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    execucao: Mapped[int] = mapped_column(
+        Integer,
         primary_key=True,
         nullable=False,
         index=True,
@@ -51,6 +61,7 @@ class SegmentacaoBinarizada(Base):
             "SegmentacaoBinarizada("
             f"nome_arquivo={self.nome_arquivo!r}, "
             f"nome_modelo={self.nome_modelo!r}, "
+            f"execucao={self.execucao!r}, "
             f"estrategia_binarizacao={self.estrategia_binarizacao!r}, "
             f"area={self.area!r}, "
             f"perimetro={self.perimetro!r}, "

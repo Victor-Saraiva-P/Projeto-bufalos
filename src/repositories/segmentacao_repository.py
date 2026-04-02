@@ -20,6 +20,7 @@ class SegmentacaoBrutaRepository:
         persistivel = SegmentacaoBruta(
             nome_arquivo=segmentacao.nome_arquivo,
             nome_modelo=segmentacao.nome_modelo,
+            execucao=segmentacao.execucao,
             auprc=segmentacao.auprc,
         )
         with self.sessionmaker() as session:
@@ -27,7 +28,12 @@ class SegmentacaoBrutaRepository:
             session.commit()
             return merged
 
-    def get(self, nome_arquivo: str, nome_modelo: str) -> SegmentacaoBruta | None:
+    def get(
+        self,
+        nome_arquivo: str,
+        nome_modelo: str,
+        execucao: int,
+    ) -> SegmentacaoBruta | None:
         with self.sessionmaker() as session:
             return session.scalar(
                 select(SegmentacaoBruta)
@@ -35,24 +41,38 @@ class SegmentacaoBrutaRepository:
                 .where(
                     SegmentacaoBruta.nome_arquivo == nome_arquivo,
                     SegmentacaoBruta.nome_modelo == nome_modelo,
+                    SegmentacaoBruta.execucao == execucao,
                 )
             )
 
-    def list(self, nome_arquivo: str | None = None) -> list[SegmentacaoBruta]:
+    def list(
+        self,
+        nome_arquivo: str | None = None,
+        nome_modelo: str | None = None,
+        execucao: int | None = None,
+    ) -> list[SegmentacaoBruta]:
         stmt = (
             select(SegmentacaoBruta)
             .options(selectinload(SegmentacaoBruta.segmentacoes_binarizadas))
-            .order_by(SegmentacaoBruta.nome_arquivo, SegmentacaoBruta.nome_modelo)
+            .order_by(
+                SegmentacaoBruta.nome_arquivo,
+                SegmentacaoBruta.nome_modelo,
+                SegmentacaoBruta.execucao,
+            )
         )
         if nome_arquivo is not None:
             stmt = stmt.where(SegmentacaoBruta.nome_arquivo == nome_arquivo)
+        if nome_modelo is not None:
+            stmt = stmt.where(SegmentacaoBruta.nome_modelo == nome_modelo)
+        if execucao is not None:
+            stmt = stmt.where(SegmentacaoBruta.execucao == execucao)
 
         with self.sessionmaker() as session:
             return cast(list[SegmentacaoBruta], session.scalars(stmt).all())
 
-    def delete(self, nome_arquivo: str, nome_modelo: str) -> None:
+    def delete(self, nome_arquivo: str, nome_modelo: str, execucao: int) -> None:
         with self.sessionmaker() as session:
-            registro = session.get(SegmentacaoBruta, (nome_arquivo, nome_modelo))
+            registro = session.get(SegmentacaoBruta, (nome_arquivo, nome_modelo, execucao))
             if registro is None:
                 return
             session.delete(registro)

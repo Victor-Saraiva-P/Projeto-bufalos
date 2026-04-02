@@ -6,6 +6,7 @@ import os
 from src.binarizacao.binarizacao_base import BinarizationStrategy
 from src.config import (
     MODELOS_PARA_AVALIACAO,
+    NUM_EXECUCOES,
 )
 from src.io.path_resolver import PathResolver
 from src.logs import (
@@ -88,48 +89,57 @@ class BinarizacaoController:
         print("Binarizando mascaras dos modelos")
 
         for nome_modelo in modelos:
-            stats = EstatisticasBinarizacao(total=len(linhas))
+            stats = EstatisticasBinarizacao(total=len(linhas) * NUM_EXECUCOES)
             resumos[nome_modelo] = stats
-            diretorio_modelo = self._diretorio_modelo(nome_modelo)
 
-            if not os.path.isdir(diretorio_modelo):
-                print(
-                    "[AVISO BINARIZACAO] "
-                    f"Diretorio de mascaras nao encontrado para o modelo "
-                    f"{nome_modelo}: {diretorio_modelo}. Pulando modelo."
-                )
-                for _ in linhas:
-                    stats.registrar_skip()
-                imprimir_resumo_binarizacao_modelo(nome_modelo, stats)
-                continue
+            for execucao in range(1, NUM_EXECUCOES + 1):
+                diretorio_modelo = self._diretorio_modelo(nome_modelo, execucao)
 
-            for idx, imagem in enumerate(linhas, start=1):
-                resultado = self.binarizacao_service.processar_arquivo(
-                    caminho_entrada=self.path_resolver.caminho_segmentacao_bruta(
-                        nome_modelo,
-                        imagem.nome_arquivo,
-                    ),
-                    caminho_saida=self.path_resolver.caminho_segmentacao_binarizada(
-                        nome_modelo,
-                        imagem.nome_arquivo,
-                        nome_binarizacao=strategy.nome_pasta,
-                    ),
-                    strategy=strategy,
-                )
-                stats.registrar_resultado(resultado)
+                if not os.path.isdir(diretorio_modelo):
+                    print(
+                        "[AVISO BINARIZACAO] "
+                        f"Diretorio de mascaras nao encontrado para o modelo "
+                        f"{nome_modelo} na execucao_{execucao}: {diretorio_modelo}. "
+                        "Pulando execucao."
+                    )
+                    for _ in linhas:
+                        stats.registrar_skip()
+                    continue
 
-                imprimir_status_binarizacao(
-                    etapa="modelo",
-                    identificador=f"{nome_modelo} {idx}/{len(linhas)}",
-                    stats=stats,
-                )
+                for idx, imagem in enumerate(linhas, start=1):
+                    resultado = self.binarizacao_service.processar_arquivo(
+                        caminho_entrada=self.path_resolver.caminho_segmentacao_bruta(
+                            nome_modelo,
+                            imagem.nome_arquivo,
+                            execucao=execucao,
+                        ),
+                        caminho_saida=self.path_resolver.caminho_segmentacao_binarizada(
+                            nome_modelo,
+                            imagem.nome_arquivo,
+                            execucao=execucao,
+                            nome_binarizacao=strategy.nome_pasta,
+                        ),
+                        strategy=strategy,
+                    )
+                    stats.registrar_resultado(resultado)
 
+                    imprimir_status_binarizacao(
+                        etapa="modelo",
+                        identificador=(
+                            f"{nome_modelo} execucao_{execucao} {idx}/{len(linhas)}"
+                        ),
+                        stats=stats,
+                    )
             imprimir_resumo_binarizacao_modelo(nome_modelo, stats)
 
         return resumos
 
-    def _diretorio_modelo(self, nome_modelo: str) -> str:
-        return os.path.join(self.path_resolver.segmentacoes_brutas_dir, nome_modelo)
+    def _diretorio_modelo(self, nome_modelo: str, execucao: int) -> str:
+        return os.path.join(
+            self.path_resolver.segmentacoes_brutas_dir,
+            self.path_resolver.nome_pasta_execucao(execucao),
+            nome_modelo,
+        )
 
     def verificar_segmentacoes(
         self,

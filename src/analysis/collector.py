@@ -128,6 +128,7 @@ class MetricsCollector:
                     {
                         "nome_arquivo": imagem.nome_arquivo,
                         "modelo": segmentacao_bruta.nome_modelo,
+                        "execucao": segmentacao_bruta.execucao,
                         "estrategia_binarizacao": segmentacao_binarizada.estrategia_binarizacao,
                         "area": area,
                         "perimetro": perimetro,

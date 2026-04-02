@@ -4,7 +4,7 @@ from collections.abc import Iterable
 import time
 
 from src.binarizacao import GaussianOpeningBinarizationStrategy
-from src.config import MODELOS_PARA_AVALIACAO
+from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
 from src.io.mask_utils import (
     carregar_mask_array_avaliacao,
     carregar_score_mask_predita,
@@ -73,31 +73,36 @@ class AvaliacaoController:
             "ground_truth",
             path_resolver=self.path_resolver,
         )
-        mascaras_modelo = {
-            nome_modelo: carregar_mask_array_avaliacao(
-                imagem.nome_arquivo,
-                nome_modelo,
-                path_resolver=self.path_resolver,
-                nome_binarizacao=self.estrategia_binarizacao,
-            )
-            for nome_modelo in nomes_modelo
-        }
-        score_masks_modelo = {
-            nome_modelo: carregar_score_mask_predita(
-                imagem.nome_arquivo,
-                nome_modelo,
-                path_resolver=self.path_resolver,
-            )
-            for nome_modelo in nomes_modelo
-        }
+        imagem_avaliada = imagem
+        for execucao in range(1, NUM_EXECUCOES + 1):
+            mascaras_modelo = {
+                nome_modelo: carregar_mask_array_avaliacao(
+                    imagem.nome_arquivo,
+                    nome_modelo,
+                    path_resolver=self.path_resolver,
+                    execucao=execucao,
+                    nome_binarizacao=self.estrategia_binarizacao,
+                )
+                for nome_modelo in nomes_modelo
+            }
+            score_masks_modelo = {
+                nome_modelo: carregar_score_mask_predita(
+                    imagem.nome_arquivo,
+                    nome_modelo,
+                    execucao=execucao,
+                    path_resolver=self.path_resolver,
+                )
+                for nome_modelo in nomes_modelo
+            }
 
-        imagem_avaliada = self.avaliacao_service.avaliar(
-            imagem=imagem,
-            ground_truth_mask=ground_truth_mask,
-            mascaras_modelo=mascaras_modelo,
-            score_masks_modelo=score_masks_modelo,
-            estrategia_binarizacao=self.estrategia_binarizacao,
-        )
+            imagem_avaliada = self.avaliacao_service.avaliar(
+                imagem=imagem_avaliada,
+                ground_truth_mask=ground_truth_mask,
+                mascaras_modelo=mascaras_modelo,
+                score_masks_modelo=score_masks_modelo,
+                estrategia_binarizacao=self.estrategia_binarizacao,
+                execucao=execucao,
+            )
         ground_truth = imagem_avaliada.ground_truth_binarizada
         if ground_truth is not None:
             self.ground_truth_binarizada_repository.save(ground_truth)
@@ -165,34 +170,35 @@ class AvaliacaoController:
             return False
 
         segmentacoes_brutas = {
-            segmentacao_bruta.nome_modelo: segmentacao_bruta
+            (segmentacao_bruta.nome_modelo, segmentacao_bruta.execucao): segmentacao_bruta
             for segmentacao_bruta in imagem.segmentacoes_brutas
         }
-        for nome_modelo in nomes_modelo:
-            segmentacao_bruta = segmentacoes_brutas.get(nome_modelo)
-            if segmentacao_bruta is None:
-                return False
-            if (
-                segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
-            ):
-                return False
-            segmentacao_binarizada_atual = next(
-                (
-                    segmentacao_binarizada
-                    for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
-                    if (
-                        segmentacao_binarizada.estrategia_binarizacao
-                        == self.estrategia_binarizacao
-                    )
-                ),
-                None,
-            )
-            if (
-                segmentacao_binarizada_atual is None
-                or segmentacao_binarizada_atual.area is None
-                or segmentacao_binarizada_atual.perimetro is None
-                or segmentacao_binarizada_atual.iou is None
-            ):
-                return False
+        for execucao in range(1, NUM_EXECUCOES + 1):
+            for nome_modelo in nomes_modelo:
+                segmentacao_bruta = segmentacoes_brutas.get((nome_modelo, execucao))
+                if segmentacao_bruta is None:
+                    return False
+                if (
+                    segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
+                ):
+                    return False
+                segmentacao_binarizada_atual = next(
+                    (
+                        segmentacao_binarizada
+                        for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
+                        if (
+                            segmentacao_binarizada.estrategia_binarizacao
+                            == self.estrategia_binarizacao
+                        )
+                    ),
+                    None,
+                )
+                if (
+                    segmentacao_binarizada_atual is None
+                    or segmentacao_binarizada_atual.area is None
+                    or segmentacao_binarizada_atual.perimetro is None
+                    or segmentacao_binarizada_atual.iou is None
+                ):
+                    return False
 
         return True

@@ -165,10 +165,12 @@ Estrutura atual:
 tests/mock_generated/
   ground_truth_binarizada/
   segmentacoes_brutas/
-    u2netp/
-  segmentacoes_binarizadas/
-    GaussianaOpening/
+    execucao_1/
       u2netp/
+  segmentacoes_binarizadas/
+    execucao_1/
+      GaussianaOpening/
+        u2netp/
 ```
 
 Objetivos desse conjunto:
@@ -208,6 +210,9 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 
 [models]
 u2netp = "cpu"
+
+[execution]
+num_execucoes = 1
 ```
 
 ## Fluxo local recomendado

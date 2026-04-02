@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Float, ForeignKey, String
+from sqlalchemy import Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.sqlite.sqlite_base import Base
@@ -25,6 +25,7 @@ class SegmentacaoBruta(Base):
         index=True,
     )
     nome_modelo: Mapped[str] = mapped_column(String, primary_key=True, nullable=False)
+    execucao: Mapped[int] = mapped_column(Integer, primary_key=True, nullable=False)
     auprc: Mapped[float] = mapped_column(Float, nullable=False)
 
     imagem: Mapped["Imagem"] = relationship("Imagem", back_populates="segmentacoes_brutas")
@@ -47,5 +48,6 @@ class SegmentacaoBruta(Base):
             "SegmentacaoBruta("
             f"nome_arquivo={self.nome_arquivo!r}, "
             f"nome_modelo={self.nome_modelo!r}, "
+            f"execucao={self.execucao!r}, "
             f"auprc={self.auprc!r})"
         )

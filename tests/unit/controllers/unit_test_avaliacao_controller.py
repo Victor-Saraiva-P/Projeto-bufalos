@@ -57,6 +57,7 @@ class FakeAvaliacaoService:
                 dict[str, np.ndarray],
                 dict[str, np.ndarray],
                 str,
+                int,
             ]
         ] = []
 
@@ -67,6 +68,7 @@ class FakeAvaliacaoService:
         mascaras_modelo: dict[str, np.ndarray],
         score_masks_modelo: dict[str, np.ndarray],
         estrategia_binarizacao: str,
+        execucao: int,
     ) -> Imagem:
         self.chamadas.append(
             (
@@ -75,6 +77,7 @@ class FakeAvaliacaoService:
                 mascaras_modelo,
                 score_masks_modelo,
                 estrategia_binarizacao,
+                execucao,
             )
         )
         imagem.ground_truth_binarizada = GroundTruthBinarizada(
@@ -85,12 +88,14 @@ class FakeAvaliacaoService:
         segmentacao = SegmentacaoBruta(
             nome_arquivo=imagem.nome_arquivo,
             nome_modelo="u2netp",
+            execucao=execucao,
             auprc=0.9,
         )
         segmentacao.segmentacoes_binarizadas.append(
             SegmentacaoBinarizada(
                 nome_arquivo=imagem.nome_arquivo,
                 nome_modelo="u2netp",
+                execucao=execucao,
                 estrategia_binarizacao=estrategia_binarizacao,
                 area=5.0,
                 perimetro=7.0,
@@ -98,8 +103,17 @@ class FakeAvaliacaoService:
             )
         )
         imagem.segmentacoes_brutas = [
-            segmentacao
+            existente
+            for existente in imagem.segmentacoes_brutas
+            if not (
+                existente.nome_modelo == segmentacao.nome_modelo
+                and existente.execucao == segmentacao.execucao
+            )
         ]
+        imagem.segmentacoes_brutas.append(segmentacao)
+        imagem.segmentacoes_brutas.sort(
+            key=lambda existente: (existente.nome_modelo, existente.execucao)
+        )
         return imagem
 
 
@@ -133,15 +147,20 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
         "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
         {"u2netp": "cpu"},
     )
+    monkeypatch.setattr("src.controllers.avaliacao_controller.NUM_EXECUCOES", 2)
     monkeypatch.setattr(
         "src.controllers.avaliacao_controller.carregar_mask_array_avaliacao",
-        lambda nome_arquivo, nome_modelo, path_resolver, nome_binarizacao=None: (
+        lambda nome_arquivo,
+        nome_modelo,
+        path_resolver,
+        execucao=None,
+        nome_binarizacao=None: (
             ground_truth_mask if nome_modelo == "ground_truth" else model_mask
         ),
     )
     monkeypatch.setattr(
         "src.controllers.avaliacao_controller.carregar_score_mask_predita",
-        lambda nome_arquivo, nome_modelo, path_resolver: score_mask,
+        lambda nome_arquivo, nome_modelo, execucao, path_resolver: score_mask,
     )
     controller = AvaliacaoController(
         imagem_repository=repository,
@@ -159,8 +178,8 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
 
     assert imagem_avaliada.ground_truth_binarizada is not None
     assert len(ground_truth_repository.salvos) == 1
-    assert len(segmentacao_repository.salvos) == 1
-    assert len(binarizacao_repository.salvos) == 1
+    assert len(segmentacao_repository.salvos) == 2
+    assert len(binarizacao_repository.salvos) == 2
     assert service.chamadas[0][0] is imagem
     assert np.array_equal(service.chamadas[0][1], ground_truth_mask)
     assert list(service.chamadas[0][2]) == ["u2netp"]
@@ -168,6 +187,11 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     assert list(service.chamadas[0][3]) == ["u2netp"]
     assert np.array_equal(service.chamadas[0][3]["u2netp"], score_mask)
     assert service.chamadas[0][4] == "GaussianaOpening"
+    assert [chamada[5] for chamada in service.chamadas] == [1, 2]
+    assert [segmentacao.execucao for segmentacao in imagem_avaliada.segmentacoes_brutas] == [
+        1,
+        2,
+    ]
 
 
 def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
@@ -189,19 +213,38 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     segmentacao_skip = SegmentacaoBruta(
         nome_arquivo="ja_avaliada",
         nome_modelo="u2netp",
+        execucao=1,
         auprc=0.9,
     )
     segmentacao_skip.segmentacoes_binarizadas.append(
         SegmentacaoBinarizada(
             nome_arquivo="ja_avaliada",
             nome_modelo="u2netp",
+            execucao=1,
             estrategia_binarizacao="GaussianaOpening",
             area=5.0,
             perimetro=7.0,
             iou=0.8,
         )
     )
-    imagem_skip.segmentacoes_brutas = [segmentacao_skip]
+    segmentacao_skip_execucao_2 = SegmentacaoBruta(
+        nome_arquivo="ja_avaliada",
+        nome_modelo="u2netp",
+        execucao=2,
+        auprc=0.91,
+    )
+    segmentacao_skip_execucao_2.segmentacoes_binarizadas.append(
+        SegmentacaoBinarizada(
+            nome_arquivo="ja_avaliada",
+            nome_modelo="u2netp",
+            execucao=2,
+            estrategia_binarizacao="GaussianaOpening",
+            area=5.0,
+            perimetro=7.0,
+            iou=0.81,
+        )
+    )
+    imagem_skip.segmentacoes_brutas = [segmentacao_skip, segmentacao_skip_execucao_2]
     imagem_ok = Imagem(nome_arquivo="avaliar", fazenda="B", peso=2.0)
     repository.imagens = [imagem_skip, imagem_ok]
     processadas: list[str] = []
@@ -210,6 +253,7 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
         "src.controllers.avaliacao_controller.MODELOS_PARA_AVALIACAO",
         {"u2netp": "cpu"},
     )
+    monkeypatch.setattr("src.controllers.avaliacao_controller.NUM_EXECUCOES", 2)
 
     def fake_processar_imagem(
         imagem: Imagem,

@@ -20,6 +20,7 @@ class SegmentacaoBinarizadaRepository:
         persistivel = SegmentacaoBinarizada(
             nome_arquivo=binarizacao.nome_arquivo,
             nome_modelo=binarizacao.nome_modelo,
+            execucao=binarizacao.execucao,
             estrategia_binarizacao=binarizacao.estrategia_binarizacao,
             area=binarizacao.area,
             perimetro=binarizacao.perimetro,
@@ -34,6 +35,7 @@ class SegmentacaoBinarizadaRepository:
         self,
         nome_arquivo: str,
         nome_modelo: str,
+        execucao: int,
         estrategia_binarizacao: str,
     ) -> SegmentacaoBinarizada | None:
         with self.sessionmaker() as session:
@@ -43,6 +45,7 @@ class SegmentacaoBinarizadaRepository:
                 .where(
                     SegmentacaoBinarizada.nome_arquivo == nome_arquivo,
                     SegmentacaoBinarizada.nome_modelo == nome_modelo,
+                    SegmentacaoBinarizada.execucao == execucao,
                     SegmentacaoBinarizada.estrategia_binarizacao == estrategia_binarizacao,
                 )
             )
@@ -51,6 +54,7 @@ class SegmentacaoBinarizadaRepository:
         self,
         nome_arquivo: str | None = None,
         nome_modelo: str | None = None,
+        execucao: int | None = None,
     ) -> list[SegmentacaoBinarizada]:
         stmt = (
             select(SegmentacaoBinarizada)
@@ -58,6 +62,7 @@ class SegmentacaoBinarizadaRepository:
             .order_by(
                 SegmentacaoBinarizada.nome_arquivo,
                 SegmentacaoBinarizada.nome_modelo,
+                SegmentacaoBinarizada.execucao,
                 SegmentacaoBinarizada.estrategia_binarizacao,
             )
         )
@@ -65,6 +70,8 @@ class SegmentacaoBinarizadaRepository:
             stmt = stmt.where(SegmentacaoBinarizada.nome_arquivo == nome_arquivo)
         if nome_modelo is not None:
             stmt = stmt.where(SegmentacaoBinarizada.nome_modelo == nome_modelo)
+        if execucao is not None:
+            stmt = stmt.where(SegmentacaoBinarizada.execucao == execucao)
 
         with self.sessionmaker() as session:
             return cast(list[SegmentacaoBinarizada], session.scalars(stmt).all())
@@ -73,12 +80,13 @@ class SegmentacaoBinarizadaRepository:
         self,
         nome_arquivo: str,
         nome_modelo: str,
+        execucao: int,
         estrategia_binarizacao: str,
     ) -> None:
         with self.sessionmaker() as session:
             registro = session.get(
                 SegmentacaoBinarizada,
-                (nome_arquivo, nome_modelo, estrategia_binarizacao),
+                (nome_arquivo, nome_modelo, execucao, estrategia_binarizacao),
             )
             if registro is None:
                 return
