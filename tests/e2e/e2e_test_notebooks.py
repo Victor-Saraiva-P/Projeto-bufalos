@@ -264,8 +264,8 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for execucao in _iterar_execucoes()
     }
 
-    assert stats.total == len(linhas)
-    assert stats.ok == len(linhas)
+    assert stats.total == len(linhas) * len(_iterar_execucoes())
+    assert stats.ok == len(linhas) * len(_iterar_execucoes())
     assert stats.erro == 0
     assert stats.skip == 0
 

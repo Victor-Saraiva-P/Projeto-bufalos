@@ -47,3 +47,7 @@ def formatar_duracao(segundos):
     if minutos > 0:
         return f"{minutos}m{seg:02d}s"
     return f"{seg}s"
+
+
+def formatar_nome_execucao(execucao: int) -> str:
+    return f"execucao_{execucao}"

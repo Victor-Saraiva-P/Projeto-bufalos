@@ -13,6 +13,7 @@ from src.io.path_resolver import PathResolver
 from src.logs import (
     EstatisticasAvaliacao,
     imprimir_resumo_avaliacao,
+    imprimir_resumo_avaliacao_execucao,
     imprimir_status_avaliacao,
 )
 from src.models import Imagem, SegmentacaoBruta
@@ -66,6 +67,7 @@ class AvaliacaoController:
     def processar_imagem(
         self,
         imagem: Imagem,
+        execucao: int | None = None,
     ) -> Imagem:
         nomes_modelo = list(MODELOS_PARA_AVALIACAO)
         ground_truth_mask = carregar_mask_array_avaliacao(
@@ -74,13 +76,14 @@ class AvaliacaoController:
             path_resolver=self.path_resolver,
         )
         imagem_avaliada = imagem
-        for execucao in range(1, NUM_EXECUCOES + 1):
+        execucoes = [execucao] if execucao is not None else range(1, NUM_EXECUCOES + 1)
+        for execucao_atual in execucoes:
             mascaras_modelo = {
                 nome_modelo: carregar_mask_array_avaliacao(
                     imagem.nome_arquivo,
                     nome_modelo,
                     path_resolver=self.path_resolver,
-                    execucao=execucao,
+                    execucao=execucao_atual,
                     nome_binarizacao=self.estrategia_binarizacao,
                 )
                 for nome_modelo in nomes_modelo
@@ -89,7 +92,7 @@ class AvaliacaoController:
                 nome_modelo: carregar_score_mask_predita(
                     imagem.nome_arquivo,
                     nome_modelo,
-                    execucao=execucao,
+                    execucao=execucao_atual,
                     path_resolver=self.path_resolver,
                 )
                 for nome_modelo in nomes_modelo
@@ -101,7 +104,7 @@ class AvaliacaoController:
                 mascaras_modelo=mascaras_modelo,
                 score_masks_modelo=score_masks_modelo,
                 estrategia_binarizacao=self.estrategia_binarizacao,
-                execucao=execucao,
+                execucao=execucao_atual,
             )
         ground_truth = imagem_avaliada.ground_truth_binarizada
         if ground_truth is not None:
@@ -125,33 +128,51 @@ class AvaliacaoController:
     ) -> EstatisticasAvaliacao:
         linhas = list(imagens) if imagens is not None else self.imagem_repository.list()
         nomes_modelo = list(MODELOS_PARA_AVALIACAO)
-        stats = EstatisticasAvaliacao(total=len(linhas))
+        stats = EstatisticasAvaliacao(total=len(linhas) * NUM_EXECUCOES)
 
         print("Calculando metricas de avaliacao")
 
-        for idx, imagem in enumerate(linhas, start=1):
-            identificador = f"{idx}/{len(linhas)}"
+        for execucao in range(1, NUM_EXECUCOES + 1):
+            stats_execucao = EstatisticasAvaliacao(total=len(linhas))
+            for idx, imagem in enumerate(linhas, start=1):
+                identificador = f"{idx}/{len(linhas)}"
 
-            if self._imagem_ja_avaliada(imagem, nomes_modelo):
-                stats.registrar_skip()
-                imprimir_status_avaliacao(identificador, imagem.nome_arquivo, stats)
-                continue
+                if self._execucao_ja_avaliada(imagem, nomes_modelo, execucao):
+                    stats.registrar_skip()
+                    stats_execucao.registrar_skip()
+                    imprimir_status_avaliacao(
+                        identificador,
+                        imagem.nome_arquivo,
+                        stats_execucao,
+                        execucao,
+                    )
+                    continue
 
-            inicio = time.perf_counter()
-            try:
-                self.processar_imagem(
-                    imagem=imagem,
+                inicio = time.perf_counter()
+                try:
+                    self.processar_imagem(
+                        imagem=imagem,
+                        execucao=execucao,
+                    )
+                except Exception as exc:
+                    stats.registrar_erro()
+                    stats_execucao.registrar_erro()
+                    print(
+                        "[ERRO AVALIACAO] "
+                        f"Falha ao avaliar {imagem.nome_arquivo} na execucao_{execucao}: {exc}"
+                    )
+                else:
+                    duracao = time.perf_counter() - inicio
+                    stats.registrar_ok_com_duracao(duracao)
+                    stats_execucao.registrar_ok_com_duracao(duracao)
+
+                imprimir_status_avaliacao(
+                    identificador,
+                    imagem.nome_arquivo,
+                    stats_execucao,
+                    execucao,
                 )
-            except Exception as exc:
-                stats.registrar_erro()
-                print(
-                    "[ERRO AVALIACAO] "
-                    f"Falha ao avaliar {imagem.nome_arquivo}: {exc}"
-                )
-            else:
-                stats.registrar_ok_com_duracao(time.perf_counter() - inicio)
-
-            imprimir_status_avaliacao(identificador, imagem.nome_arquivo, stats)
+            imprimir_resumo_avaliacao_execucao(execucao, stats_execucao)
 
         imprimir_resumo_avaliacao(stats)
         return stats
@@ -160,6 +181,17 @@ class AvaliacaoController:
         self,
         imagem: Imagem,
         nomes_modelo: list[str],
+    ) -> bool:
+        for execucao in range(1, NUM_EXECUCOES + 1):
+            if not self._execucao_ja_avaliada(imagem, nomes_modelo, execucao):
+                return False
+        return True
+
+    def _execucao_ja_avaliada(
+        self,
+        imagem: Imagem,
+        nomes_modelo: list[str],
+        execucao: int,
     ) -> bool:
         ground_truth = imagem.ground_truth_binarizada
         if (
@@ -173,32 +205,29 @@ class AvaliacaoController:
             (segmentacao_bruta.nome_modelo, segmentacao_bruta.execucao): segmentacao_bruta
             for segmentacao_bruta in imagem.segmentacoes_brutas
         }
-        for execucao in range(1, NUM_EXECUCOES + 1):
-            for nome_modelo in nomes_modelo:
-                segmentacao_bruta = segmentacoes_brutas.get((nome_modelo, execucao))
-                if segmentacao_bruta is None:
-                    return False
-                if (
-                    segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA
-                ):
-                    return False
-                segmentacao_binarizada_atual = next(
-                    (
-                        segmentacao_binarizada
-                        for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
-                        if (
-                            segmentacao_binarizada.estrategia_binarizacao
-                            == self.estrategia_binarizacao
-                        )
-                    ),
-                    None,
-                )
-                if (
-                    segmentacao_binarizada_atual is None
-                    or segmentacao_binarizada_atual.area is None
-                    or segmentacao_binarizada_atual.perimetro is None
-                    or segmentacao_binarizada_atual.iou is None
-                ):
-                    return False
+        for nome_modelo in nomes_modelo:
+            segmentacao_bruta = segmentacoes_brutas.get((nome_modelo, execucao))
+            if segmentacao_bruta is None:
+                return False
+            if segmentacao_bruta.auprc <= SegmentacaoBruta.AUPRC_NAO_CALCULADA:
+                return False
+            segmentacao_binarizada_atual = next(
+                (
+                    segmentacao_binarizada
+                    for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas
+                    if (
+                        segmentacao_binarizada.estrategia_binarizacao
+                        == self.estrategia_binarizacao
+                    )
+                ),
+                None,
+            )
+            if (
+                segmentacao_binarizada_atual is None
+                or segmentacao_binarizada_atual.area is None
+                or segmentacao_binarizada_atual.perimetro is None
+                or segmentacao_binarizada_atual.iou is None
+            ):
+                return False
 
         return True

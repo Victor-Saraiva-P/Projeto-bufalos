@@ -6,6 +6,7 @@ from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
 from src.io.path_resolver import PathResolver
 from src.logs import (
     EstatisticasProcessamentoComEta,
+    imprimir_resumo_execucao_modelo,
     imprimir_resumo_modelo,
     imprimir_status,
 )
@@ -62,6 +63,7 @@ class SegmentacaoController:
             )
 
             for execucao in range(1, NUM_EXECUCOES + 1):
+                stats_execucao = EstatisticasProcessamentoComEta(total=len(linhas))
                 for imagem in linhas:
                     resultado = self.segmentacao_service.segmentar_arquivo(
                         nome_arquivo=imagem.nome_arquivo,
@@ -79,13 +81,21 @@ class SegmentacaoController:
                         ),
                         rembg_session=rembg_session,
                     )
-                    self._registrar_resultado(stats_geral, stats_modelo, resultado)
+                    self._registrar_resultado(
+                        stats_geral,
+                        stats_modelo,
+                        resultado,
+                        stats_execucao=stats_execucao,
+                    )
 
                     imprimir_status(
                         stats_geral,
                         stats_modelo,
-                        f"{nome_modelo} execucao_{execucao}",
+                        stats_execucao,
+                        nome_modelo,
+                        execucao,
                     )
+                imprimir_resumo_execucao_modelo(nome_modelo, execucao, stats_execucao)
 
             imprimir_resumo_modelo(nome_modelo, stats_modelo)
 
@@ -96,17 +106,24 @@ class SegmentacaoController:
         stats_geral: EstatisticasProcessamentoComEta,
         stats_modelo: EstatisticasProcessamentoComEta,
         resultado: ResultadoSegmentacaoArquivo,
+        stats_execucao: EstatisticasProcessamentoComEta | None = None,
     ) -> None:
         if resultado.status == "ok":
             duracao = resultado.duracao_inferencia or 0.0
             stats_geral.registrar_ok_com_duracao(duracao)
             stats_modelo.registrar_ok_com_duracao(duracao)
+            if stats_execucao is not None:
+                stats_execucao.registrar_ok_com_duracao(duracao)
             return
 
         if resultado.status == "skip":
             stats_geral.registrar_skip()
             stats_modelo.registrar_skip()
+            if stats_execucao is not None:
+                stats_execucao.registrar_skip()
             return
 
         stats_geral.registrar_erro()
         stats_modelo.registrar_erro()
+        if stats_execucao is not None:
+            stats_execucao.registrar_erro()

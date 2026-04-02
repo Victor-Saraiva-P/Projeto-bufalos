@@ -257,16 +257,17 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
 
     def fake_processar_imagem(
         imagem: Imagem,
+        execucao: int | None = None,
     ) -> Imagem:
-        processadas.append(imagem.nome_arquivo)
+        processadas.append(f"{imagem.nome_arquivo}:{execucao}")
         return imagem
 
     monkeypatch.setattr(controller, "processar_imagem", fake_processar_imagem)
 
     stats = controller.processar_imagens()
 
-    assert processadas == ["avaliar"]
-    assert stats.total == 2
-    assert stats.ok == 1
-    assert stats.skip == 1
+    assert processadas == ["avaliar:1", "avaliar:2"]
+    assert stats.total == 4
+    assert stats.ok == 2
+    assert stats.skip == 2
     assert stats.erro == 0

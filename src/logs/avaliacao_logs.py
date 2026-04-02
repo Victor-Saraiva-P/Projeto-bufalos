@@ -1,7 +1,11 @@
 from dataclasses import dataclass, field
 import time
 
-from src.logs.logs_base import EstatisticasLogGeral, formatar_duracao
+from src.logs.logs_base import (
+    EstatisticasLogGeral,
+    formatar_duracao,
+    formatar_nome_execucao,
+)
 
 
 @dataclass
@@ -22,6 +26,7 @@ def imprimir_status_avaliacao(
     identificador: str,
     nome_arquivo: str,
     stats: EstatisticasAvaliacao,
+    execucao: int,
 ) -> None:
     perc = (stats.processadas / stats.total * 100.0) if stats.total else 0.0
     tempo_execucao = stats.tempo_execucao
@@ -31,7 +36,7 @@ def imprimir_status_avaliacao(
     eta = (restantes / taxa) if taxa > 0 else None
 
     print(
-        f"[AVALIACAO] {identificador} | {nome_arquivo} | "
+        f"[AVALIACAO {formatar_nome_execucao(execucao)}] {identificador} | {nome_arquivo} | "
         f"processadas={stats.processadas}/{stats.total} ({perc:5.1f}%) | "
         f"ok={stats.ok} skip={stats.skip} erro={stats.erro} | "
         f"media={media:.2f}s/img | ETA {formatar_duracao(eta)}"
@@ -44,6 +49,23 @@ def imprimir_resumo_avaliacao(stats: EstatisticasAvaliacao) -> None:
     media = (stats.tempo_calculo / stats.ok) if stats.ok else 0.0
 
     print("[RESUMO AVALIACAO]")
+    print(
+        f"tempo_total={formatar_duracao(tempo_execucao)} | total={stats.total} | "
+        f"ok={stats.ok} | skip={stats.skip} | erro={stats.erro}"
+    )
+    print(f"tempo_medio={media:.2f}s/img | throughput={taxa:.2f} img/s")
+    print("-" * 100)
+
+
+def imprimir_resumo_avaliacao_execucao(
+    execucao: int,
+    stats: EstatisticasAvaliacao,
+) -> None:
+    tempo_execucao = stats.tempo_execucao
+    taxa = (stats.processadas / tempo_execucao) if tempo_execucao > 0 else 0.0
+    media = (stats.tempo_calculo / stats.ok) if stats.ok else 0.0
+
+    print(f"[RESUMO AVALIACAO {formatar_nome_execucao(execucao)}]")
     print(
         f"tempo_total={formatar_duracao(tempo_execucao)} | total={stats.total} | "
         f"ok={stats.ok} | skip={stats.skip} | erro={stats.erro}"

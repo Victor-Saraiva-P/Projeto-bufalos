@@ -12,6 +12,7 @@ from src.io.path_resolver import PathResolver
 from src.logs import (
     EstatisticasBinarizacao,
     imprimir_resumo_binarizacao,
+    imprimir_resumo_binarizacao_execucao,
     imprimir_resumo_binarizacao_modelo,
     imprimir_status_binarizacao,
 )
@@ -93,6 +94,7 @@ class BinarizacaoController:
             resumos[nome_modelo] = stats
 
             for execucao in range(1, NUM_EXECUCOES + 1):
+                stats_execucao = EstatisticasBinarizacao(total=len(linhas))
                 diretorio_modelo = self._diretorio_modelo(nome_modelo, execucao)
 
                 if not os.path.isdir(diretorio_modelo):
@@ -104,6 +106,7 @@ class BinarizacaoController:
                     )
                     for _ in linhas:
                         stats.registrar_skip()
+                        stats_execucao.registrar_skip()
                     continue
 
                 for idx, imagem in enumerate(linhas, start=1):
@@ -122,14 +125,20 @@ class BinarizacaoController:
                         strategy=strategy,
                     )
                     stats.registrar_resultado(resultado)
+                    stats_execucao.registrar_resultado(resultado)
 
                     imprimir_status_binarizacao(
                         etapa="modelo",
-                        identificador=(
-                            f"{nome_modelo} execucao_{execucao} {idx}/{len(linhas)}"
-                        ),
-                        stats=stats,
+                        identificador=f"{idx}/{len(linhas)}",
+                        stats=stats_execucao,
+                        nome_modelo=nome_modelo,
+                        execucao=execucao,
                     )
+                imprimir_resumo_binarizacao_execucao(
+                    nome_modelo,
+                    execucao,
+                    stats_execucao,
+                )
             imprimir_resumo_binarizacao_modelo(nome_modelo, stats)
 
         return resumos
