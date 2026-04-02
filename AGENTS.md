@@ -722,6 +722,10 @@ Pull requests devem:
 - mencionar atualizacoes de documentacao;
 - incluir evidencia de teste, como `pytest ...`;
 - explicar o motivo se notebooks ou artefatos gerados forem alterados.
+- ser abertos sempre como draft por padrao;
+- usar titulo e corpo em portugues;
+- usar um titulo que abranja o conjunto real de mudancas do PR;
+- nao usar prefixos como `[codex]` no titulo.
 
 ## Mapa Da Documentacao Humana
 

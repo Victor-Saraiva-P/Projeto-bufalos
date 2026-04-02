@@ -118,6 +118,17 @@ Objetivo dessa regra:
 
 Se, durante a implementacao, um teste precisar ser alterado apos esse commit, a mudanca deve ser rara, tecnicamente justificavel e facilmente identificavel no historico.
 
+## Commits e pull requests
+
+Convencoes esperadas:
+
+- commits devem manter mensagens curtas e com um objetivo claro;
+- pull requests devem ser abertos sempre como draft por padrao;
+- titulo e corpo do pull request devem estar em portugues;
+- o titulo do pull request deve abranger o conjunto real de mudancas introduzidas;
+- o titulo do pull request nao deve usar prefixos como `[codex]`;
+- o corpo do pull request deve resumir a mudanca, listar impacto relevante e registrar a validacao executada.
+
 ## Regra para mudancas no SQLite
 
 O banco `generated/bufalos.sqlite3` e tratado como artefato descartavel do pipeline.
