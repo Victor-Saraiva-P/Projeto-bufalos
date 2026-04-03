@@ -201,6 +201,7 @@ generated/
 tests/generated/
 tests/e2e_generated/
 tests/mock_generated/*.sqlite3
+!tests/mock_generated/bufalos-avaliacao.sqlite3
 rembg
 uv.lock
 !docs/referencia/

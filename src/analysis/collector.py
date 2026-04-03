@@ -29,12 +29,21 @@ class MetricsCollector:
     - Materializa um DataFrame analítico a partir das entidades persistidas
     """
 
-    def __init__(self, force_recalculate: bool = False):
+    def __init__(
+        self,
+        force_recalculate: bool = False,
+        imagem_repository: ImagemRepository | None = None,
+        avaliacao_controller: AvaliacaoController | None = None,
+    ):
         self.force_recalculate = force_recalculate
         self.df: Optional[pd.DataFrame] = None
-        self.imagem_repository = ImagemRepository()
-        self.avaliacao_controller = AvaliacaoController(
-            imagem_repository=self.imagem_repository
+        self.imagem_repository = (
+            imagem_repository if imagem_repository is not None else ImagemRepository()
+        )
+        self.avaliacao_controller = (
+            avaliacao_controller
+            if avaliacao_controller is not None
+            else AvaliacaoController(imagem_repository=self.imagem_repository)
         )
 
     def collect_all_metrics(self) -> pd.DataFrame:
