@@ -25,7 +25,7 @@ rembg = ".png"
 sigma = 1.0
 threshold = 127
 kernel_size = 3
-ground_truth_strategy = "GaussianaOpening"
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = ["GaussianaOpening"]
 
 [execution]

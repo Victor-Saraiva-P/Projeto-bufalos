@@ -81,7 +81,7 @@ def test_caminho_segmentacao_binarizada_aceita_nome_binarizacao_explicitamente()
 
 
 def test_config_expoe_estrategias_binarizacao() -> None:
-    assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GaussianaOpening"
+    assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GroundTruthLimiarGlobal"
     assert SEGMENTACAO_BINARIZATION_STRATEGIES == ["GaussianaOpening"]
 
 
