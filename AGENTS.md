@@ -25,15 +25,20 @@ O fluxo principal do projeto e:
 1. gerar mascaras previstas com modelos de segmentacao;
 2. binarizar mascaras previstas e mascaras de referencia;
 3. calcular metricas por imagem e por modelo;
-4. agregar os resultados;
-5. produzir visualizacoes e ranking.
+4. materializar bases analiticas a partir do SQLite;
+5. produzir visualizacoes para interpretacao dos resultados.
 
-Os notebooks principais executam esse fluxo nesta ordem:
+No estado atual deste worktree, os notebooks operacionais executam esse fluxo nesta ordem:
 
 1. `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`
 2. `notebooks/02_binarizacao_mascaras.ipynb`
 3. `notebooks/03_calculo_das_avaliacoes.ipynb`
-4. `notebooks/04_analise_das_avaliacoes.ipynb`
+
+Estado de transicao:
+
+- o antigo `notebooks/04_analise_das_avaliacoes.ipynb` foi removido desta branch por estar acoplado ao ranking final pos-binarizacao;
+- os novos notebooks 04 e 05 serao recriados para a etapa de analise estatistica e visualizacao da segmentacao bruta;
+- o plano desta reestruturacao esta em `PLANO_REESTRUTURACAO_NOTEBOOKS_04_05.md`.
 
 ## Estrutura Do Repositorio
 
@@ -49,7 +54,7 @@ Pastas principais:
 - `src/logs/`: logging compartilhado entre segmentacao, binarizacao e verificacoes de integridade;
 - `src/metricas/`: contratos compartilhados de metricas;
 - `src/metricas/segmentacao_binarizada/`: metricas concretas da segmentacao binarizada;
-- `src/analysis/` e `src/visualization/`: agregacao, ranking e apresentacao;
+- `src/analysis/` e `src/visualization/`: coleta analitica, materializacao e apoio a visualizacao;
 - `src/tagging/`: anotadores manuais de tags de curadoria;
 - `tests/`: suite automatizada;
 - `notebooks/`: fluxo exploratorio e analitico do projeto;
@@ -243,16 +248,6 @@ collector = MetricsCollector(force_recalculate=False)
 df_metrics = collector.collect_all_metrics()
 ```
 
-Exemplo minimo para gerar ranking:
-
-```python
-from src.analysis import ModelRanker
-from src.config import RANKING_WEIGHTS
-
-ranker = ModelRanker(df_metrics, weights=RANKING_WEIGHTS)
-df_ranking = ranker.calculate_ranking()
-```
-
 Interpretação das metricas:
 
 - `iou`: varia entre `0` e `1`; quanto maior, melhor;
@@ -276,7 +271,7 @@ Implementacao no projeto:
 
 - o calculo fica em `src/metricas/segmentacao_bruta/auprc.py`;
 - a interface recebe `score_mask` continuo e `ground_truth_mask` binario;
-- a metrica foi adicionada para o estagio de binarizacao, e nao como substituta direta das metricas agregadas finais do ranking de segmentacao.
+- a metrica foi adicionada para o estagio de analise da segmentacao bruta, sem depender de um ranking final unico.
 
 Metricas de segmentacao bruta com score continuo:
 
@@ -292,7 +287,7 @@ Contrato atual dessas metricas:
 - recebem `ground_truth_mask` binario;
 - sao persistidas em `SegmentacaoBruta` como `auprc`, `soft_dice` e
   `brier_score`;
-- sao expostas pelo coletor analitico para uso em notebooks e ranking.
+- sao expostas pelo coletor analitico para uso em notebooks e futuras tabelas analiticas.
 
 Formulas:
 
@@ -301,20 +296,6 @@ IoU = intersecao / uniao
 |area_modelo - area_gt| / area_gt
 |perimetro_modelo - perimetro_gt| / perimetro_gt
 ```
-
-Ranking ponderado esperado em `src/config.py`:
-
-```python
-RANKING_WEIGHTS = {
-    "iou": 0.70,
-    "area_diff_rel": 0.15,
-    "perimetro_diff_rel": 0.15,
-}
-```
-
-Regra importante:
-
-- a soma dos pesos deve ser `1.0`.
 
 Persistencia:
 
@@ -326,7 +307,8 @@ Ao analisar resultados, normalmente vale olhar:
 
 - distribuicao das metricas por modelo;
 - top `N` e bottom `N` por imagem;
-- consistencia entre score agregado e inspecao visual.
+- estabilidade entre execucoes;
+- comportamento por tags de curadoria.
 
 ## Tags De Curadoria
 

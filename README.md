@@ -45,7 +45,12 @@ Depois, rode os notebooks principais nesta ordem:
 1. `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`
 2. `notebooks/02_binarizacao_mascaras.ipynb`
 3. `notebooks/03_calculo_das_avaliacoes.ipynb`
-4. `notebooks/04_analise_das_avaliacoes.ipynb`
+
+Estado atual deste worktree:
+
+- o notebook `04_analise_das_avaliacoes.ipynb` antigo foi removido;
+- os notebooks 04 e 05 serao reconstruidos para a nova etapa de analise estatistica da segmentacao bruta;
+- o plano de transicao desta branch esta em `PLANO_REESTRUTURACAO_NOTEBOOKS_04_05.md`.
 
 Observacoes sobre persistencia:
 

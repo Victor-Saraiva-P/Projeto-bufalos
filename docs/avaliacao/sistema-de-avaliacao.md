@@ -19,16 +19,19 @@ O fluxo principal do projeto e:
 1. gerar as segmentacoes previstas;
 2. binarizar as mascaras previstas e as mascaras de referencia;
 3. calcular metricas por imagem e por modelo;
-4. agregar resultados;
-5. produzir visualizacoes e ranking.
+4. materializar bases analiticas a partir do SQLite;
+5. produzir visualizacoes para interpretacao dos resultados.
 
 No projeto, a etapa de avaliacao e centralizada no notebook:
 
 - `notebooks/03_calculo_das_avaliacoes.ipynb`
 
-A analise exploratoria e o ranking ficam no notebook:
+A reestruturacao analitica desta branch esta em transicao:
 
-- `notebooks/04_analise_das_avaliacoes.ipynb`
+- o notebook `04_analise_das_avaliacoes.ipynb` antigo foi removido por estar orientado ao ranking final pos-binarizacao;
+- o novo notebook 04 sera recriado para calculo estatistico da segmentacao bruta;
+- o novo notebook 05 sera criado para visualizacao da segmentacao bruta;
+- o plano detalhado esta em `PLANO_REESTRUTURACAO_NOTEBOOKS_04_05.md`.
 
 ## Componentes envolvidos
 
@@ -39,10 +42,8 @@ Arquivos relevantes:
 - `src/controllers/binarizacao_controller.py`: processa a etapa de binarizacao e grava os artefatos binarios no filesystem;
 - `src/services/binarizacao_service.py`: executa a binarizacao sem criar entidades metricas incompletas;
 - `src/analysis/collector.py`: coleta as metricas para todas as imagens e modelos;
-- `src/analysis/ranker.py`: transforma as metricas agregadas em ranking;
-- `src/visualization/metric_plots.py`: gera graficos para inspecao das metricas;
 - `src/visualization/image_grid.py`: monta grades visuais para comparar casos;
-- `src/config.py`: define caminhos e pesos usados no ranking.
+- `src/config.py`: define caminhos, modelos e estrategias usados pelo pipeline.
 
 Saida gerada:
 
@@ -76,12 +77,6 @@ O notebook 03 permite:
 - persistir os resultados incrementais no SQLite;
 - acompanhar o progresso do processamento por imagem.
 
-Depois, use o notebook 04 para:
-
-- inspecionar distribuicoes por modelo;
-- ver os melhores e piores casos;
-- comparar o ranking final.
-
 ### Via codigo
 
 Exemplo minimo para coletar metricas:
@@ -91,16 +86,6 @@ from src.analysis import MetricsCollector
 
 collector = MetricsCollector(force_recalculate=False)
 df_metrics = collector.collect_all_metrics()
-```
-
-Exemplo minimo para gerar ranking:
-
-```python
-from src.analysis import ModelRanker
-from src.config import RANKING_WEIGHTS
-
-ranker = ModelRanker(df_metrics, weights=RANKING_WEIGHTS)
-df_ranking = ranker.calculate_ranking()
 ```
 
 ## Como interpretar as metricas
@@ -144,24 +129,6 @@ Leitura:
 - valores menores sao melhores;
 - ajuda a medir a qualidade do contorno.
 
-## Ranking ponderado
-
-O ranking final combina as metricas com pesos definidos em `src/config.py`.
-
-Configuracao esperada:
-
-```python
-RANKING_WEIGHTS = {
-    "iou": 0.70,
-    "area_diff_rel": 0.15,
-    "perimetro_diff_rel": 0.15,
-}
-```
-
-Regra importante:
-
-- a soma dos pesos deve ser `1.0`.
-
 ## Persistencia
 
 Por padrao, a coleta usa o SQLite do projeto como fonte de verdade para as metricas.
@@ -191,6 +158,7 @@ Ao analisar os resultados, normalmente vale olhar:
 
 - distribuicao das metricas por modelo;
 - top `N` e bottom `N` por imagem;
-- consistencia entre score agregado e inspecao visual.
+- estabilidade entre execucoes;
+- comportamento por tags de curadoria.
 
 As tags de curadoria descritas em [`tags-de-imagem.md`](./tags-de-imagem.md) ajudam a entender por que certos grupos de imagem tendem a performar pior.

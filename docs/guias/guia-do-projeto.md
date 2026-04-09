@@ -226,12 +226,17 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 
 ### Notebooks principais
 
-O fluxo de execucao do projeto esta organizado em quatro notebooks:
+No estado atual deste worktree, o fluxo operacional consolidado esta organizado em tres notebooks:
 
 - `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as segmentacoes brutas dos modelos em `generated/segmentacoes_brutas/execucao_N/`;
 - `notebooks/02_binarizacao_mascaras.ipynb`: binariza as mascaras de referencia com a strategy configurada para ground truth e gera mascaras previstas em `generated/segmentacoes_binarizadas/execucao_N/` para todas as strategies configuradas;
 - `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite para todas as strategies configuradas;
-- `notebooks/04_analise_das_avaliacoes.ipynb`: agrega os resultados persistidos, gera visualizacoes e compara os modelos.
+
+Estado de transicao:
+
+- o antigo `notebooks/04_analise_das_avaliacoes.ipynb` foi removido deste worktree por estar acoplado ao fluxo antigo de ranking final pos-binarizacao;
+- os novos notebooks 04 e 05 serao recriados para a etapa de analise estatistica e visualizacao da segmentacao bruta;
+- o plano detalhado desta reestruturacao esta em `PLANO_REESTRUTURACAO_NOTEBOOKS_04_05.md`.
 
 Nos notebooks 01 e 02, a execucao operacional acontece por meio dos controllers em `src/controllers/`.
 
@@ -246,7 +251,7 @@ Para abrir o ambiente de notebooks:
 jupyter notebook
 ```
 
-Execute os notebooks na ordem acima.
+Execute os notebooks operacionais na ordem acima. A nova camada analitica sera reintroduzida quando os notebooks 04 e 05 forem implementados.
 
 ## Configuracao de GPU
 
