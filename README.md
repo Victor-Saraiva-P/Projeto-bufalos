@@ -87,6 +87,7 @@ Se voce quer:
 - entender a suite automatizada: veja `docs/guias/testes.md`;
 - entender o CI: veja `docs/guias/ci.md`;
 - entender por que o `e2e` gera saidas persistentes: veja `docs/decisoes-tecnicas/e2e-com-saidas-persistentes.md`;
+- entender por que o ground truth usa threshold global simples: veja `docs/decisoes-tecnicas/binarizacao-ground-truth-com-threshold-global.md`;
 - entender o sistema de avaliacao: veja `docs/avaliacao/sistema-de-avaliacao.md`;
 - entender a metrica AUPRC usada na binarizacao: veja `docs/metricas/auprc.md`;
 - entender a metrica Soft Dice usada para cobertura de score continuo: veja `docs/metricas/soft-dice.md`;
@@ -130,6 +131,7 @@ docs/
     soft-dice.md
   decisoes-tecnicas/
     e2e-com-saidas-persistentes.md
+    binarizacao-ground-truth-com-threshold-global.md
     escolha-da-metrica-auprc.md
     escolha-da-metrica-brier-score.md
     escolha-da-metrica-soft-dice.md

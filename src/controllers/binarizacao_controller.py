@@ -5,8 +5,8 @@ import os
 
 from src.binarizacao.binarizacao_base import BinarizationStrategy
 from src.binarizacao.registro import (
-    instanciar_estrategia_binarizacao,
-    instanciar_estrategias_binarizacao,
+    instanciar_estrategia_ground_truth_binarizacao,
+    instanciar_estrategias_segmentacao_binarizacao,
 )
 from src.config import (
     GROUND_TRUTH_BINARIZATION_STRATEGY,
@@ -49,12 +49,16 @@ class BinarizacaoController:
         self.ground_truth_strategy = (
             ground_truth_strategy
             if ground_truth_strategy is not None
-            else instanciar_estrategia_binarizacao(GROUND_TRUTH_BINARIZATION_STRATEGY)
+            else instanciar_estrategia_ground_truth_binarizacao(
+                GROUND_TRUTH_BINARIZATION_STRATEGY
+            )
         )
         self.segmentacao_strategies = (
             list(segmentacao_strategies)
             if segmentacao_strategies is not None
-            else instanciar_estrategias_binarizacao(SEGMENTACAO_BINARIZATION_STRATEGIES)
+            else instanciar_estrategias_segmentacao_binarizacao(
+                SEGMENTACAO_BINARIZATION_STRATEGIES
+            )
         )
 
     def processar_ground_truth(

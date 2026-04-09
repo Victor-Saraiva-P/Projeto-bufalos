@@ -4,7 +4,10 @@ from dataclasses import dataclass
 
 import pytest
 
-from src.binarizacao import GaussianOpeningBinarizationStrategy
+from src.binarizacao import (
+    GaussianOpeningBinarizationStrategy,
+    GroundTruthGlobalThresholdBinarizationStrategy,
+)
 from src.controllers.binarizacao_controller import BinarizacaoController
 from src.io.path_resolver import PathResolver
 from src.models import Imagem
@@ -80,7 +83,7 @@ def test_processar_ground_truth_nao_persiste_registro_parcial(
     )
 
     stats = controller.processar_ground_truth(
-        GaussianOpeningBinarizationStrategy(),
+        GroundTruthGlobalThresholdBinarizationStrategy(),
         imagens=imagens,
     )
 
