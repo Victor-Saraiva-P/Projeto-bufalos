@@ -4,11 +4,13 @@ from src.models import (
     Imagem,
     SegmentacaoBinarizada,
     SegmentacaoBruta,
+    Tag,
 )
 
 
 def test_build_metrics_dataframe_inclui_metricas_brutas() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.tags = []
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
         area=100.0,
@@ -48,32 +50,72 @@ def test_build_metrics_dataframe_inclui_metricas_brutas() -> None:
 
     assert list(df.columns) == [
         "nome_arquivo",
+        "fazenda",
+        "peso",
         "modelo",
         "execucao",
-        "estrategia_binarizacao",
-        "area",
-        "perimetro",
-        "iou",
         "auprc",
         "soft_dice",
         "brier_score",
-        "area_gt",
-        "perimetro_gt",
-        "area_diff_abs",
-        "area_similarity",
-        "perimetro_diff_abs",
-        "perimetro_similarity",
+        "tags",
+        "tags_sem_ok",
+        "num_tags_problema",
+        "tem_tag_problema",
+        "grupo_dificuldade",
+        "tag_ok",
+        "tag_multi_bufalos",
+        "tag_cortado",
+        "tag_angulo_extremo",
+        "tag_baixo_contraste",
+        "tag_ocluido",
     ]
-    assert len(df) == 2
-    assert set(df["estrategia_binarizacao"]) == {"GaussianaOpening", "LimiarFixo"}
+    assert len(df) == 1
     assert set(df["execucao"]) == {1}
     assert set(df["auprc"]) == {0.92}
     assert set(df["brier_score"]) == {0.08}
     assert set(df["soft_dice"]) == {0.81}
+    assert df.iloc[0]["tags"] == ""
+    assert df.iloc[0]["tags_sem_ok"] == ""
+    assert df.iloc[0]["num_tags_problema"] == 0
+    assert df.iloc[0]["tem_tag_problema"] == False
+    assert df.iloc[0]["grupo_dificuldade"] == "nao_revisada"
+
+
+def test_build_metrics_dataframe_inclui_flags_de_tags() -> None:
+    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.tags = [Tag(nome_tag="multi_bufalos"), Tag(nome_tag="baixo_contraste")]
+    imagem.ground_truth_binarizada = GroundTruthBinarizada(
+        nome_arquivo="bufalo_001",
+        area=100.0,
+        perimetro=40.0,
+    )
+    imagem.segmentacoes_brutas = [
+        SegmentacaoBruta(
+            nome_arquivo="bufalo_001",
+            nome_modelo="u2netp",
+            execucao=1,
+            auprc=0.92,
+            soft_dice=0.81,
+            brier_score=0.08,
+        )
+    ]
+
+    df = MetricsCollector._build_metrics_dataframe([imagem])
+
+    assert df.iloc[0]["tags"] == "baixo_contraste,multi_bufalos"
+    assert df.iloc[0]["tags_sem_ok"] == "baixo_contraste,multi_bufalos"
+    assert df.iloc[0]["num_tags_problema"] == 2
+    assert df.iloc[0]["tem_tag_problema"] == True
+    assert df.iloc[0]["grupo_dificuldade"] == "2_ou_mais_problemas"
+    assert df.iloc[0]["tag_multi_bufalos"] == True
+    assert df.iloc[0]["tag_baixo_contraste"] == True
+    assert df.iloc[0]["tag_ok"] == False
+    assert df.iloc[0]["tag_cortado"] == False
 
 
 def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valido() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.tags = []
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
         area=100.0,
@@ -107,6 +149,7 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valido() -> None
 
 def test_build_metrics_dataframe_descarta_segmentacao_sem_soft_dice_valido() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.tags = []
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
         area=100.0,
@@ -140,6 +183,7 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_soft_dice_valido() -> 
 
 def test_build_metrics_dataframe_descarta_segmentacao_sem_brier_score_valido() -> None:
     imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.tags = []
     imagem.ground_truth_binarizada = GroundTruthBinarizada(
         nome_arquivo="bufalo_001",
         area=100.0,

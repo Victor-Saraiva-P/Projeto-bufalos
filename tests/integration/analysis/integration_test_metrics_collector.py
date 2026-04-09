@@ -2,7 +2,7 @@ from pathlib import Path
 import shutil
 
 from src.analysis.collector import MetricsCollector
-from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES, SEGMENTACAO_BINARIZATION_STRATEGIES
+from src.config import MODELOS_PARA_AVALIACAO, NUM_EXECUCOES
 from src.repositories import ImagemRepository
 
 
@@ -29,8 +29,6 @@ def test_metrics_collector_carrega_metricas_do_sqlite_versionado(tmp_path: Path)
         len(imagem_repository.list())
         * NUM_EXECUCOES
         * len(MODELOS_PARA_AVALIACAO)
-        * len(SEGMENTACAO_BINARIZATION_STRATEGIES)
     )
     assert set(df["modelo"]) == set(MODELOS_PARA_AVALIACAO)
-    assert set(df["estrategia_binarizacao"]) == set(SEGMENTACAO_BINARIZATION_STRATEGIES)
     assert set(df["execucao"]) == set(range(1, NUM_EXECUCOES + 1))

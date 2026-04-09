@@ -2,7 +2,7 @@
 Coletor de métricas de segmentação para avaliação de modelos.
 
 Este módulo processa todas as imagens e modelos, calculando métricas
-e persistindo resultados no SQLite do projeto.
+e materializando uma base analítica de segmentação bruta a partir do SQLite.
 """
 
 from typing import Optional
@@ -17,6 +17,15 @@ from src.controllers.avaliacao_controller import (
 from src.models import Imagem, SegmentacaoBruta
 from src.repositories import ImagemRepository
 
+TAG_COLUMNS = (
+    "ok",
+    "multi_bufalos",
+    "cortado",
+    "angulo_extremo",
+    "baixo_contraste",
+    "ocluido",
+)
+
 
 class MetricsCollector:
     """
@@ -24,9 +33,9 @@ class MetricsCollector:
 
     Esta classe:
     - Itera sobre todas as imagens do índice persistido no SQLite
-    - Para cada imagem, calcula métricas de cada segmentacao vs ground truth
+    - Para cada imagem, calcula métricas da segmentacao bruta
     - Persiste resultados por imagem no SQLite
-    - Materializa um DataFrame analítico a partir das entidades persistidas
+    - Materializa um DataFrame analítico por imagem + modelo + execucao
     """
 
     def __init__(
@@ -115,14 +124,18 @@ class MetricsCollector:
         registros: list[dict[str, float | str]] = []
 
         for imagem in imagens:
-            ground_truth = imagem.ground_truth_binarizada
-            if ground_truth is None:
-                continue
+            tags = sorted(dict.fromkeys(imagem.nomes_tags))
+            tags_sem_ok = [tag for tag in tags if tag != "ok"]
+            num_tags_problema = len(tags_sem_ok)
 
-            area_gt = ground_truth.area
-            perimetro_gt = ground_truth.perimetro
-            if area_gt is None or perimetro_gt is None:
-                continue
+            if not tags:
+                grupo_dificuldade = "nao_revisada"
+            elif "ok" in tags and num_tags_problema == 0:
+                grupo_dificuldade = "ok"
+            elif num_tags_problema <= 1:
+                grupo_dificuldade = "1_problema"
+            else:
+                grupo_dificuldade = "2_ou_mais_problemas"
 
             for segmentacao_bruta in imagem.segmentacoes_brutas:
                 if (
@@ -134,48 +147,25 @@ class MetricsCollector:
                 ):
                     continue
 
-                for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas:
-                    if (
-                        segmentacao_binarizada.area is None
-                        or segmentacao_binarizada.perimetro is None
-                        or segmentacao_binarizada.iou is None
-                    ):
-                        continue
+                registro = {
+                    "nome_arquivo": imagem.nome_arquivo,
+                    "fazenda": imagem.fazenda,
+                    "peso": imagem.peso,
+                    "modelo": segmentacao_bruta.nome_modelo,
+                    "execucao": segmentacao_bruta.execucao,
+                    "auprc": segmentacao_bruta.auprc,
+                    "soft_dice": segmentacao_bruta.soft_dice,
+                    "brier_score": segmentacao_bruta.brier_score,
+                    "tags": ",".join(tags),
+                    "tags_sem_ok": ",".join(tags_sem_ok),
+                    "num_tags_problema": num_tags_problema,
+                    "tem_tag_problema": num_tags_problema > 0,
+                    "grupo_dificuldade": grupo_dificuldade,
+                }
 
-                    area = segmentacao_binarizada.area
-                    perimetro = segmentacao_binarizada.perimetro
-                    iou = segmentacao_binarizada.iou
+                for tag_name in TAG_COLUMNS:
+                    registro[f"tag_{tag_name}"] = tag_name in tags
 
-                    area_diff_abs = abs(area - area_gt)
-                    perimetro_diff_abs = abs(perimetro - perimetro_gt)
-                    area_similarity = (
-                        1.0 - (area_diff_abs / area_gt) if area_gt > 0 else 0.0
-                    )
-                    perimetro_similarity = (
-                        1.0 - (perimetro_diff_abs / perimetro_gt)
-                        if perimetro_gt > 0
-                        else 0.0
-                    )
-
-                    registros.append(
-                        {
-                            "nome_arquivo": imagem.nome_arquivo,
-                            "modelo": segmentacao_bruta.nome_modelo,
-                            "execucao": segmentacao_bruta.execucao,
-                            "estrategia_binarizacao": segmentacao_binarizada.estrategia_binarizacao,
-                            "area": area,
-                            "perimetro": perimetro,
-                            "iou": iou,
-                            "auprc": segmentacao_bruta.auprc,
-                            "soft_dice": segmentacao_bruta.soft_dice,
-                            "brier_score": segmentacao_bruta.brier_score,
-                            "area_gt": area_gt,
-                            "perimetro_gt": perimetro_gt,
-                            "area_diff_abs": area_diff_abs,
-                            "area_similarity": max(0.0, area_similarity),
-                            "perimetro_diff_abs": perimetro_diff_abs,
-                            "perimetro_similarity": max(0.0, perimetro_similarity),
-                        }
-                    )
+                registros.append(registro)
 
         return pd.DataFrame(registros)

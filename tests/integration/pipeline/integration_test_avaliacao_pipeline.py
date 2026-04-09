@@ -56,7 +56,6 @@ def test_avaliacao_controller_consume_mock_generated_e_persiste_metricas_brutas(
         len(linhas)
         * NUM_EXECUCOES
         * len(MODELOS_PARA_AVALIACAO)
-        * len(SEGMENTACAO_BINARIZATION_STRATEGIES)
     )
     assert all(imagem.ground_truth_binarizada is not None for imagem in imagens)
     assert all(
@@ -68,5 +67,6 @@ def test_avaliacao_controller_consume_mock_generated_e_persiste_metricas_brutas(
     )
     assert "brier_score" in df.columns
     assert "soft_dice" in df.columns
+    assert "tag_ok" in df.columns
     assert set(df["brier_score"].between(0.0, 1.0)) == {True}
     assert set(df["soft_dice"].between(0.0, 1.0)) == {True}
