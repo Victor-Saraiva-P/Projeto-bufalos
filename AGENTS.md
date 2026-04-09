@@ -35,6 +35,11 @@ Os notebooks principais executam esse fluxo nesta ordem:
 3. `notebooks/03_calculo_das_avaliacoes.ipynb`
 4. `notebooks/04_analise_das_avaliacoes.ipynb`
 
+Observacao sobre o notebook 02:
+
+- o ground truth usa uma estrategia dedicada e conservadora, `GroundTruthLimiarGlobal`;
+- as segmentacoes previstas continuam usando as estrategias configuradas para os modelos, como `GaussianaOpening`.
+
 ## Estrutura Do Repositorio
 
 Pastas principais:
@@ -376,6 +381,21 @@ Convencao de uso:
 
 ## Decisoes Tecnicas
 
+### Binarizacao do ground truth com threshold global
+
+Decisao:
+
+- usar `GroundTruthLimiarGlobal` apenas para as mascaras de ground truth;
+- converter a imagem para grayscale, aplicar threshold global fixo e salvar a saida em `.png`;
+- nao aplicar blur gaussiano nem morfologia nessa etapa;
+- manter `GaussianaOpening` nas segmentacoes previstas dos modelos.
+
+Motivo:
+
+- as mascaras manuais de ground truth ja chegam visualmente quase binarias;
+- os artefatos residuais do JPEG aparecem sobretudo nas bordas e sob ampliacao;
+- um threshold global simples faz a quantizacao final sem alterar o contorno mais do que o necessario.
+
 ### Formato das mascaras
 
 Decisao:
@@ -643,7 +663,7 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 num_execucoes = 3
 
 [binarization]
-ground_truth_strategy = "GaussianaOpening"
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = ["GaussianaOpening"]
 
 [models]
