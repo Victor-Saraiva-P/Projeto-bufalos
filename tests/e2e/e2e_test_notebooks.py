@@ -6,6 +6,10 @@ import tomllib
 
 import pytest
 import numpy as np
+from src.analysis import (
+    MetricsCollector,
+    build_and_persist_analysis_segmentacao_bruta_resumo_modelo,
+)
 from src.controllers import (
     AvaliacaoController,
     BinarizacaoController,
@@ -13,7 +17,11 @@ from src.controllers import (
     SegmentacaoController,
 )
 from src.io.path_resolver import PathResolver
-from src.repositories import ImagemRepository
+from src.repositories import (
+    AnaliseSegmentacaoBrutaBaseRepository,
+    AnaliseSegmentacaoBrutaResumoModeloRepository,
+    ImagemRepository,
+)
 
 E2E_CONFIG_PATH = "config.e2e.toml"
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -390,3 +398,56 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         for imagem in imagens
         for segmentacao_bruta in imagem.segmentacoes_brutas
     )
+
+
+@pytest.mark.e2e
+def test_notebook_04_persiste_base_e_resumo_estatistico_inicial(
+    e2e_context: E2EContext,
+) -> None:
+    try:
+        import rembg  # noqa: F401
+    except ModuleNotFoundError:
+        pytest.skip("rembg nao esta instalado no ambiente.")
+
+    resolver = e2e_context.resolver
+    modelos = e2e_context.modelos
+    linhas = _executar_fluxo_notebook_02(e2e_context)
+
+    AvaliacaoController().processar_imagens()
+
+    collector = MetricsCollector(
+        force_recalculate=False,
+        imagem_repository=ImagemRepository(resolver.sqlite_path),
+    )
+    base_repository = AnaliseSegmentacaoBrutaBaseRepository(resolver.sqlite_path)
+    resumo_repository = AnaliseSegmentacaoBrutaResumoModeloRepository(
+        resolver.sqlite_path
+    )
+
+    df_base = collector.persist_analysis_segmentacao_bruta_base(base_repository)
+    df_resumo_modelo, _ = build_and_persist_analysis_segmentacao_bruta_resumo_modelo(
+        df_base=df_base,
+        repository=resumo_repository,
+    )
+
+    base_registros = base_repository.list()
+    resumo_registros = resumo_repository.list()
+
+    assert len(df_base) == len(linhas) * e2e_context.num_execucoes * len(modelos)
+    assert len(base_registros) == len(df_base)
+    assert {registro.nome_modelo for registro in base_registros} == set(modelos)
+    assert {registro.execucao for registro in base_registros} == set(
+        _iterar_execucoes(e2e_context.num_execucoes)
+    )
+    assert all(registro.auprc >= 0.0 for registro in base_registros)
+    assert all(registro.soft_dice >= 0.0 for registro in base_registros)
+    assert all(registro.brier_score >= 0.0 for registro in base_registros)
+
+    assert len(df_resumo_modelo) == len(modelos) * 3
+    assert len(resumo_registros) == len(df_resumo_modelo)
+    assert {registro.nome_modelo for registro in resumo_registros} == set(modelos)
+    assert {registro.metric_name for registro in resumo_registros} == {
+        "auprc",
+        "soft_dice",
+        "brier_score",
+    }
