@@ -15,7 +15,10 @@ from src.controllers.avaliacao_controller import (
     MascaraBinarizadaNaoEncontradaError,
 )
 from src.models import Imagem, SegmentacaoBruta
-from src.repositories import ImagemRepository
+from src.repositories import (
+    AnaliseSegmentacaoBrutaBaseRepository,
+    ImagemRepository,
+)
 
 TAG_COLUMNS = (
     "ok",
@@ -91,6 +94,19 @@ class MetricsCollector:
         print(f"  - Modelos com dados: {self.df['modelo'].nunique()}")
 
         return self.df
+
+    def persist_analysis_segmentacao_bruta_base(
+        self,
+        base_repository: AnaliseSegmentacaoBrutaBaseRepository | None = None,
+    ) -> pd.DataFrame:
+        from src.analysis.persistence import persist_analysis_segmentacao_bruta_base
+
+        df_base = self.collect_all_metrics()
+        persist_analysis_segmentacao_bruta_base(
+            df_base=df_base,
+            repository=base_repository,
+        )
+        return df_base
 
     def _calculate_metrics_for_image(self, imagem: Imagem, modelos_com_erro: set) -> None:
         imagem_avaliada = self.avaliacao_controller.processar_imagem(imagem)

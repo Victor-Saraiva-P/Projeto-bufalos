@@ -4,6 +4,8 @@ from sqlalchemy.exc import IntegrityError
 from src.config import INDICE_PATH
 from src.io.indice_loader import carregar_indice_excel
 from src.models import (
+    AnaliseSegmentacaoBrutaBase,
+    AnaliseSegmentacaoBrutaResumoModelo,
     GroundTruthBinarizada,
     Imagem,
     ImagemTag,
@@ -12,6 +14,8 @@ from src.models import (
     Tag,
 )
 from src.repositories import (
+    AnaliseSegmentacaoBrutaBaseRepository,
+    AnaliseSegmentacaoBrutaResumoModeloRepository,
     GroundTruthBinarizadaRepository,
     ImagemRepository,
     ImagemTagRepository,
@@ -207,6 +211,146 @@ def test_tag_repositories_persistem_tag_e_associacao(tmp_path) -> None:
     assert "nova_tag" in imagem_persistida.nomes_tags
     assert tag_repository.get("nova_tag") is not None
     assert imagem_tag_repository.get("1166_Calcula_506", "nova_tag") is not None
+
+
+def test_analise_segmentacao_bruta_base_repository_replace_all_persiste_registros(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaBaseRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaBase(
+                nome_arquivo="1166_Calcula_506",
+                nome_modelo="u2netp",
+                execucao=1,
+                fazenda="Calcula",
+                peso=506.0,
+                auprc=0.91,
+                soft_dice=0.83,
+                brier_score=0.07,
+                tags="baixo_contraste",
+                tags_sem_ok="baixo_contraste",
+                num_tags_problema=1,
+                tem_tag_problema=True,
+                grupo_dificuldade="1_problema",
+                tag_ok=False,
+                tag_multi_bufalos=False,
+                tag_cortado=False,
+                tag_angulo_extremo=False,
+                tag_baixo_contraste=True,
+                tag_ocluido=False,
+            )
+        ]
+    )
+
+    registros = repository.list()
+
+    assert len(registros) == 1
+    assert registros[0].nome_arquivo == "1166_Calcula_506"
+    assert registros[0].nome_modelo == "u2netp"
+    assert registros[0].execucao == 1
+    assert registros[0].grupo_dificuldade == "1_problema"
+    assert registros[0].tag_baixo_contraste is True
+
+
+def test_analise_segmentacao_bruta_base_repository_replace_all_substitui_conteudo(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaBaseRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaBase(
+                nome_arquivo="1166_Calcula_506",
+                nome_modelo="u2netp",
+                execucao=1,
+                fazenda="Calcula",
+                peso=506.0,
+                auprc=0.91,
+                soft_dice=0.83,
+                brier_score=0.07,
+                tags="",
+                tags_sem_ok="",
+                num_tags_problema=0,
+                tem_tag_problema=False,
+                grupo_dificuldade="nao_revisada",
+                tag_ok=False,
+                tag_multi_bufalos=False,
+                tag_cortado=False,
+                tag_angulo_extremo=False,
+                tag_baixo_contraste=False,
+                tag_ocluido=False,
+            )
+        ]
+    )
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaBase(
+                nome_arquivo="67_Laje-Nova_453",
+                nome_modelo="u2net",
+                execucao=2,
+                fazenda="Laje-Nova",
+                peso=453.0,
+                auprc=0.88,
+                soft_dice=0.79,
+                brier_score=0.09,
+                tags="multi_bufalos",
+                tags_sem_ok="multi_bufalos",
+                num_tags_problema=1,
+                tem_tag_problema=True,
+                grupo_dificuldade="1_problema",
+                tag_ok=False,
+                tag_multi_bufalos=True,
+                tag_cortado=False,
+                tag_angulo_extremo=False,
+                tag_baixo_contraste=False,
+                tag_ocluido=False,
+            )
+        ]
+    )
+
+    registros = repository.list()
+
+    assert len(registros) == 1
+    assert registros[0].nome_arquivo == "67_Laje-Nova_453"
+    assert registros[0].execucao == 2
+    assert registros[0].tag_multi_bufalos is True
+
+
+def test_analise_segmentacao_bruta_resumo_modelo_repository_replace_all_persiste_resumos(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaResumoModeloRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaResumoModelo(
+                nome_modelo="u2netp",
+                metric_name="auprc",
+                count=2,
+                mean=0.8,
+                median=0.8,
+                std=0.1,
+                min=0.7,
+                max=0.9,
+                q1=0.75,
+                q3=0.85,
+                iqr=0.10,
+                higher_is_better=True,
+            )
+        ]
+    )
+
+    registros = repository.list()
+
+    assert len(registros) == 1
+    assert registros[0].nome_modelo == "u2netp"
+    assert registros[0].metric_name == "auprc"
+    assert registros[0].higher_is_better is True
 
 
 def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
