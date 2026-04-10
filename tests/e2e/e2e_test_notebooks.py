@@ -824,10 +824,10 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
     assert not df_intervalo_confianca.empty
     assert not df_interacoes.empty
 
-    metric_names = ["auprc", "soft_dice", "brier_score"]
-    metric_pairs = [("auprc", "soft_dice"), ("auprc", "brier_score"), ("soft_dice", "brier_score")]
+    metric_names = ["soft_dice", "brier_score"]
+    metric_pairs = [("soft_dice", "brier_score")]
     regression_metrics = ["soft_dice", "brier_score"]
-    interaction_metrics = ["auprc", "soft_dice", "brier_score"]
+    interaction_metrics = ["soft_dice", "brier_score"]
 
     generated_figures = 0
     figures_univariada = []
@@ -930,8 +930,9 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
             PdfReportSection(
                 heading="Interacao entre modelo e dificuldade",
                 body=(
-                    "Para manter o relatorio sucinto, este bloco mostra as tres metricas brutas principais "
-                    "para enxergar queda de qualidade com dificuldade: auprc, soft_dice e brier_score."
+                    "Para manter o relatorio sucinto, este bloco mostra apenas as duas metricas mais "
+                    "interpretaveis e complementares para enxergar queda de qualidade com dificuldade: "
+                    "soft_dice e brier_score."
                 ),
                 figures=figures_interacoes,
             ),
