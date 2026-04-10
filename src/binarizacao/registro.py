@@ -4,8 +4,15 @@ from collections.abc import Iterable
 
 from src.binarizacao.binarizacao_base import BinarizationStrategy
 from src.binarizacao.estrategias import (
-    GaussianOpeningBinarizationStrategy,
+    FixedThresholdHighBinarizationStrategy,
+    FixedThresholdLowBinarizationStrategy,
+    GaussianOpeningHighBinarizationStrategy,
+    GaussianOpeningLowBinarizationStrategy,
     GroundTruthGlobalThresholdBinarizationStrategy,
+    HysteresisClosingHighBinarizationStrategy,
+    HysteresisClosingLowBinarizationStrategy,
+    OtsuOpeningHighBinarizationStrategy,
+    OtsuOpeningLowBinarizationStrategy,
 )
 
 
@@ -14,7 +21,14 @@ _GROUND_TRUTH_STRATEGY_FACTORIES = {
 }
 
 _SEGMENTACAO_STRATEGY_FACTORIES = {
-    "GaussianaOpening": GaussianOpeningBinarizationStrategy,
+    "GaussianaOpeningAlta": GaussianOpeningHighBinarizationStrategy,
+    "GaussianaOpeningBaixa": GaussianOpeningLowBinarizationStrategy,
+    "HistereseClosingAlta": HysteresisClosingHighBinarizationStrategy,
+    "HistereseClosingBaixa": HysteresisClosingLowBinarizationStrategy,
+    "LimiarFixoAlta": FixedThresholdHighBinarizationStrategy,
+    "LimiarFixoBaixa": FixedThresholdLowBinarizationStrategy,
+    "OtsuOpeningAlta": OtsuOpeningHighBinarizationStrategy,
+    "OtsuOpeningBaixa": OtsuOpeningLowBinarizationStrategy,
 }
 
 

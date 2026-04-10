@@ -1,6 +1,6 @@
 from src.metricas.metrica_base import Metrica
 from src.metricas.segmentacao_bruta import AUPRC, BrierScore, SoftDice
-from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro
+from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro, Precision, Recall
 
 __all__ = [
     "AUPRC",
@@ -9,5 +9,7 @@ __all__ = [
     "IoU",
     "Metrica",
     "Perimetro",
+    "Precision",
+    "Recall",
     "SoftDice",
 ]

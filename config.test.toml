@@ -13,9 +13,28 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 [execution]
 num_execucoes = 3
 
+[analysis.segmentacao_binarizada]
+execucao_escolhida = 1
+
 [binarization]
+threshold = 127
 ground_truth_strategy = "GroundTruthLimiarGlobal"
-segmentacao_strategies = ["GaussianaOpening"]
+segmentacao_strategies = [
+    "GaussianaOpeningBaixa",
+    "GaussianaOpeningAlta",
+    "LimiarFixoBaixa",
+    "LimiarFixoAlta",
+    "OtsuOpeningBaixa",
+    "OtsuOpeningAlta",
+    "HistereseClosingBaixa",
+    "HistereseClosingAlta",
+]
 
 [models]
 u2netp = "cpu"
+
+[evaluation.parallelism]
+enabled = false
+executor = "process"
+max_workers = 1
+batch_size = 4

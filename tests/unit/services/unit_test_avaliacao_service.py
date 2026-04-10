@@ -29,12 +29,30 @@ class FakeIoU:
         return 0.75 if self.modelo == "u2netp" else 0.5
 
 
+class FakePrecision:
+    def __init__(self, *, modelo: str, **_kwargs):
+        self.modelo = modelo
+
+    def calcular(self) -> float:
+        return 0.8 if self.modelo == "u2netp" else 0.4
+
+
+class FakeRecall:
+    def __init__(self, *, modelo: str, **_kwargs):
+        self.modelo = modelo
+
+    def calcular(self) -> float:
+        return 0.7 if self.modelo == "u2netp" else 0.3
+
+
 class FakeAUPRC:
     ultimo_score_mask: np.ndarray | None = None
+    chamadas = 0
 
     def __init__(self, *, modelo: str, **_kwargs):
         self.modelo = modelo
         FakeAUPRC.ultimo_score_mask = np.asarray(_kwargs["score_mask"], dtype=np.float64)
+        FakeAUPRC.chamadas += 1
 
     def calcular(self) -> float:
         return 0.9 if self.modelo == "u2netp" else 0.6
@@ -42,10 +60,12 @@ class FakeAUPRC:
 
 class FakeSoftDice:
     ultimo_score_mask: np.ndarray | None = None
+    chamadas = 0
 
     def __init__(self, *, modelo: str, **_kwargs):
         self.modelo = modelo
         FakeSoftDice.ultimo_score_mask = np.asarray(_kwargs["score_mask"], dtype=np.float64)
+        FakeSoftDice.chamadas += 1
 
     def calcular(self) -> float:
         return 0.85 if self.modelo == "u2netp" else 0.55
@@ -53,12 +73,14 @@ class FakeSoftDice:
 
 class FakeBrierScore:
     ultimo_score_mask: np.ndarray | None = None
+    chamadas = 0
 
     def __init__(self, *, modelo: str, **_kwargs):
         self.modelo = modelo
         FakeBrierScore.ultimo_score_mask = np.asarray(
             _kwargs["score_mask"], dtype=np.float64
         )
+        FakeBrierScore.chamadas += 1
 
     def calcular(self) -> float:
         return 0.08 if self.modelo == "u2netp" else 0.2
@@ -73,6 +95,8 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.Precision", FakePrecision)
+    monkeypatch.setattr("src.services.avaliacao_service.Recall", FakeRecall)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
     monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
     monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
@@ -125,6 +149,8 @@ def test_avaliar_preenche_ground_truth_e_reaproveita_segmentacoes(
     assert binarizada.area == 40.0
     assert binarizada.perimetro == 8.0
     assert binarizada.iou == 0.75
+    assert binarizada.precision == 0.8
+    assert binarizada.recall == 0.7
     assert FakeAUPRC.ultimo_score_mask is not None
     assert FakeSoftDice.ultimo_score_mask is not None
     assert FakeBrierScore.ultimo_score_mask is not None
@@ -142,6 +168,8 @@ def test_avaliar_separa_segmentacoes_da_mesma_imagem_por_execucao(
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.Precision", FakePrecision)
+    monkeypatch.setattr("src.services.avaliacao_service.Recall", FakeRecall)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
     monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
     monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
@@ -178,6 +206,8 @@ def test_avaliar_acumula_metricas_de_multiplas_binarizacoes_na_mesma_segmentacao
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.Precision", FakePrecision)
+    monkeypatch.setattr("src.services.avaliacao_service.Recall", FakeRecall)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
     monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
     monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
@@ -221,6 +251,8 @@ def test_avaliar_repassa_score_mask_ja_normalizado_para_metricas_brutas(
     monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
     monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
     monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.Precision", FakePrecision)
+    monkeypatch.setattr("src.services.avaliacao_service.Recall", FakeRecall)
     monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
     monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
     monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
@@ -245,3 +277,36 @@ def test_avaliar_repassa_score_mask_ja_normalizado_para_metricas_brutas(
     assert np.allclose(FakeAUPRC.ultimo_score_mask, esperado)
     assert np.allclose(FakeSoftDice.ultimo_score_mask, esperado)
     assert np.allclose(FakeBrierScore.ultimo_score_mask, esperado)
+
+
+def test_avaliar_execucao_calcula_metricas_brutas_uma_vez_por_modelo(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    FakeAUPRC.chamadas = 0
+    FakeSoftDice.chamadas = 0
+    FakeBrierScore.chamadas = 0
+    monkeypatch.setattr("src.services.avaliacao_service.Area", FakeArea)
+    monkeypatch.setattr("src.services.avaliacao_service.Perimetro", FakePerimetro)
+    monkeypatch.setattr("src.services.avaliacao_service.IoU", FakeIoU)
+    monkeypatch.setattr("src.services.avaliacao_service.Precision", FakePrecision)
+    monkeypatch.setattr("src.services.avaliacao_service.Recall", FakeRecall)
+    monkeypatch.setattr("src.services.avaliacao_service.AUPRC", FakeAUPRC)
+    monkeypatch.setattr("src.services.avaliacao_service.SoftDice", FakeSoftDice)
+    monkeypatch.setattr("src.services.avaliacao_service.BrierScore", FakeBrierScore)
+
+    resultado = AvaliacaoService().avaliar_execucao(
+        nome_arquivo="bufalo_001",
+        ground_truth_mask=np.zeros((2, 2), dtype=np.uint8),
+        mascaras_modelo_por_estrategia={
+            "GaussianaOpening": {"u2netp": np.ones((2, 2), dtype=np.uint8)},
+            "LimiarFixo": {"u2netp": np.ones((2, 2), dtype=np.uint8)},
+        },
+        score_masks_modelo={"u2netp": np.full((2, 2), 0.8, dtype=np.float64)},
+        execucao=1,
+    )
+
+    assert len(resultado.segmentacoes_brutas) == 1
+    assert len(resultado.segmentacoes_binarizadas) == 2
+    assert FakeAUPRC.chamadas == 1
+    assert FakeSoftDice.chamadas == 1
+    assert FakeBrierScore.chamadas == 1

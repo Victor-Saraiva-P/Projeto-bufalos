@@ -76,7 +76,10 @@ _COLUMNS = _CONFIG["columns"]
 _FILE_TYPES = _CONFIG["file_types"]
 _BINARIZATION = _CONFIG["binarization"]
 _EXECUTION = _CONFIG["execution"]
+_ANALYSIS = _CONFIG.get("analysis", {})
+_ANALYSIS_BINARIZED = _ANALYSIS.get("segmentacao_binarizada", {})
 _EVALUATION = _CONFIG["evaluation"]
+_EVALUATION_PARALLELISM = _EVALUATION.get("parallelism", {})
 
 # Diretorios mais gerais
 DATA_DIR = _resolver_caminho(_PATHS["data_dir"])
@@ -109,18 +112,23 @@ IMAGES_TYPE = _FILE_TYPES["images"]
 REMBG_IMAGE_TYPE = _FILE_TYPES["rembg"]
 
 # Configuracao de binarizacao
-BINARIZATION_SIGMA = _BINARIZATION["sigma"]
+BINARIZATION_SIGMA = _BINARIZATION.get("sigma", 1.0)
 BINARIZATION_THRESHOLD = _BINARIZATION["threshold"]
-BINARIZATION_KERNEL_SIZE = _BINARIZATION["kernel_size"]
+BINARIZATION_KERNEL_SIZE = _BINARIZATION.get("kernel_size", 3)
 GROUND_TRUTH_BINARIZATION_STRATEGY = _BINARIZATION["ground_truth_strategy"]
 SEGMENTACAO_BINARIZATION_STRATEGIES = list(_BINARIZATION["segmentacao_strategies"])
-
-# Deprecated - usar BINARIZATION_THRESHOLD
 LIMIAR_BINARIZACAO = BINARIZATION_THRESHOLD
 
 # Configuracao de execucao
 NUM_EXECUCOES = _EXECUTION["num_execucoes"]
+SEGMENTACAO_BINARIZADA_ANALISE_EXECUCAO = int(
+    _ANALYSIS_BINARIZED.get("execucao_escolhida", 1)
+)
 
 # Configuracoes declarativas
 MODELOS_PARA_AVALIACAO = _CONFIG["models"]
 RANKING_WEIGHTS = _EVALUATION["ranking_weights"]
+EVALUATION_PARALLELISM_ENABLED = bool(_EVALUATION_PARALLELISM.get("enabled", False))
+EVALUATION_PARALLELISM_EXECUTOR = str(_EVALUATION_PARALLELISM.get("executor", "process"))
+EVALUATION_PARALLELISM_MAX_WORKERS = int(_EVALUATION_PARALLELISM.get("max_workers", 1))
+EVALUATION_PARALLELISM_BATCH_SIZE = int(_EVALUATION_PARALLELISM.get("batch_size", 1))

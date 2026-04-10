@@ -25,6 +25,8 @@ class SegmentacaoBinarizadaRepository:
             area=binarizacao.area,
             perimetro=binarizacao.perimetro,
             iou=binarizacao.iou,
+            precision=binarizacao.precision,
+            recall=binarizacao.recall,
         )
         with self.sessionmaker() as session:
             merged = session.merge(persistivel)

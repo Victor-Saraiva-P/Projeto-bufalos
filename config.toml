@@ -26,10 +26,22 @@ sigma = 1.0
 threshold = 127
 kernel_size = 3
 ground_truth_strategy = "GroundTruthLimiarGlobal"
-segmentacao_strategies = ["GaussianaOpening"]
+segmentacao_strategies = [
+    "GaussianaOpeningBaixa",
+    "GaussianaOpeningAlta",
+    "LimiarFixoBaixa",
+    "LimiarFixoAlta",
+    "OtsuOpeningBaixa",
+    "OtsuOpeningAlta",
+    "HistereseClosingBaixa",
+    "HistereseClosingAlta",
+]
 
 [execution]
 num_execucoes = 3
+
+[analysis.segmentacao_binarizada]
+execucao_escolhida = 1
 
 [models]
 u2net = "gpu"
@@ -53,3 +65,9 @@ birefnet-massive = "cpu"
 iou = 0.34
 area_similarity = 0.33
 perimetro_similarity = 0.33
+
+[evaluation.parallelism]
+enabled = true
+executor = "process"
+max_workers = 8
+batch_size = 16

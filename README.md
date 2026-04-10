@@ -45,7 +45,12 @@ Depois, rode os notebooks principais nesta ordem:
 1. `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`
 2. `notebooks/02_binarizacao_mascaras.ipynb`
 3. `notebooks/03_calculo_das_avaliacoes.ipynb`
-4. `notebooks/04_analise_das_avaliacoes.ipynb`
+
+Estado atual deste worktree:
+
+- o notebook `04_analise_das_avaliacoes.ipynb` antigo foi removido;
+- os notebooks 04 e 05 serao reconstruidos para a nova etapa de analise estatistica da segmentacao bruta;
+- o plano de transicao desta branch esta em `PLANO_REESTRUTURACAO_NOTEBOOKS_04_05.md`.
 
 Observacoes sobre persistencia:
 
@@ -55,6 +60,13 @@ Observacoes sobre persistencia:
 - o Excel continua sendo usado apenas no processo de tagging.
 - os notebooks 01 e 02 executam o pipeline por meio de controllers em `src/controllers/`.
 - nessa arquitetura, controllers podem ler `src/config.py`; services recebem caminhos, modelos e estrategias ja resolvidos por parametro.
+
+Observacoes praticas do projeto:
+
+- a producao do `ground truth` manual foi uma etapa cara e demorada;
+- a qualidade da avaliacao depende de mascaras manuais bem feitas, entao a segmentacao de referencia nao podia ser feita de forma descuidada;
+- o software usado para essa segmentacao manual foi o `GIMP`;
+- os modelos e as etapas do pipeline exigem bastante do hardware, o que aumenta o tempo de segmentacao, binarizacao e analise.
 
 Para executar a suite automatizada:
 
@@ -89,6 +101,7 @@ Se voce quer:
 - entender por que o `e2e` gera saidas persistentes: veja `docs/decisoes-tecnicas/e2e-com-saidas-persistentes.md`;
 - entender por que o ground truth usa threshold global simples: veja `docs/decisoes-tecnicas/binarizacao-ground-truth-com-threshold-global.md`;
 - entender o sistema de avaliacao: veja `docs/avaliacao/sistema-de-avaliacao.md`;
+- entender a estabilidade entre execucoes: veja `docs/avaliacao/estabilidade-entre-execucoes.md`;
 - entender a metrica AUPRC usada na binarizacao: veja `docs/metricas/auprc.md`;
 - entender a metrica Soft Dice usada para cobertura de score continuo: veja `docs/metricas/soft-dice.md`;
 - entender a metrica Brier Score usada para erro probabilistico do score continuo: veja `docs/metricas/brier-score.md`;
@@ -124,6 +137,7 @@ docs/
     ci.md
   avaliacao/
     sistema-de-avaliacao.md
+    estabilidade-entre-execucoes.md
     tags-de-imagem.md
   metricas/
     auprc.md

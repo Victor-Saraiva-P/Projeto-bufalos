@@ -50,7 +50,7 @@ def test_caminho_segmentacao_avaliacao_usa_ground_truth_para_modelo_especial() -
         execucao=1,
         nome_binarizacao=SEGMENTACAO_BINARIZATION_STRATEGIES[0],
     ) == (
-        "/tmp/seg_bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png"
+        "/tmp/seg_bin/execucao_1/GaussianaOpeningBaixa/u2netp/bufalo_001.png"
     )
 
 
@@ -82,7 +82,16 @@ def test_caminho_segmentacao_binarizada_aceita_nome_binarizacao_explicitamente()
 
 def test_config_expoe_estrategias_binarizacao() -> None:
     assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GroundTruthLimiarGlobal"
-    assert SEGMENTACAO_BINARIZATION_STRATEGIES == ["GaussianaOpening"]
+    assert SEGMENTACAO_BINARIZATION_STRATEGIES == [
+        "GaussianaOpeningBaixa",
+        "GaussianaOpeningAlta",
+        "LimiarFixoBaixa",
+        "LimiarFixoAlta",
+        "OtsuOpeningBaixa",
+        "OtsuOpeningAlta",
+        "HistereseClosingBaixa",
+        "HistereseClosingAlta",
+    ]
 
 
 def test_caminho_segmentacao_bruta_inclui_execucao() -> None:

@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import pytest
 
 from src.binarizacao import (
-    GaussianOpeningBinarizationStrategy,
+    GaussianOpeningLowBinarizationStrategy,
     GroundTruthGlobalThresholdBinarizationStrategy,
 )
 from src.controllers.binarizacao_controller import BinarizacaoController
@@ -101,8 +101,8 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
     repository = FakeImagemRepository(imagens)
     service = FakeBinarizacaoService(
         resultados={
-            "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png": "ok",
-            "/pred/bin/execucao_2/GaussianaOpening/u2netp/bufalo_001.png": "ok",
+            "/pred/bin/execucao_1/GaussianaOpeningBaixa/u2netp/bufalo_001.png": "ok",
+            "/pred/bin/execucao_2/GaussianaOpeningBaixa/u2netp/bufalo_001.png": "ok",
         }
     )
     resolver = FakePathResolver(
@@ -136,7 +136,7 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
     )
 
     resumos = controller.processar_segmentacoes(
-        GaussianOpeningBinarizationStrategy(),
+        GaussianOpeningLowBinarizationStrategy(),
         imagens=imagens,
     )
 
@@ -146,8 +146,8 @@ def test_processar_segmentacoes_nao_persiste_binarizacoes_parciais(
     assert stats.skip == 0
     assert stats.erro == 0
     assert service.processados == [
-        "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png",
-        "/pred/bin/execucao_2/GaussianaOpening/u2netp/bufalo_001.png",
+        "/pred/bin/execucao_1/GaussianaOpeningBaixa/u2netp/bufalo_001.png",
+        "/pred/bin/execucao_2/GaussianaOpeningBaixa/u2netp/bufalo_001.png",
     ]
     assert imagens[0].segmentacoes_brutas == []
 
@@ -158,13 +158,13 @@ def test_processar_segmentacoes_configuradas_itera_todas_as_estrategias(
     imagens = [Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)]
     repository = FakeImagemRepository(imagens)
     strategies = [
-        FakeNamedStrategy("GaussianaOpening"),
-            FakeNamedStrategy("LimiarFixo"),
+        FakeNamedStrategy("GaussianaOpeningBaixa"),
+        FakeNamedStrategy("LimiarFixoAlta"),
     ]
     service = FakeBinarizacaoService(
         resultados={
-            "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png": "ok",
-            "/pred/bin/execucao_1/LimiarFixo/u2netp/bufalo_001.png": "ok",
+            "/pred/bin/execucao_1/GaussianaOpeningBaixa/u2netp/bufalo_001.png": "ok",
+            "/pred/bin/execucao_1/LimiarFixoAlta/u2netp/bufalo_001.png": "ok",
         }
     )
     resolver = FakePathResolver(
@@ -200,12 +200,12 @@ def test_processar_segmentacoes_configuradas_itera_todas_as_estrategias(
 
     resumos = controller.processar_segmentacoes_configuradas(imagens=imagens)
 
-    assert set(resumos) == {"GaussianaOpening", "LimiarFixo"}
+    assert set(resumos) == {"GaussianaOpeningBaixa", "LimiarFixoAlta"}
     assert all(
         resumos[nome]["u2netp"].ok == 1
-        for nome in {"GaussianaOpening", "LimiarFixo"}
+        for nome in {"GaussianaOpeningBaixa", "LimiarFixoAlta"}
     )
     assert service.processados == [
-        "/pred/bin/execucao_1/GaussianaOpening/u2netp/bufalo_001.png",
-        "/pred/bin/execucao_1/LimiarFixo/u2netp/bufalo_001.png",
+        "/pred/bin/execucao_1/GaussianaOpeningBaixa/u2netp/bufalo_001.png",
+        "/pred/bin/execucao_1/LimiarFixoAlta/u2netp/bufalo_001.png",
     ]
