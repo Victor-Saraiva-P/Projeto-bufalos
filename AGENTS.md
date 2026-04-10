@@ -365,7 +365,7 @@ Definicoes:
 - `multi_bufalos`: mais de um bufalo visivel na cena com presenca relevante para a leitura da imagem;
 - `cortado`: parte relevante do corpo ficou fora do enquadramento;
 - `angulo_extremo`: o angulo dificulta comparar volume corporal ou contorno;
-- `baixo_contraste`: o contorno do bufalo se mistura ao fundo;
+- `baixo_contraste`: o contorno do bufalo se mistura ao fundo por semelhanca de cor, luminosidade ou textura, incluindo casos de baixa iluminacao, coloracao parecida com elementos do fundo, outros bufalos ao fundo visualmente semelhantes ao sujeito principal e patas enlameadas se confundindo com chao lamacento; se esses outros bufalos tambem tiverem presenca relevante na cena, combine com `multi_bufalos`;
 - `ocluido`: parte relevante do corpo esta na imagem, mas foi encoberta.
 
 Distincoes importantes:
