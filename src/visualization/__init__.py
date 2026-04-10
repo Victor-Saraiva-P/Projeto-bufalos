@@ -10,6 +10,12 @@ from src.visualization.image_grid import (
     plot_image_grid,
     plot_single_image_comparison,
 )
+from src.visualization.artifact_export import (
+    build_artifact_output_dir,
+    build_artifact_stem,
+    export_figure_with_csv,
+    export_table_csv,
+)
 from src.visualization.pdf_report import PdfReportSection, save_pdf_report
 from src.visualization.segmentacao_bruta_plots import (
     plot_metric_bars_with_ci_by_model,
@@ -31,6 +37,10 @@ from src.visualization.segmentacao_bruta_plots import (
 __all__ = [
     "plot_image_grid",
     "plot_single_image_comparison",
+    "build_artifact_output_dir",
+    "build_artifact_stem",
+    "export_figure_with_csv",
+    "export_table_csv",
     "PdfReportSection",
     "save_pdf_report",
     "plot_metric_bars_with_ci_by_model",
