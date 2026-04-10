@@ -7,6 +7,7 @@ import tomllib
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+plt.rcParams["figure.max_open_warning"] = 0
 import pytest
 import numpy as np
 import pandas as pd
@@ -16,13 +17,13 @@ from src.analysis import (
     build_and_persist_analysis_segmentacao_bruta_resumo_modelo,
     build_and_persist_analysis_segmentacao_bruta_resumo_tag,
 )
+from src.io.path_resolver import PathResolver
 from src.controllers import (
     AvaliacaoController,
     BinarizacaoController,
     ImagemController,
     SegmentacaoController,
 )
-from src.io.path_resolver import PathResolver
 from src.repositories import (
     AnaliseSegmentacaoBrutaResumoExecucaoRepository,
     AnaliseSegmentacaoBrutaResumoModeloRepository,
@@ -30,11 +31,13 @@ from src.repositories import (
     ImagemRepository,
 )
 from src.visualization import (
+    PdfReportSection,
     plot_metric_bars_by_model,
     plot_metric_by_execution_heatmap,
     plot_metric_distribution_by_model,
     plot_metric_distribution_by_tag,
     plot_metric_tag_comparison,
+    save_pdf_report,
 )
 
 E2E_CONFIG_PATH = "config.e2e.toml"
@@ -613,35 +616,103 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
     ]
 
     generated_figures = 0
+    figures_visao_modelo = []
+    figures_estabilidade_execucao = []
+    figures_impacto_tags = []
+    figures_distribuicao = []
 
     for metric_name in metric_names:
         fig, ax = plot_metric_bars_by_model(df_resumo_modelo, metric_name)
         assert ax.has_data()
-        plt.close(fig)
+        figures_visao_modelo.append(fig)
         generated_figures += 1
 
         fig, ax = plot_metric_by_execution_heatmap(df_resumo_execucao, metric_name)
         assert ax.images
-        plt.close(fig)
+        figures_estabilidade_execucao.append(fig)
         generated_figures += 1
 
         fig, ax = plot_metric_distribution_by_model(df_base, metric_name)
         assert ax.has_data()
-        plt.close(fig)
+        figures_distribuicao.append(fig)
         generated_figures += 1
 
     for tag_name in tags_prioritarias:
         fig, ax = plot_metric_distribution_by_tag(df_base, "soft_dice", tag_name)
         assert ax.has_data()
-        plt.close(fig)
+        figures_distribuicao.append(fig)
         generated_figures += 1
 
         for metric_name in metric_names:
             fig, ax = plot_metric_tag_comparison(df_resumo_tag, metric_name, tag_name)
             assert ax.has_data()
-            plt.close(fig)
+            figures_impacto_tags.append(fig)
             generated_figures += 1
 
     assert generated_figures == (
         len(metric_names) * 3 + len(tags_prioritarias) * (1 + len(metric_names))
     )
+
+    pdf_path = Path(resolver.generated_dir) / "05_visualizacao_segmentacao_bruta.pdf"
+    saved_pdf_path = save_pdf_report(
+        output_path=pdf_path,
+        report_title="05 - Visualizacao da Segmentacao Bruta",
+        sections=[
+            PdfReportSection(
+                heading="Carregamento dos resumos e da base linha a linha",
+                body=(
+                    "Os resumos agregados sao lidos do SQLite. "
+                    "A base linha a linha e reconstruida apenas para os graficos de distribuicao."
+                ),
+            ),
+            PdfReportSection(
+                heading="Visao geral por modelo",
+                body=(
+                    "A tabela abaixo resume as medias e medianas por metrica, "
+                    "e os graficos ajudam a comparar os modelos de forma agregada."
+                ),
+                figures=figures_visao_modelo,
+            ),
+            PdfReportSection(
+                heading="Estabilidade por execucao",
+                body="Aqui avaliamos se o comportamento do modelo se mantem estavel entre as execucoes.",
+                figures=figures_estabilidade_execucao,
+            ),
+            PdfReportSection(
+                heading="Impacto das tags",
+                body=(
+                    "As tags entram como eixo explicativo do que degrada a segmentacao. "
+                    "O foco inicial esta nas tags mais provaveis de piorar a qualidade da mascara."
+                ),
+                figures=figures_impacto_tags,
+            ),
+            PdfReportSection(
+                heading="Distribuicao linha a linha",
+                body=(
+                    "Os boxplots usam a base completa em memoria para mostrar dispersao e caudas, "
+                    "algo que os resumos persistidos nao capturam sozinhos."
+                ),
+                figures=figures_distribuicao,
+            ),
+            PdfReportSection(
+                heading="Leitura inicial",
+                body=(
+                    "A combinacao entre medias por modelo, estabilidade por execucao, impacto das tags "
+                    "e distribuicao linha a linha ja permite responder quais modelos segmentam melhor "
+                    "e em que cenarios eles passam a falhar."
+                ),
+            ),
+        ],
+    )
+
+    assert saved_pdf_path == pdf_path
+    assert pdf_path.exists()
+    assert pdf_path.stat().st_size > 0
+
+    for figure in (
+        figures_visao_modelo
+        + figures_estabilidade_execucao
+        + figures_impacto_tags
+        + figures_distribuicao
+    ):
+        plt.close(figure)
