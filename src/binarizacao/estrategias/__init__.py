@@ -3,6 +3,9 @@ from src.binarizacao.estrategias.gaussiana import (
     GaussianOpeningHighBinarizationStrategy,
     GaussianOpeningLowBinarizationStrategy,
 )
+from src.binarizacao.estrategias.ground_truth_limiar_global import (
+    GroundTruthGlobalThresholdBinarizationStrategy,
+)
 from src.binarizacao.estrategias.histerese import (
     HysteresisClosingBinarizationStrategy,
     HysteresisClosingHighBinarizationStrategy,
@@ -32,4 +35,5 @@ __all__ = [
     "HysteresisClosingBinarizationStrategy",
     "HysteresisClosingLowBinarizationStrategy",
     "HysteresisClosingHighBinarizationStrategy",
+    "GroundTruthGlobalThresholdBinarizationStrategy",
 ]

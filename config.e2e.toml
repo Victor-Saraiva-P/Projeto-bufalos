@@ -17,7 +17,8 @@ num_execucoes = 3
 execucao_escolhida = 1
 
 [binarization]
-ground_truth_strategy = "GaussianaOpeningBaixa"
+threshold = 127
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = [
     "GaussianaOpeningBaixa",
     "GaussianaOpeningAlta",

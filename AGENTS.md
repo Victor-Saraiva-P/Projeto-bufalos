@@ -40,6 +40,11 @@ Estado de transicao:
 - os novos notebooks 04 e 05 serao recriados para a etapa de analise estatistica e visualizacao da segmentacao bruta;
 - o plano desta reestruturacao esta em `PLANO_REESTRUTURACAO_NOTEBOOKS_04_05.md`.
 
+Observacao sobre o notebook 02:
+
+- o ground truth usa uma estrategia dedicada e conservadora, `GroundTruthLimiarGlobal`;
+- as segmentacoes previstas continuam usando as estrategias configuradas para os modelos, como `GaussianaOpening`.
+
 ## Estrutura Do Repositorio
 
 Pastas principais:
@@ -342,7 +347,7 @@ Definicoes:
 - `multi_bufalos`: mais de um bufalo visivel na cena com presenca relevante para a leitura da imagem;
 - `cortado`: parte relevante do corpo ficou fora do enquadramento;
 - `angulo_extremo`: o angulo dificulta comparar volume corporal ou contorno;
-- `baixo_contraste`: o contorno do bufalo se mistura ao fundo;
+- `baixo_contraste`: o contorno do bufalo se mistura ao fundo por semelhanca de cor, luminosidade ou textura, incluindo casos de baixa iluminacao, coloracao parecida com elementos do fundo, outros bufalos ao fundo visualmente semelhantes ao sujeito principal e patas enlameadas se confundindo com chao lamacento; se esses outros bufalos tambem tiverem presenca relevante na cena, combine com `multi_bufalos`;
 - `ocluido`: parte relevante do corpo esta na imagem, mas foi encoberta.
 
 Distincoes importantes:
@@ -357,6 +362,21 @@ Convencao de uso:
 - nao crie variacoes fora desse conjunto sem atualizar a documentacao.
 
 ## Decisoes Tecnicas
+
+### Binarizacao do ground truth com threshold global
+
+Decisao:
+
+- usar `GroundTruthLimiarGlobal` apenas para as mascaras de ground truth;
+- converter a imagem para grayscale, aplicar threshold global fixo e salvar a saida em `.png`;
+- nao aplicar blur gaussiano nem morfologia nessa etapa;
+- manter `GaussianaOpening` nas segmentacoes previstas dos modelos.
+
+Motivo:
+
+- as mascaras manuais de ground truth ja chegam visualmente quase binarias;
+- os artefatos residuais do JPEG aparecem sobretudo nas bordas e sob ampliacao;
+- um threshold global simples faz a quantizacao final sem alterar o contorno mais do que o necessario.
 
 ### Formato das mascaras
 
@@ -625,7 +645,7 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 num_execucoes = 3
 
 [binarization]
-ground_truth_strategy = "GaussianaOpening"
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = ["GaussianaOpening"]
 
 [models]

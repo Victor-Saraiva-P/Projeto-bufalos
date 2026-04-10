@@ -289,7 +289,7 @@ As tags de curadoria estao definidas em `docs/avaliacao/tags-de-imagem.md`.
 No estado atual deste worktree, o fluxo operacional consolidado esta organizado em tres notebooks:
 
 - `notebooks/01_geracao_mascaras_e_segmentacao.ipynb`: gera as segmentacoes brutas dos modelos em `generated/segmentacoes_brutas/execucao_N/`;
-- `notebooks/02_binarizacao_mascaras.ipynb`: binariza as mascaras de referencia com a strategy configurada para ground truth e gera mascaras previstas em `generated/segmentacoes_binarizadas/execucao_N/` para todas as strategies configuradas;
+- `notebooks/02_binarizacao_mascaras.ipynb`: binariza as mascaras de referencia com a strategy dedicada de ground truth e gera mascaras previstas em `generated/segmentacoes_binarizadas/execucao_N/` para todas as strategies configuradas;
 - `notebooks/03_calculo_das_avaliacoes.ipynb`: calcula e persiste as metricas de avaliacao no SQLite para todas as strategies configuradas;
 
 Estado de transicao:

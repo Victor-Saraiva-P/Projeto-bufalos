@@ -246,7 +246,7 @@ sqlite_file = "tests/e2e_generated/bufalos-e2e.sqlite3"
 num_execucoes = 3
 
 [binarization]
-ground_truth_strategy = "GaussianaOpening"
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = ["GaussianaOpening"]
 
 [models]
@@ -272,7 +272,7 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 num_execucoes = 3
 
 [binarization]
-ground_truth_strategy = "GaussianaOpening"
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = ["GaussianaOpening"]
 
 [models]

@@ -22,7 +22,10 @@ images = ".jpg"
 rembg = ".png"
 
 [binarization]
-ground_truth_strategy = "GaussianaOpeningBaixa"
+sigma = 1.0
+threshold = 127
+kernel_size = 3
+ground_truth_strategy = "GroundTruthLimiarGlobal"
 segmentacao_strategies = [
     "GaussianaOpeningBaixa",
     "GaussianaOpeningAlta",
