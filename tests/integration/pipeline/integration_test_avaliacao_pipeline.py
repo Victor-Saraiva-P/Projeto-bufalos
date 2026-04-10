@@ -48,8 +48,8 @@ def test_avaliacao_controller_consume_mock_generated_e_persiste_metricas_brutas(
     imagens = ImagemRepository(resolver.sqlite_path).list()
     df = MetricsCollector._build_metrics_dataframe(imagens)
 
-    assert stats.total == len(linhas) * NUM_EXECUCOES * len(SEGMENTACAO_BINARIZATION_STRATEGIES)
-    assert stats.ok == len(linhas) * NUM_EXECUCOES * len(SEGMENTACAO_BINARIZATION_STRATEGIES)
+    assert stats.total == len(linhas) * NUM_EXECUCOES
+    assert stats.ok == len(linhas) * NUM_EXECUCOES
     assert stats.erro == 0
     assert stats.skip == 0
     assert len(df) == (
@@ -70,3 +70,9 @@ def test_avaliacao_controller_consume_mock_generated_e_persiste_metricas_brutas(
     assert "tag_ok" in df.columns
     assert set(df["brier_score"].between(0.0, 1.0)) == {True}
     assert set(df["soft_dice"].between(0.0, 1.0)) == {True}
+    assert all(
+        len(segmentacao_bruta.segmentacoes_binarizadas)
+        == len(SEGMENTACAO_BINARIZATION_STRATEGIES)
+        for imagem in imagens
+        for segmentacao_bruta in imagem.segmentacoes_brutas
+    )

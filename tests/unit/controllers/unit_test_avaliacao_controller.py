@@ -244,7 +244,7 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     imagem_avaliada = controller.processar_imagem(imagem)
 
     assert imagem_avaliada.ground_truth_binarizada is not None
-    assert len(ground_truth_repository.salvos) == 1
+    assert len(ground_truth_repository.salvos) == 2
     assert len(segmentacao_repository.salvos) == 2
     assert len(binarizacao_repository.salvos) == 4
     assert service.chamadas[0][0] == imagem.nome_arquivo

@@ -380,14 +380,10 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
     }
 
     assert stats.total == (
-        len(linhas)
-        * len(_iterar_execucoes(e2e_context.num_execucoes))
-        * len(e2e_context.segmentacao_strategies)
+        len(linhas) * len(_iterar_execucoes(e2e_context.num_execucoes))
     )
     assert stats.ok == (
-        len(linhas)
-        * len(_iterar_execucoes(e2e_context.num_execucoes))
-        * len(e2e_context.segmentacao_strategies)
+        len(linhas) * len(_iterar_execucoes(e2e_context.num_execucoes))
     )
     assert stats.erro == 0
     assert stats.skip == 0
