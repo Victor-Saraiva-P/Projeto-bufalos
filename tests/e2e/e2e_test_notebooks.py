@@ -13,9 +13,14 @@ import numpy as np
 import pandas as pd
 from src.analysis import (
     MetricsCollector,
+    build_and_persist_analysis_segmentacao_bruta_estabilidade,
+    build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo,
+    build_and_persist_analysis_segmentacao_bruta_intervalo_confianca,
     build_and_persist_analysis_segmentacao_bruta_resumo_execucao,
     build_and_persist_analysis_segmentacao_bruta_resumo_modelo,
     build_and_persist_analysis_segmentacao_bruta_resumo_tag,
+    build_and_persist_analysis_segmentacao_bruta_testes_modelo,
+    build_and_persist_analysis_segmentacao_bruta_testes_tag,
 )
 from src.io.path_resolver import PathResolver
 from src.controllers import (
@@ -25,9 +30,14 @@ from src.controllers import (
     SegmentacaoController,
 )
 from src.repositories import (
+    AnaliseSegmentacaoBrutaEstabilidadeRepository,
+    AnaliseSegmentacaoBrutaInteracaoTagModeloRepository,
+    AnaliseSegmentacaoBrutaIntervaloConfiancaRepository,
     AnaliseSegmentacaoBrutaResumoExecucaoRepository,
     AnaliseSegmentacaoBrutaResumoModeloRepository,
     AnaliseSegmentacaoBrutaResumoTagRepository,
+    AnaliseSegmentacaoBrutaTesteModeloRepository,
+    AnaliseSegmentacaoBrutaTesteTagRepository,
     ImagemRepository,
 )
 from src.visualization import (
@@ -424,7 +434,7 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
 
 
 @pytest.mark.e2e
-def test_notebook_04_persiste_resumos_estatisticos_iniciais(
+def test_notebook_04_persiste_camadas_estatisticas_da_segmentacao_bruta(
     e2e_context: E2EContext,
 ) -> None:
     try:
@@ -451,6 +461,21 @@ def test_notebook_04_persiste_resumos_estatisticos_iniciais(
     resumo_tag_repository = AnaliseSegmentacaoBrutaResumoTagRepository(
         resolver.sqlite_path
     )
+    estabilidade_repository = AnaliseSegmentacaoBrutaEstabilidadeRepository(
+        resolver.sqlite_path
+    )
+    intervalo_repository = AnaliseSegmentacaoBrutaIntervaloConfiancaRepository(
+        resolver.sqlite_path
+    )
+    teste_modelo_repository = AnaliseSegmentacaoBrutaTesteModeloRepository(
+        resolver.sqlite_path
+    )
+    teste_tag_repository = AnaliseSegmentacaoBrutaTesteTagRepository(
+        resolver.sqlite_path
+    )
+    interacao_repository = AnaliseSegmentacaoBrutaInteracaoTagModeloRepository(
+        resolver.sqlite_path
+    )
 
     df_base = collector.collect_all_metrics()
     df_resumo_modelo, _ = build_and_persist_analysis_segmentacao_bruta_resumo_modelo(
@@ -465,10 +490,35 @@ def test_notebook_04_persiste_resumos_estatisticos_iniciais(
         df_base=df_base,
         repository=resumo_tag_repository,
     )
+    df_estabilidade, _ = build_and_persist_analysis_segmentacao_bruta_estabilidade(
+        df_base=df_base,
+        repository=estabilidade_repository,
+    )
+    df_intervalos, _ = build_and_persist_analysis_segmentacao_bruta_intervalo_confianca(
+        df_base=df_base,
+        repository=intervalo_repository,
+    )
+    df_testes_modelo, _ = build_and_persist_analysis_segmentacao_bruta_testes_modelo(
+        df_base=df_base,
+        repository=teste_modelo_repository,
+    )
+    df_testes_tag, _ = build_and_persist_analysis_segmentacao_bruta_testes_tag(
+        df_base=df_base,
+        repository=teste_tag_repository,
+    )
+    df_interacoes, _ = build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo(
+        df_base=df_base,
+        repository=interacao_repository,
+    )
 
     resumo_modelo_registros = resumo_modelo_repository.list()
     resumo_execucao_registros = resumo_execucao_repository.list()
     resumo_tag_registros = resumo_tag_repository.list()
+    estabilidade_registros = estabilidade_repository.list()
+    intervalo_registros = intervalo_repository.list()
+    testes_modelo_registros = teste_modelo_repository.list()
+    testes_tag_registros = teste_tag_repository.list()
+    interacoes_registros = interacao_repository.list()
 
     assert len(df_base) == len(linhas) * e2e_context.num_execucoes * len(modelos)
 
@@ -502,6 +552,38 @@ def test_notebook_04_persiste_resumos_estatisticos_iniciais(
         "brier_score",
     }
     assert {registro.tag_value for registro in resumo_tag_registros} == {False, True}
+
+    assert len(estabilidade_registros) == len(df_estabilidade)
+    assert {registro.metric_name for registro in estabilidade_registros} == {
+        "auprc",
+        "soft_dice",
+        "brier_score",
+    }
+
+    assert len(intervalo_registros) == len(df_intervalos)
+    assert {registro.statistic_name for registro in intervalo_registros} == {
+        "mean",
+        "median",
+    }
+
+    assert len(testes_modelo_registros) == len(df_testes_modelo)
+    assert df_testes_modelo.empty
+
+    assert len(testes_tag_registros) == len(df_testes_tag)
+    assert testes_tag_registros
+    assert {registro.metric_name for registro in testes_tag_registros} == {
+        "auprc",
+        "soft_dice",
+        "brier_score",
+    }
+
+    assert len(interacoes_registros) == len(df_interacoes)
+    assert interacoes_registros
+    assert {registro.metric_name for registro in interacoes_registros} == {
+        "auprc",
+        "soft_dice",
+        "brier_score",
+    }
 
 
 @pytest.mark.e2e

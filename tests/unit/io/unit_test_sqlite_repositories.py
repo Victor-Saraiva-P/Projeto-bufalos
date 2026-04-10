@@ -4,9 +4,14 @@ from sqlalchemy.exc import IntegrityError
 from src.config import INDICE_PATH
 from src.io.indice_loader import carregar_indice_excel
 from src.models import (
+    AnaliseSegmentacaoBrutaEstabilidade,
+    AnaliseSegmentacaoBrutaInteracaoTagModelo,
+    AnaliseSegmentacaoBrutaIntervaloConfianca,
     AnaliseSegmentacaoBrutaResumoExecucao,
     AnaliseSegmentacaoBrutaResumoModelo,
     AnaliseSegmentacaoBrutaResumoTag,
+    AnaliseSegmentacaoBrutaTesteModelo,
+    AnaliseSegmentacaoBrutaTesteTag,
     GroundTruthBinarizada,
     Imagem,
     ImagemTag,
@@ -15,9 +20,14 @@ from src.models import (
     Tag,
 )
 from src.repositories import (
+    AnaliseSegmentacaoBrutaEstabilidadeRepository,
+    AnaliseSegmentacaoBrutaInteracaoTagModeloRepository,
+    AnaliseSegmentacaoBrutaIntervaloConfiancaRepository,
     AnaliseSegmentacaoBrutaResumoExecucaoRepository,
     AnaliseSegmentacaoBrutaResumoModeloRepository,
     AnaliseSegmentacaoBrutaResumoTagRepository,
+    AnaliseSegmentacaoBrutaTesteModeloRepository,
+    AnaliseSegmentacaoBrutaTesteTagRepository,
     GroundTruthBinarizadaRepository,
     ImagemRepository,
     ImagemTagRepository,
@@ -315,6 +325,167 @@ def test_analise_segmentacao_bruta_resumo_tag_repository_replace_all_persiste_re
     assert registros[0].nome_modelo == "u2netp"
     assert registros[0].tag_name == "tag_multi_bufalos"
     assert registros[0].tag_value is True
+
+
+def test_analise_segmentacao_bruta_estabilidade_repository_replace_all_persiste_resumos(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaEstabilidadeRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaEstabilidade(
+                nome_modelo="u2netp",
+                metric_name="auprc",
+                count_execucoes=3,
+                mean_execucoes=0.8,
+                std_execucoes=0.02,
+                cv_execucoes=0.025,
+                amplitude_execucoes=0.04,
+                melhor_execucao=1,
+                pior_execucao=3,
+                higher_is_better=True,
+            )
+        ]
+    )
+
+    registros = repository.list()
+    assert len(registros) == 1
+    assert registros[0].metric_name == "auprc"
+
+
+def test_analise_segmentacao_bruta_intervalo_confianca_repository_replace_all_persiste_resumos(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaIntervaloConfiancaRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaIntervaloConfianca(
+                nome_modelo="u2netp",
+                metric_name="auprc",
+                statistic_name="mean",
+                count=5,
+                estimate=0.8,
+                ci_low=0.75,
+                ci_high=0.84,
+                confidence_level=0.95,
+                n_resamples=1000,
+                higher_is_better=True,
+            )
+        ]
+    )
+
+    registros = repository.list()
+    assert len(registros) == 1
+    assert registros[0].statistic_name == "mean"
+
+
+def test_analise_segmentacao_bruta_teste_modelo_repository_replace_all_persiste_resumos(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaTesteModeloRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaTesteModelo(
+                metric_name="auprc",
+                comparison_scope="pairwise",
+                test_name="dunn_holm",
+                group_a="u2netp",
+                group_b="isnet",
+                n_group_a=10,
+                n_group_b=10,
+                statistic=2.0,
+                p_value=0.04,
+                p_value_adjusted=0.08,
+                effect_size=0.5,
+                effect_size_label="large",
+                mean_group_a=0.8,
+                mean_group_b=0.7,
+                median_group_a=0.81,
+                median_group_b=0.71,
+                favored_group="u2netp",
+            )
+        ]
+    )
+
+    registros = repository.list()
+    assert len(registros) == 1
+    assert registros[0].group_b == "isnet"
+
+
+def test_analise_segmentacao_bruta_teste_tag_repository_replace_all_persiste_resumos(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaTesteTagRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaTesteTag(
+                metric_name="auprc",
+                tag_name="tag_multi_bufalos",
+                comparison_scope="global",
+                nome_modelo="__global__",
+                test_name="mann_whitney_u",
+                n_group_a=3,
+                n_group_b=5,
+                statistic=6.0,
+                p_value=0.02,
+                p_value_adjusted=0.02,
+                effect_size=-0.6,
+                effect_size_label="large",
+                mean_com_tag=0.4,
+                mean_sem_tag=0.8,
+                median_com_tag=0.42,
+                median_sem_tag=0.81,
+                delta_mean=-0.4,
+                delta_median=-0.39,
+            )
+        ]
+    )
+
+    registros = repository.list()
+    assert len(registros) == 1
+    assert registros[0].nome_modelo == "__global__"
+
+
+def test_analise_segmentacao_bruta_interacao_tag_modelo_repository_replace_all_persiste_resumos(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBrutaInteracaoTagModeloRepository(sqlite_path)
+
+    repository.replace_all(
+        [
+            AnaliseSegmentacaoBrutaInteracaoTagModelo(
+                nome_modelo="u2netp",
+                tag_name="tag_multi_bufalos",
+                metric_name="auprc",
+                count_com_tag=2,
+                count_sem_tag=4,
+                mean_com_tag=0.6,
+                mean_sem_tag=0.9,
+                median_com_tag=0.61,
+                median_sem_tag=0.91,
+                delta_mean=-0.3,
+                delta_median=-0.3,
+                relative_delta_mean=-0.33,
+                adjusted_delta_mean=-0.3,
+                adjusted_delta_median=-0.3,
+                impact_direction="piora",
+                higher_is_better=True,
+            )
+        ]
+    )
+
+    registros = repository.list()
+    assert len(registros) == 1
+    assert registros[0].impact_direction == "piora"
 
 
 def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
