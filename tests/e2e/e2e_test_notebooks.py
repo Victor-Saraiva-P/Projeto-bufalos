@@ -42,11 +42,16 @@ from src.repositories import (
 )
 from src.visualization import (
     PdfReportSection,
+    plot_metric_bars_with_ci_by_model,
     plot_metric_bars_by_model,
     plot_metric_by_execution_heatmap,
     plot_metric_distribution_by_model,
     plot_metric_distribution_by_tag,
     plot_metric_tag_comparison,
+    plot_model_tag_interaction_heatmap,
+    plot_pairwise_pvalue_heatmap,
+    plot_stability_heatmap,
+    plot_tag_effect_bars,
     save_pdf_report,
 )
 
@@ -111,7 +116,8 @@ def _iterar_execucoes(num_execucoes: int) -> range:
 
 def _registros_para_dataframe(registros: list, columns: list[str]) -> pd.DataFrame:
     return pd.DataFrame(
-        [{column: getattr(registro, column) for column in columns} for registro in registros]
+        [{column: getattr(registro, column) for column in columns} for registro in registros],
+        columns=columns,
     )
 
 
@@ -614,6 +620,21 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
     resumo_tag_repository = AnaliseSegmentacaoBrutaResumoTagRepository(
         resolver.sqlite_path
     )
+    estabilidade_repository = AnaliseSegmentacaoBrutaEstabilidadeRepository(
+        resolver.sqlite_path
+    )
+    intervalo_repository = AnaliseSegmentacaoBrutaIntervaloConfiancaRepository(
+        resolver.sqlite_path
+    )
+    teste_modelo_repository = AnaliseSegmentacaoBrutaTesteModeloRepository(
+        resolver.sqlite_path
+    )
+    teste_tag_repository = AnaliseSegmentacaoBrutaTesteTagRepository(
+        resolver.sqlite_path
+    )
+    interacao_repository = AnaliseSegmentacaoBrutaInteracaoTagModeloRepository(
+        resolver.sqlite_path
+    )
 
     build_and_persist_analysis_segmentacao_bruta_resumo_modelo(
         df_base=df_base,
@@ -626,6 +647,26 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
     build_and_persist_analysis_segmentacao_bruta_resumo_tag(
         df_base=df_base,
         repository=resumo_tag_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_estabilidade(
+        df_base=df_base,
+        repository=estabilidade_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_intervalo_confianca(
+        df_base=df_base,
+        repository=intervalo_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_testes_modelo(
+        df_base=df_base,
+        repository=teste_modelo_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_testes_tag(
+        df_base=df_base,
+        repository=teste_tag_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo(
+        df_base=df_base,
+        repository=interacao_repository,
     )
 
     df_resumo_modelo = _registros_para_dataframe(
@@ -682,11 +723,111 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
             "higher_is_better",
         ],
     )
+    df_estabilidade = _registros_para_dataframe(
+        estabilidade_repository.list(),
+        [
+            "nome_modelo",
+            "metric_name",
+            "count_execucoes",
+            "mean_execucoes",
+            "std_execucoes",
+            "cv_execucoes",
+            "amplitude_execucoes",
+            "melhor_execucao",
+            "pior_execucao",
+            "higher_is_better",
+        ],
+    )
+    df_intervalo_confianca = _registros_para_dataframe(
+        intervalo_repository.list(),
+        [
+            "nome_modelo",
+            "metric_name",
+            "statistic_name",
+            "count",
+            "estimate",
+            "ci_low",
+            "ci_high",
+            "confidence_level",
+            "n_resamples",
+            "higher_is_better",
+        ],
+    )
+    df_testes_modelo = _registros_para_dataframe(
+        teste_modelo_repository.list(),
+        [
+            "metric_name",
+            "comparison_scope",
+            "test_name",
+            "group_a",
+            "group_b",
+            "n_group_a",
+            "n_group_b",
+            "statistic",
+            "p_value",
+            "p_value_adjusted",
+            "effect_size",
+            "effect_size_label",
+            "mean_group_a",
+            "mean_group_b",
+            "median_group_a",
+            "median_group_b",
+            "favored_group",
+        ],
+    )
+    df_testes_tag = _registros_para_dataframe(
+        teste_tag_repository.list(),
+        [
+            "metric_name",
+            "tag_name",
+            "comparison_scope",
+            "nome_modelo",
+            "test_name",
+            "n_group_a",
+            "n_group_b",
+            "statistic",
+            "p_value",
+            "p_value_adjusted",
+            "effect_size",
+            "effect_size_label",
+            "mean_com_tag",
+            "mean_sem_tag",
+            "median_com_tag",
+            "median_sem_tag",
+            "delta_mean",
+            "delta_median",
+        ],
+    )
+    df_interacoes = _registros_para_dataframe(
+        interacao_repository.list(),
+        [
+            "nome_modelo",
+            "tag_name",
+            "metric_name",
+            "count_com_tag",
+            "count_sem_tag",
+            "mean_com_tag",
+            "mean_sem_tag",
+            "median_com_tag",
+            "median_sem_tag",
+            "delta_mean",
+            "delta_median",
+            "relative_delta_mean",
+            "adjusted_delta_mean",
+            "adjusted_delta_median",
+            "impact_direction",
+            "higher_is_better",
+        ],
+    )
 
     assert not df_base.empty
     assert not df_resumo_modelo.empty
     assert not df_resumo_execucao.empty
     assert not df_resumo_tag.empty
+    assert not df_estabilidade.empty
+    assert not df_intervalo_confianca.empty
+    assert not df_testes_tag.empty
+    assert not df_interacoes.empty
 
     metric_names = ["auprc", "soft_dice", "brier_score"]
     tags_prioritarias = [
@@ -699,8 +840,11 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
 
     generated_figures = 0
     figures_visao_modelo = []
+    figures_intervalos = []
     figures_estabilidade_execucao = []
+    figures_testes_modelo = []
     figures_impacto_tags = []
+    figures_interacoes = []
     figures_distribuicao = []
 
     for metric_name in metric_names:
@@ -709,7 +853,28 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
         figures_visao_modelo.append(fig)
         generated_figures += 1
 
+        fig, ax = plot_metric_bars_with_ci_by_model(
+            df_resumo_modelo, df_intervalo_confianca, metric_name
+        )
+        assert ax.has_data()
+        figures_intervalos.append(fig)
+        generated_figures += 1
+
         fig, ax = plot_metric_by_execution_heatmap(df_resumo_execucao, metric_name)
+        assert ax.images
+        figures_estabilidade_execucao.append(fig)
+        generated_figures += 1
+
+        fig, ax = plot_stability_heatmap(
+            df_estabilidade, metric_name, value_column="cv_execucoes"
+        )
+        assert ax.images
+        figures_estabilidade_execucao.append(fig)
+        generated_figures += 1
+
+        fig, ax = plot_stability_heatmap(
+            df_estabilidade, metric_name, value_column="amplitude_execucoes"
+        )
         assert ax.images
         figures_estabilidade_execucao.append(fig)
         generated_figures += 1
@@ -718,6 +883,21 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
         assert ax.has_data()
         figures_distribuicao.append(fig)
         generated_figures += 1
+
+        fig, ax = plot_model_tag_interaction_heatmap(df_interacoes, metric_name)
+        assert ax.images
+        figures_interacoes.append(fig)
+        generated_figures += 1
+
+        df_pairwise_metric = df_testes_modelo.loc[
+            (df_testes_modelo["metric_name"] == metric_name)
+            & (df_testes_modelo["comparison_scope"] == "pairwise")
+        ]
+        if not df_pairwise_metric.empty:
+            fig, ax = plot_pairwise_pvalue_heatmap(df_testes_modelo, metric_name)
+            assert ax.images
+            figures_testes_modelo.append(fig)
+            generated_figures += 1
 
     for tag_name in tags_prioritarias:
         fig, ax = plot_metric_distribution_by_tag(df_base, "soft_dice", tag_name)
@@ -731,9 +911,44 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
             figures_impacto_tags.append(fig)
             generated_figures += 1
 
-    assert generated_figures == (
-        len(metric_names) * 3 + len(tags_prioritarias) * (1 + len(metric_names))
+            df_effect_metric = df_testes_tag.loc[
+                (df_testes_tag["metric_name"] == metric_name)
+                & (df_testes_tag["tag_name"] == tag_name)
+                & (df_testes_tag["comparison_scope"] == "por_modelo")
+            ]
+            if not df_effect_metric.empty:
+                fig, ax = plot_tag_effect_bars(
+                    df_testes_tag,
+                    metric_name,
+                    tag_name,
+                    comparison_scope="por_modelo",
+                )
+                assert ax.has_data()
+                figures_impacto_tags.append(fig)
+                generated_figures += 1
+
+    expected_figures = len(metric_names) * 7
+    expected_figures += len(tags_prioritarias)
+    expected_figures += len(tags_prioritarias) * len(metric_names)
+    expected_figures += sum(
+        1
+        for tag_name in tags_prioritarias
+        for metric_name in metric_names
+        if not df_testes_tag.loc[
+            (df_testes_tag["metric_name"] == metric_name)
+            & (df_testes_tag["tag_name"] == tag_name)
+            & (df_testes_tag["comparison_scope"] == "por_modelo")
+        ].empty
     )
+    expected_figures += sum(
+        1
+        for metric_name in metric_names
+        if not df_testes_modelo.loc[
+            (df_testes_modelo["metric_name"] == metric_name)
+            & (df_testes_modelo["comparison_scope"] == "pairwise")
+        ].empty
+    )
+    assert generated_figures == expected_figures
 
     pdf_path = Path(resolver.generated_dir) / "05_visualizacao_segmentacao_bruta.pdf"
     saved_pdf_path = save_pdf_report(
@@ -741,47 +956,75 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
         report_title="05 - Visualizacao da Segmentacao Bruta",
         sections=[
             PdfReportSection(
-                heading="Carregamento dos resumos e da base linha a linha",
+                heading="Carregamento das tabelas analiticas e da base linha a linha",
                 body=(
-                    "Os resumos agregados sao lidos do SQLite. "
-                    "A base linha a linha e reconstruida apenas para os graficos de distribuicao."
+                    "Os resumos, testes e medidas de estabilidade sao lidos do SQLite. "
+                    "A base linha a linha e reconstruida apenas para os boxplots e leituras de distribuicao."
                 ),
             ),
             PdfReportSection(
                 heading="Visao geral por modelo",
                 body=(
-                    "A tabela abaixo resume as medias e medianas por metrica, "
-                    "e os graficos ajudam a comparar os modelos de forma agregada."
+                    "A tabela abaixo resume medias e medianas por metrica, "
+                    "e os graficos ajudam a comparar os modelos de forma agregada antes de olhar significancia e dificuldade."
                 ),
                 figures=figures_visao_modelo,
             ),
             PdfReportSection(
+                heading="Intervalos de confianca por modelo",
+                body=(
+                    "Os intervalos de confianca ajudam a evitar conclusoes baseadas apenas na media. "
+                    "Aqui usamos bootstrap para a media de cada metrica por modelo."
+                ),
+                figures=figures_intervalos,
+            ),
+            PdfReportSection(
                 heading="Estabilidade por execucao",
-                body="Aqui avaliamos se o comportamento do modelo se mantem estavel entre as execucoes.",
+                body=(
+                    "Aqui avaliamos se o comportamento do modelo se mantem estavel entre as execucoes, "
+                    "tanto na media por execucao quanto em medidas de variacao como coeficiente de variacao e amplitude."
+                ),
                 figures=figures_estabilidade_execucao,
+            ),
+            PdfReportSection(
+                heading="Comparacao estatistica entre modelos",
+                body=(
+                    "Quando ha mais de um modelo no banco, este bloco mostra a significancia ajustada "
+                    "das comparacoes par a par entre modelos. Se o ambiente atual tiver apenas um modelo, "
+                    "o bloco fica vazio por definicao."
+                ),
+                figures=figures_testes_modelo,
             ),
             PdfReportSection(
                 heading="Impacto das tags",
                 body=(
                     "As tags entram como eixo explicativo do que degrada a segmentacao. "
-                    "O foco inicial esta nas tags mais provaveis de piorar a qualidade da mascara."
+                    "Aqui mostramos tanto a comparacao agregada por tag quanto o tamanho de efeito estimado para cada dificuldade."
                 ),
                 figures=figures_impacto_tags,
+            ),
+            PdfReportSection(
+                heading="Interacao modelo x dificuldade",
+                body=(
+                    "Este bloco destaca quais modelos sofrem mais com cada dificuldade, "
+                    "usando o delta ajustado pela direcao desejada da metrica."
+                ),
+                figures=figures_interacoes,
             ),
             PdfReportSection(
                 heading="Distribuicao linha a linha",
                 body=(
                     "Os boxplots usam a base completa em memoria para mostrar dispersao e caudas, "
-                    "algo que os resumos persistidos nao capturam sozinhos."
+                    "algo que os resumos persistidos e os testes inferenciais nao capturam sozinhos."
                 ),
                 figures=figures_distribuicao,
             ),
             PdfReportSection(
                 heading="Leitura inicial",
                 body=(
-                    "A combinacao entre medias por modelo, estabilidade por execucao, impacto das tags "
-                    "e distribuicao linha a linha ja permite responder quais modelos segmentam melhor "
-                    "e em que cenarios eles passam a falhar."
+                    "Com a combinacao entre medias, intervalos de confianca, estabilidade, significancia entre modelos, "
+                    "impacto das tags e interacoes modelo x dificuldade, o notebook 05 passa a refletir melhor "
+                    "a camada estatistica calculada pelo notebook 04."
                 ),
             ),
         ],
@@ -793,8 +1036,11 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
 
     for figure in (
         figures_visao_modelo
+        + figures_intervalos
         + figures_estabilidade_execucao
+        + figures_testes_modelo
         + figures_impacto_tags
+        + figures_interacoes
         + figures_distribuicao
     ):
         plt.close(figure)

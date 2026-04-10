@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 
@@ -189,5 +190,206 @@ def plot_metric_distribution_by_tag(
     ax.set_title(f"Distribuicao de {metric_name} por {tag_name}")
     ax.set_xlabel("Grupo")
     ax.set_ylabel(metric_name)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_metric_bars_with_ci_by_model(
+    df_resumo_modelo: pd.DataFrame,
+    df_intervalo_confianca: pd.DataFrame,
+    metric_name: str,
+    statistic_name: str = "mean",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_resumo_modelo, "grafico com intervalo de confianca por modelo")
+    _require_non_empty(
+        df_intervalo_confianca, "grafico com intervalo de confianca por modelo"
+    )
+    _require_columns(
+        df_resumo_modelo,
+        {"nome_modelo", "metric_name", "mean", "higher_is_better"},
+        "grafico com intervalo de confianca por modelo",
+    )
+    _require_columns(
+        df_intervalo_confianca,
+        {"nome_modelo", "metric_name", "statistic_name", "estimate", "ci_low", "ci_high"},
+        "grafico com intervalo de confianca por modelo",
+    )
+
+    df_plot = df_intervalo_confianca.loc[
+        (df_intervalo_confianca["metric_name"] == metric_name)
+        & (df_intervalo_confianca["statistic_name"] == statistic_name)
+    ].copy()
+    _require_non_empty(
+        df_plot, f"grafico com intervalo de confianca da metrica {metric_name}"
+    )
+
+    higher_is_better = bool(
+        df_resumo_modelo.loc[df_resumo_modelo["metric_name"] == metric_name, "higher_is_better"].iloc[0]
+    )
+    df_plot = df_plot.sort_values("estimate", ascending=not higher_is_better)
+    errors = np.vstack(
+        [
+            df_plot["estimate"].to_numpy() - df_plot["ci_low"].to_numpy(),
+            df_plot["ci_high"].to_numpy() - df_plot["estimate"].to_numpy(),
+        ]
+    )
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.bar(
+        df_plot["nome_modelo"],
+        df_plot["estimate"],
+        yerr=errors,
+        capsize=4,
+        color="#2A9D8F",
+    )
+    ax.set_title(f"{statistic_name.title()} com intervalo de confianca de {metric_name}")
+    ax.set_xlabel("Modelo")
+    ax.set_ylabel(statistic_name.title())
+    ax.tick_params(axis="x", rotation=45)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_stability_heatmap(
+    df_estabilidade: pd.DataFrame,
+    metric_name: str,
+    value_column: str = "cv_execucoes",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_estabilidade, "heatmap de estabilidade")
+    _require_columns(
+        df_estabilidade,
+        {"nome_modelo", "metric_name", value_column},
+        "heatmap de estabilidade",
+    )
+
+    df_plot = df_estabilidade.loc[df_estabilidade["metric_name"] == metric_name].copy()
+    _require_non_empty(df_plot, f"heatmap de estabilidade da metrica {metric_name}")
+
+    matrix = np.expand_dims(df_plot.sort_values("nome_modelo")[value_column].to_numpy(), axis=1)
+    labels = df_plot.sort_values("nome_modelo")["nome_modelo"].to_list()
+
+    fig, ax = plt.subplots(figsize=(5, max(3, len(labels) * 0.45)))
+    image = ax.imshow(matrix, aspect="auto", cmap="YlOrRd")
+    ax.set_title(f"{value_column} por modelo em {metric_name}")
+    ax.set_xlabel(value_column)
+    ax.set_ylabel("Modelo")
+    ax.set_xticks([0])
+    ax.set_xticklabels([value_column])
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels)
+    fig.colorbar(image, ax=ax, label=value_column)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_pairwise_pvalue_heatmap(
+    df_testes_modelo: pd.DataFrame,
+    metric_name: str,
+    value_column: str = "p_value_adjusted",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_testes_modelo, "heatmap de comparacao entre modelos")
+    _require_columns(
+        df_testes_modelo,
+        {"metric_name", "comparison_scope", "group_a", "group_b", value_column},
+        "heatmap de comparacao entre modelos",
+    )
+
+    df_plot = df_testes_modelo.loc[
+        (df_testes_modelo["metric_name"] == metric_name)
+        & (df_testes_modelo["comparison_scope"] == "pairwise")
+    ].copy()
+    _require_non_empty(
+        df_plot, f"heatmap de comparacao entre modelos da metrica {metric_name}"
+    )
+
+    labels = sorted(set(df_plot["group_a"]) | set(df_plot["group_b"]))
+    matrix = pd.DataFrame(np.nan, index=labels, columns=labels)
+    for label in labels:
+        matrix.loc[label, label] = 0.0
+
+    for row in df_plot.to_dict(orient="records"):
+        matrix.loc[str(row["group_a"]), str(row["group_b"])] = float(row[value_column])
+        matrix.loc[str(row["group_b"]), str(row["group_a"])] = float(row[value_column])
+
+    fig, ax = plt.subplots(figsize=(7, 6))
+    image = ax.imshow(matrix.to_numpy(), cmap="magma_r")
+    ax.set_title(f"{value_column} entre pares de modelos em {metric_name}")
+    ax.set_xticks(range(len(labels)))
+    ax.set_xticklabels(labels, rotation=45, ha="right")
+    ax.set_yticks(range(len(labels)))
+    ax.set_yticklabels(labels)
+    fig.colorbar(image, ax=ax, label=value_column)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_tag_effect_bars(
+    df_testes_tag: pd.DataFrame,
+    metric_name: str,
+    tag_name: str,
+    comparison_scope: str = "por_modelo",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_testes_tag, "grafico de efeito por tag")
+    _require_columns(
+        df_testes_tag,
+        {"metric_name", "tag_name", "comparison_scope", "nome_modelo", "effect_size"},
+        "grafico de efeito por tag",
+    )
+
+    df_plot = df_testes_tag.loc[
+        (df_testes_tag["metric_name"] == metric_name)
+        & (df_testes_tag["tag_name"] == tag_name)
+        & (df_testes_tag["comparison_scope"] == comparison_scope)
+    ].copy()
+    _require_non_empty(
+        df_plot, f"grafico de efeito por tag {tag_name} na metrica {metric_name}"
+    )
+    df_plot = df_plot.sort_values("effect_size")
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    ax.bar(df_plot["nome_modelo"], df_plot["effect_size"], color="#E76F51")
+    ax.axhline(0.0, color="#222222", linewidth=1)
+    ax.set_title(f"Tamanho de efeito de {tag_name} em {metric_name}")
+    ax.set_xlabel("Escopo")
+    ax.set_ylabel("Cliff's Delta")
+    ax.tick_params(axis="x", rotation=45)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_model_tag_interaction_heatmap(
+    df_interacoes: pd.DataFrame,
+    metric_name: str,
+    value_column: str = "adjusted_delta_mean",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_interacoes, "heatmap de interacao modelo x tag")
+    _require_columns(
+        df_interacoes,
+        {"nome_modelo", "tag_name", "metric_name", value_column},
+        "heatmap de interacao modelo x tag",
+    )
+
+    df_plot = df_interacoes.loc[df_interacoes["metric_name"] == metric_name].copy()
+    _require_non_empty(
+        df_plot, f"heatmap de interacao modelo x tag da metrica {metric_name}"
+    )
+
+    matrix = (
+        df_plot.pivot(index="nome_modelo", columns="tag_name", values=value_column)
+        .sort_index()
+        .sort_index(axis=1)
+        .fillna(0.0)
+    )
+
+    fig, ax = plt.subplots(figsize=(9, max(4, len(matrix.index) * 0.45)))
+    image = ax.imshow(matrix.to_numpy(), aspect="auto", cmap="coolwarm")
+    ax.set_title(f"Interacao modelo x tag em {metric_name}")
+    ax.set_xlabel("Tag")
+    ax.set_ylabel("Modelo")
+    ax.set_xticks(range(len(matrix.columns)))
+    ax.set_xticklabels(matrix.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(matrix.index)))
+    ax.set_yticklabels(matrix.index)
+    fig.colorbar(image, ax=ax, label=value_column)
     fig.tight_layout()
     return fig, ax
