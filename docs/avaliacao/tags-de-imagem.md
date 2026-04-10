@@ -90,12 +90,18 @@ Use quando o contorno do bufalo se mistura ao fundo por semelhanca de cor, lumin
 Exemplos:
 
 - animal escuro sobre fundo escuro;
+- baixa iluminacao deixando fundo e bufalo visualmente parecidos;
+- coloracao do bufalo muito similar a barro, vegetacao, sombra, troncos ou outros elementos do fundo;
+- outros bufalos ao fundo com coloracao muito parecida, dificultando distinguir qual corpo pertence ao sujeito principal;
+- patas meladas de lama em chao lamacento, tornando dificil identificar onde termina a pata e onde comeca o solo;
 - borda do corpo pouco destacada;
 - cenario reduzindo a separacao entre figura e fundo.
 
 Regra pratica:
 
 - use `baixo_contraste` quando o problema principal estiver no contraste com o fundo, e nao em corte, oclusao ou angulo.
+- a tag continua valendo mesmo quando o corpo esta inteiro no enquadramento, desde que a dificuldade principal seja separar visualmente animal e fundo.
+- quando houver outros bufalos no fundo, use `baixo_contraste` se a dificuldade principal for a semelhanca visual entre eles e o sujeito principal; adicione `multi_bufalos` tambem se esses outros animais tiverem presenca relevante na cena.
 
 ### `ocluido`
 
@@ -127,6 +133,9 @@ Exemplos combinados:
 
 - perna atras da cerca: `ocluido`;
 - corpo inteiro visivel, mas com pouca separacao do fundo: `baixo_contraste`;
+- baixa iluminacao fazendo a silhueta do bufalo sumir no fundo: `baixo_contraste`;
+- patas cobertas de lama sobre chao igualmente lamacento, sem elemento na frente delas: `baixo_contraste`;
+- outro bufalo ao fundo com cor muito parecida, mas sem encobrir o sujeito principal: `baixo_contraste` e, se tiver relevancia propria na cena, `multi_bufalos`;
 - grade na frente do corpo e fundo parecido com a pelagem: `ocluido` e `baixo_contraste`.
 
 ## Convencao de uso
