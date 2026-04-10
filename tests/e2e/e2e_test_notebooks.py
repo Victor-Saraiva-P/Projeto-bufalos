@@ -4,11 +4,17 @@ from pathlib import Path
 import shutil
 import tomllib
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
 import pytest
 import numpy as np
+import pandas as pd
 from src.analysis import (
     MetricsCollector,
+    build_and_persist_analysis_segmentacao_bruta_resumo_execucao,
     build_and_persist_analysis_segmentacao_bruta_resumo_modelo,
+    build_and_persist_analysis_segmentacao_bruta_resumo_tag,
 )
 from src.controllers import (
     AvaliacaoController,
@@ -18,9 +24,17 @@ from src.controllers import (
 )
 from src.io.path_resolver import PathResolver
 from src.repositories import (
-    AnaliseSegmentacaoBrutaBaseRepository,
+    AnaliseSegmentacaoBrutaResumoExecucaoRepository,
     AnaliseSegmentacaoBrutaResumoModeloRepository,
+    AnaliseSegmentacaoBrutaResumoTagRepository,
     ImagemRepository,
+)
+from src.visualization import (
+    plot_metric_bars_by_model,
+    plot_metric_by_execution_heatmap,
+    plot_metric_distribution_by_model,
+    plot_metric_distribution_by_tag,
+    plot_metric_tag_comparison,
 )
 
 E2E_CONFIG_PATH = "config.e2e.toml"
@@ -80,6 +94,12 @@ def _limpar_saida_e2e(resolver: PathResolver) -> None:
 
 def _iterar_execucoes(num_execucoes: int) -> range:
     return range(1, num_execucoes + 1)
+
+
+def _registros_para_dataframe(registros: list, columns: list[str]) -> pd.DataFrame:
+    return pd.DataFrame(
+        [{column: getattr(registro, column) for column in columns} for registro in registros]
+    )
 
 
 @pytest.fixture
@@ -401,7 +421,7 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
 
 
 @pytest.mark.e2e
-def test_notebook_04_persiste_base_e_resumo_estatistico_inicial(
+def test_notebook_04_persiste_resumos_estatisticos_iniciais(
     e2e_context: E2EContext,
 ) -> None:
     try:
@@ -419,35 +439,209 @@ def test_notebook_04_persiste_base_e_resumo_estatistico_inicial(
         force_recalculate=False,
         imagem_repository=ImagemRepository(resolver.sqlite_path),
     )
-    base_repository = AnaliseSegmentacaoBrutaBaseRepository(resolver.sqlite_path)
-    resumo_repository = AnaliseSegmentacaoBrutaResumoModeloRepository(
+    resumo_modelo_repository = AnaliseSegmentacaoBrutaResumoModeloRepository(
+        resolver.sqlite_path
+    )
+    resumo_execucao_repository = AnaliseSegmentacaoBrutaResumoExecucaoRepository(
+        resolver.sqlite_path
+    )
+    resumo_tag_repository = AnaliseSegmentacaoBrutaResumoTagRepository(
         resolver.sqlite_path
     )
 
-    df_base = collector.persist_analysis_segmentacao_bruta_base(base_repository)
+    df_base = collector.collect_all_metrics()
     df_resumo_modelo, _ = build_and_persist_analysis_segmentacao_bruta_resumo_modelo(
         df_base=df_base,
-        repository=resumo_repository,
+        repository=resumo_modelo_repository,
+    )
+    df_resumo_execucao, _ = build_and_persist_analysis_segmentacao_bruta_resumo_execucao(
+        df_base=df_base,
+        repository=resumo_execucao_repository,
+    )
+    df_resumo_tag, _ = build_and_persist_analysis_segmentacao_bruta_resumo_tag(
+        df_base=df_base,
+        repository=resumo_tag_repository,
     )
 
-    base_registros = base_repository.list()
-    resumo_registros = resumo_repository.list()
+    resumo_modelo_registros = resumo_modelo_repository.list()
+    resumo_execucao_registros = resumo_execucao_repository.list()
+    resumo_tag_registros = resumo_tag_repository.list()
 
     assert len(df_base) == len(linhas) * e2e_context.num_execucoes * len(modelos)
-    assert len(base_registros) == len(df_base)
-    assert {registro.nome_modelo for registro in base_registros} == set(modelos)
-    assert {registro.execucao for registro in base_registros} == set(
-        _iterar_execucoes(e2e_context.num_execucoes)
-    )
-    assert all(registro.auprc >= 0.0 for registro in base_registros)
-    assert all(registro.soft_dice >= 0.0 for registro in base_registros)
-    assert all(registro.brier_score >= 0.0 for registro in base_registros)
 
     assert len(df_resumo_modelo) == len(modelos) * 3
-    assert len(resumo_registros) == len(df_resumo_modelo)
-    assert {registro.nome_modelo for registro in resumo_registros} == set(modelos)
-    assert {registro.metric_name for registro in resumo_registros} == {
+    assert len(resumo_modelo_registros) == len(df_resumo_modelo)
+    assert {registro.nome_modelo for registro in resumo_modelo_registros} == set(modelos)
+    assert {registro.metric_name for registro in resumo_modelo_registros} == {
         "auprc",
         "soft_dice",
         "brier_score",
     }
+
+    assert len(df_resumo_execucao) == len(modelos) * e2e_context.num_execucoes * 3
+    assert len(resumo_execucao_registros) == len(df_resumo_execucao)
+    assert {registro.execucao for registro in resumo_execucao_registros} == set(
+        _iterar_execucoes(e2e_context.num_execucoes)
+    )
+
+    assert len(resumo_tag_registros) == len(df_resumo_tag)
+    assert {registro.tag_name for registro in resumo_tag_registros} == {
+        "tag_ok",
+        "tag_multi_bufalos",
+        "tag_cortado",
+        "tag_angulo_extremo",
+        "tag_baixo_contraste",
+        "tag_ocluido",
+    }
+    assert {registro.metric_name for registro in resumo_tag_registros} == {
+        "auprc",
+        "soft_dice",
+        "brier_score",
+    }
+    assert {registro.tag_value for registro in resumo_tag_registros} == {False, True}
+
+
+@pytest.mark.e2e
+def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
+    e2e_context: E2EContext,
+) -> None:
+    try:
+        import rembg  # noqa: F401
+    except ModuleNotFoundError:
+        pytest.skip("rembg nao esta instalado no ambiente.")
+
+    resolver = e2e_context.resolver
+    _executar_fluxo_notebook_02(e2e_context)
+    AvaliacaoController().processar_imagens()
+
+    collector = MetricsCollector(
+        force_recalculate=False,
+        imagem_repository=ImagemRepository(resolver.sqlite_path),
+    )
+    df_base = collector.collect_all_metrics()
+
+    resumo_modelo_repository = AnaliseSegmentacaoBrutaResumoModeloRepository(
+        resolver.sqlite_path
+    )
+    resumo_execucao_repository = AnaliseSegmentacaoBrutaResumoExecucaoRepository(
+        resolver.sqlite_path
+    )
+    resumo_tag_repository = AnaliseSegmentacaoBrutaResumoTagRepository(
+        resolver.sqlite_path
+    )
+
+    build_and_persist_analysis_segmentacao_bruta_resumo_modelo(
+        df_base=df_base,
+        repository=resumo_modelo_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_resumo_execucao(
+        df_base=df_base,
+        repository=resumo_execucao_repository,
+    )
+    build_and_persist_analysis_segmentacao_bruta_resumo_tag(
+        df_base=df_base,
+        repository=resumo_tag_repository,
+    )
+
+    df_resumo_modelo = _registros_para_dataframe(
+        resumo_modelo_repository.list(),
+        [
+            "nome_modelo",
+            "metric_name",
+            "count",
+            "mean",
+            "median",
+            "std",
+            "min",
+            "max",
+            "q1",
+            "q3",
+            "iqr",
+            "higher_is_better",
+        ],
+    )
+    df_resumo_execucao = _registros_para_dataframe(
+        resumo_execucao_repository.list(),
+        [
+            "nome_modelo",
+            "execucao",
+            "metric_name",
+            "count",
+            "mean",
+            "median",
+            "std",
+            "min",
+            "max",
+            "q1",
+            "q3",
+            "iqr",
+            "higher_is_better",
+        ],
+    )
+    df_resumo_tag = _registros_para_dataframe(
+        resumo_tag_repository.list(),
+        [
+            "nome_modelo",
+            "tag_name",
+            "tag_value",
+            "metric_name",
+            "count",
+            "mean",
+            "median",
+            "std",
+            "min",
+            "max",
+            "q1",
+            "q3",
+            "iqr",
+            "higher_is_better",
+        ],
+    )
+
+    assert not df_base.empty
+    assert not df_resumo_modelo.empty
+    assert not df_resumo_execucao.empty
+    assert not df_resumo_tag.empty
+
+    metric_names = ["auprc", "soft_dice", "brier_score"]
+    tags_prioritarias = [
+        "tag_multi_bufalos",
+        "tag_baixo_contraste",
+        "tag_angulo_extremo",
+        "tag_cortado",
+        "tag_ocluido",
+    ]
+
+    generated_figures = 0
+
+    for metric_name in metric_names:
+        fig, ax = plot_metric_bars_by_model(df_resumo_modelo, metric_name)
+        assert ax.has_data()
+        plt.close(fig)
+        generated_figures += 1
+
+        fig, ax = plot_metric_by_execution_heatmap(df_resumo_execucao, metric_name)
+        assert ax.images
+        plt.close(fig)
+        generated_figures += 1
+
+        fig, ax = plot_metric_distribution_by_model(df_base, metric_name)
+        assert ax.has_data()
+        plt.close(fig)
+        generated_figures += 1
+
+    for tag_name in tags_prioritarias:
+        fig, ax = plot_metric_distribution_by_tag(df_base, "soft_dice", tag_name)
+        assert ax.has_data()
+        plt.close(fig)
+        generated_figures += 1
+
+        for metric_name in metric_names:
+            fig, ax = plot_metric_tag_comparison(df_resumo_tag, metric_name, tag_name)
+            assert ax.has_data()
+            plt.close(fig)
+            generated_figures += 1
+
+    assert generated_figures == (
+        len(metric_names) * 3 + len(tags_prioritarias) * (1 + len(metric_names))
+    )

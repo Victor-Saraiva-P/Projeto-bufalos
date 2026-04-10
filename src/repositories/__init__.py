@@ -1,8 +1,11 @@
-from src.repositories.analysis_segmentacao_bruta_base_repository import (
-    AnaliseSegmentacaoBrutaBaseRepository,
+from src.repositories.analysis_segmentacao_bruta_resumo_execucao_repository import (
+    AnaliseSegmentacaoBrutaResumoExecucaoRepository,
 )
 from src.repositories.analysis_segmentacao_bruta_resumo_modelo_repository import (
     AnaliseSegmentacaoBrutaResumoModeloRepository,
+)
+from src.repositories.analysis_segmentacao_bruta_resumo_tag_repository import (
+    AnaliseSegmentacaoBrutaResumoTagRepository,
 )
 from src.repositories.imagem_repository import ImagemRepository
 from src.repositories.ground_truth_binarizada_repository import (
@@ -18,8 +21,9 @@ from src.repositories.tag_repository import TagRepository
 from src.repositories.imagem_tag_repository import ImagemTagRepository
 
 __all__ = [
-    "AnaliseSegmentacaoBrutaBaseRepository",
+    "AnaliseSegmentacaoBrutaResumoExecucaoRepository",
     "AnaliseSegmentacaoBrutaResumoModeloRepository",
+    "AnaliseSegmentacaoBrutaResumoTagRepository",
     "GroundTruthBinarizadaRepository",
     "ImagemRepository",
     "ImagemTagRepository",
