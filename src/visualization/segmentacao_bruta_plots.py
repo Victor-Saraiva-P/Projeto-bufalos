@@ -393,3 +393,104 @@ def plot_model_tag_interaction_heatmap(
     fig.colorbar(image, ax=ax, label=value_column)
     fig.tight_layout()
     return fig, ax
+
+
+def plot_metric_scatter(
+    df_base: pd.DataFrame,
+    x_metric: str,
+    y_metric: str,
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_base, "grafico bivariado entre metricas")
+    _require_columns(
+        df_base,
+        {"modelo", x_metric, y_metric},
+        "grafico bivariado entre metricas",
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    for model_name, model_df in df_base.groupby("modelo", dropna=False):
+        ax.scatter(
+            model_df[x_metric],
+            model_df[y_metric],
+            alpha=0.6,
+            label=str(model_name),
+            s=18,
+        )
+
+    ax.set_title(f"{y_metric} vs {x_metric}")
+    ax.set_xlabel(x_metric)
+    ax.set_ylabel(y_metric)
+    ax.legend(fontsize=8, ncol=2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_metric_correlation_heatmap(
+    df_base: pd.DataFrame,
+    metric_columns: list[str],
+    method: str,
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_base, "heatmap de correlacao")
+    _require_columns(df_base, set(metric_columns), "heatmap de correlacao")
+
+    correlation = df_base[metric_columns].corr(method=method)
+    fig, ax = plt.subplots(figsize=(6, 5))
+    image = ax.imshow(correlation.to_numpy(), cmap="coolwarm", vmin=-1.0, vmax=1.0)
+    ax.set_title(f"Correlacao {method.title()} entre metricas")
+    ax.set_xticks(range(len(metric_columns)))
+    ax.set_xticklabels(metric_columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(metric_columns)))
+    ax.set_yticklabels(metric_columns)
+    fig.colorbar(image, ax=ax, label="correlacao")
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_simple_regression(
+    df_base: pd.DataFrame,
+    x_column: str,
+    y_column: str,
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_base, "grafico de regressao simples")
+    _require_columns(
+        df_base,
+        {"modelo", x_column, y_column},
+        "grafico de regressao simples",
+    )
+
+    x_values = df_base[x_column].astype(float).to_numpy()
+    y_values = df_base[y_column].astype(float).to_numpy()
+    slope, intercept = np.polyfit(x_values, y_values, deg=1)
+    fitted = slope * x_values + intercept
+    residual = y_values - fitted
+    total = y_values - y_values.mean()
+    r_squared = 1.0 - float(np.sum(residual**2) / np.sum(total**2)) if np.sum(total**2) else 0.0
+
+    fig, ax = plt.subplots(figsize=(7, 5))
+    for model_name, model_df in df_base.groupby("modelo", dropna=False):
+        ax.scatter(
+            model_df[x_column],
+            model_df[y_column],
+            alpha=0.55,
+            label=str(model_name),
+            s=18,
+        )
+
+    x_line = np.linspace(x_values.min(), x_values.max(), 100)
+    y_line = slope * x_line + intercept
+    ax.plot(x_line, y_line, color="#222222", linewidth=2)
+    ax.set_title(f"Regressao simples: {y_column} ~ {x_column}")
+    ax.set_xlabel(x_column)
+    ax.set_ylabel(y_column)
+    ax.legend(fontsize=8, ncol=2)
+    ax.text(
+        0.02,
+        0.98,
+        f"y = {slope:.4f}x + {intercept:.4f}\nR² = {r_squared:.4f}",
+        transform=ax.transAxes,
+        ha="left",
+        va="top",
+        bbox={"facecolor": "white", "alpha": 0.8, "edgecolor": "#bbbbbb"},
+    )
+    fig.tight_layout()
+    return fig, ax

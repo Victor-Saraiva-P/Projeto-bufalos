@@ -43,15 +43,14 @@ from src.repositories import (
 from src.visualization import (
     PdfReportSection,
     plot_metric_bars_with_ci_by_model,
-    plot_metric_bars_by_model,
+    plot_metric_correlation_heatmap,
     plot_metric_by_execution_heatmap,
     plot_metric_distribution_by_model,
-    plot_metric_distribution_by_tag,
-    plot_metric_tag_comparison,
+    plot_metric_scatter,
     plot_model_tag_interaction_heatmap,
     plot_pairwise_pvalue_heatmap,
+    plot_simple_regression,
     plot_stability_heatmap,
-    plot_tag_effect_bars,
     save_pdf_report,
 )
 
@@ -822,61 +821,27 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
 
     assert not df_base.empty
     assert not df_resumo_modelo.empty
-    assert not df_resumo_execucao.empty
-    assert not df_resumo_tag.empty
-    assert not df_estabilidade.empty
     assert not df_intervalo_confianca.empty
-    assert not df_testes_tag.empty
     assert not df_interacoes.empty
 
     metric_names = ["auprc", "soft_dice", "brier_score"]
-    tags_prioritarias = [
-        "tag_multi_bufalos",
-        "tag_baixo_contraste",
-        "tag_angulo_extremo",
-        "tag_cortado",
-        "tag_ocluido",
-    ]
+    metric_pairs = [("auprc", "soft_dice"), ("auprc", "brier_score"), ("soft_dice", "brier_score")]
+    regression_metrics = ["soft_dice", "brier_score"]
+    interaction_metrics = ["auprc", "soft_dice", "brier_score"]
 
     generated_figures = 0
-    figures_visao_modelo = []
-    figures_intervalos = []
-    figures_estabilidade_execucao = []
-    figures_testes_modelo = []
-    figures_impacto_tags = []
-    figures_interacoes = []
+    figures_univariada = []
     figures_distribuicao = []
+    figures_correlacao = []
+    figures_regressao = []
+    figures_interacoes = []
 
     for metric_name in metric_names:
-        fig, ax = plot_metric_bars_by_model(df_resumo_modelo, metric_name)
-        assert ax.has_data()
-        figures_visao_modelo.append(fig)
-        generated_figures += 1
-
         fig, ax = plot_metric_bars_with_ci_by_model(
             df_resumo_modelo, df_intervalo_confianca, metric_name
         )
         assert ax.has_data()
-        figures_intervalos.append(fig)
-        generated_figures += 1
-
-        fig, ax = plot_metric_by_execution_heatmap(df_resumo_execucao, metric_name)
-        assert ax.images
-        figures_estabilidade_execucao.append(fig)
-        generated_figures += 1
-
-        fig, ax = plot_stability_heatmap(
-            df_estabilidade, metric_name, value_column="cv_execucoes"
-        )
-        assert ax.images
-        figures_estabilidade_execucao.append(fig)
-        generated_figures += 1
-
-        fig, ax = plot_stability_heatmap(
-            df_estabilidade, metric_name, value_column="amplitude_execucoes"
-        )
-        assert ax.images
-        figures_estabilidade_execucao.append(fig)
+        figures_univariada.append(fig)
         generated_figures += 1
 
         fig, ax = plot_metric_distribution_by_model(df_base, metric_name)
@@ -884,69 +849,37 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
         figures_distribuicao.append(fig)
         generated_figures += 1
 
+    for x_metric, y_metric in metric_pairs:
+        fig, ax = plot_metric_scatter(df_base, x_metric, y_metric)
+        assert ax.has_data()
+        figures_correlacao.append(fig)
+        generated_figures += 1
+
+    for method in ["pearson", "spearman"]:
+        fig, ax = plot_metric_correlation_heatmap(df_base, metric_names, method)
+        assert ax.images
+        figures_correlacao.append(fig)
+        generated_figures += 1
+
+    for metric_name in regression_metrics:
+        fig, ax = plot_simple_regression(df_base, "num_tags_problema", metric_name)
+        assert ax.has_data()
+        figures_regressao.append(fig)
+        generated_figures += 1
+
+    for metric_name in interaction_metrics:
         fig, ax = plot_model_tag_interaction_heatmap(df_interacoes, metric_name)
         assert ax.images
         figures_interacoes.append(fig)
         generated_figures += 1
 
-        df_pairwise_metric = df_testes_modelo.loc[
-            (df_testes_modelo["metric_name"] == metric_name)
-            & (df_testes_modelo["comparison_scope"] == "pairwise")
-        ]
-        if not df_pairwise_metric.empty:
-            fig, ax = plot_pairwise_pvalue_heatmap(df_testes_modelo, metric_name)
-            assert ax.images
-            figures_testes_modelo.append(fig)
-            generated_figures += 1
-
-    for tag_name in tags_prioritarias:
-        fig, ax = plot_metric_distribution_by_tag(df_base, "soft_dice", tag_name)
-        assert ax.has_data()
-        figures_distribuicao.append(fig)
-        generated_figures += 1
-
-        for metric_name in metric_names:
-            fig, ax = plot_metric_tag_comparison(df_resumo_tag, metric_name, tag_name)
-            assert ax.has_data()
-            figures_impacto_tags.append(fig)
-            generated_figures += 1
-
-            df_effect_metric = df_testes_tag.loc[
-                (df_testes_tag["metric_name"] == metric_name)
-                & (df_testes_tag["tag_name"] == tag_name)
-                & (df_testes_tag["comparison_scope"] == "por_modelo")
-            ]
-            if not df_effect_metric.empty:
-                fig, ax = plot_tag_effect_bars(
-                    df_testes_tag,
-                    metric_name,
-                    tag_name,
-                    comparison_scope="por_modelo",
-                )
-                assert ax.has_data()
-                figures_impacto_tags.append(fig)
-                generated_figures += 1
-
-    expected_figures = len(metric_names) * 7
-    expected_figures += len(tags_prioritarias)
-    expected_figures += len(tags_prioritarias) * len(metric_names)
-    expected_figures += sum(
-        1
-        for tag_name in tags_prioritarias
-        for metric_name in metric_names
-        if not df_testes_tag.loc[
-            (df_testes_tag["metric_name"] == metric_name)
-            & (df_testes_tag["tag_name"] == tag_name)
-            & (df_testes_tag["comparison_scope"] == "por_modelo")
-        ].empty
-    )
-    expected_figures += sum(
-        1
-        for metric_name in metric_names
-        if not df_testes_modelo.loc[
-            (df_testes_modelo["metric_name"] == metric_name)
-            & (df_testes_modelo["comparison_scope"] == "pairwise")
-        ].empty
+    expected_figures = (
+        len(metric_names)
+        + len(metric_names)
+        + len(metric_pairs)
+        + 2
+        + len(regression_metrics)
+        + len(interaction_metrics)
     )
     assert generated_figures == expected_figures
 
@@ -958,73 +891,56 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
             PdfReportSection(
                 heading="Carregamento das tabelas analiticas e da base linha a linha",
                 body=(
-                    "Os resumos, testes e medidas de estabilidade sao lidos do SQLite. "
-                    "A base linha a linha e reconstruida apenas para os boxplots e leituras de distribuicao."
+                    "A visualizacao agora usa apenas o que e mais util para leitura do projeto: "
+                    "resumos por modelo, intervalos de confianca, interacoes com dificuldade e a base linha a linha para correlacao e regressao."
                 ),
             ),
             PdfReportSection(
-                heading="Visao geral por modelo",
+                heading="Estatistica descritiva univariada",
                 body=(
-                    "A tabela abaixo resume medias e medianas por metrica, "
-                    "e os graficos ajudam a comparar os modelos de forma agregada antes de olhar significancia e dificuldade."
+                    "Este bloco resume cada metrica por modelo usando estimativa central e intervalo de confianca, "
+                    "o que torna a comparacao mais informativa do que olhar apenas medias isoladas."
                 ),
-                figures=figures_visao_modelo,
+                figures=figures_univariada,
             ),
             PdfReportSection(
-                heading="Intervalos de confianca por modelo",
+                heading="Distribuicoes por modelo",
                 body=(
-                    "Os intervalos de confianca ajudam a evitar conclusoes baseadas apenas na media. "
-                    "Aqui usamos bootstrap para a media de cada metrica por modelo."
-                ),
-                figures=figures_intervalos,
-            ),
-            PdfReportSection(
-                heading="Estabilidade por execucao",
-                body=(
-                    "Aqui avaliamos se o comportamento do modelo se mantem estavel entre as execucoes, "
-                    "tanto na media por execucao quanto em medidas de variacao como coeficiente de variacao e amplitude."
-                ),
-                figures=figures_estabilidade_execucao,
-            ),
-            PdfReportSection(
-                heading="Comparacao estatistica entre modelos",
-                body=(
-                    "Quando ha mais de um modelo no banco, este bloco mostra a significancia ajustada "
-                    "das comparacoes par a par entre modelos. Se o ambiente atual tiver apenas um modelo, "
-                    "o bloco fica vazio por definicao."
-                ),
-                figures=figures_testes_modelo,
-            ),
-            PdfReportSection(
-                heading="Impacto das tags",
-                body=(
-                    "As tags entram como eixo explicativo do que degrada a segmentacao. "
-                    "Aqui mostramos tanto a comparacao agregada por tag quanto o tamanho de efeito estimado para cada dificuldade."
-                ),
-                figures=figures_impacto_tags,
-            ),
-            PdfReportSection(
-                heading="Interacao modelo x dificuldade",
-                body=(
-                    "Este bloco destaca quais modelos sofrem mais com cada dificuldade, "
-                    "usando o delta ajustado pela direcao desejada da metrica."
-                ),
-                figures=figures_interacoes,
-            ),
-            PdfReportSection(
-                heading="Distribuicao linha a linha",
-                body=(
-                    "Os boxplots usam a base completa em memoria para mostrar dispersao e caudas, "
-                    "algo que os resumos persistidos e os testes inferenciais nao capturam sozinhos."
+                    "Os boxplots mostram densidade, centralidade e dispersao diretamente na base linha a linha, "
+                    "complementando os intervalos de confianca com a forma da distribuicao."
                 ),
                 figures=figures_distribuicao,
             ),
             PdfReportSection(
+                heading="Analise bivariada e correlacao",
+                body=(
+                    "Aqui avaliamos se as metricas contam historias complementares ou redundantes, "
+                    "usando graficos bivariados e matrizes de correlacao de Pearson e Spearman."
+                ),
+                figures=figures_correlacao,
+            ),
+            PdfReportSection(
+                heading="Regressao simples",
+                body=(
+                    "A regressao simples usa num_tags_problema como proxy de dificuldade "
+                    "para medir a tendencia de degradacao das metricas mais interpretaveis para a segmentacao bruta."
+                ),
+                figures=figures_regressao,
+            ),
+            PdfReportSection(
+                heading="Interacao entre modelo e dificuldade",
+                body=(
+                    "Para manter o relatorio sucinto, este bloco mostra as tres metricas brutas principais "
+                    "para enxergar queda de qualidade com dificuldade: auprc, soft_dice e brier_score."
+                ),
+                figures=figures_interacoes,
+            ),
+            PdfReportSection(
                 heading="Leitura inicial",
                 body=(
-                    "Com a combinacao entre medias, intervalos de confianca, estabilidade, significancia entre modelos, "
-                    "impacto das tags e interacoes modelo x dificuldade, o notebook 05 passa a refletir melhor "
-                    "a camada estatistica calculada pelo notebook 04."
+                    "O notebook 05 agora prioriza menos paineis e mais leitura analitica: "
+                    "univariada com intervalo de confianca, distribuicao, associacao entre metricas, "
+                    "correlacao, regressao simples e relacao entre modelo e dificuldade."
                 ),
             ),
         ],
@@ -1035,12 +951,10 @@ def test_notebook_05_gera_visualizacoes_da_segmentacao_bruta(
     assert pdf_path.stat().st_size > 0
 
     for figure in (
-        figures_visao_modelo
-        + figures_intervalos
-        + figures_estabilidade_execucao
-        + figures_testes_modelo
-        + figures_impacto_tags
-        + figures_interacoes
+        figures_univariada
         + figures_distribuicao
+        + figures_correlacao
+        + figures_regressao
+        + figures_interacoes
     ):
         plt.close(figure)

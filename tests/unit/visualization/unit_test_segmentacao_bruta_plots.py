@@ -4,7 +4,12 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from src.visualization import plot_pairwise_pvalue_heatmap
+from src.visualization import (
+    plot_metric_correlation_heatmap,
+    plot_metric_scatter,
+    plot_pairwise_pvalue_heatmap,
+    plot_simple_regression,
+)
 
 
 def test_plot_pairwise_pvalue_heatmap_gera_figura_sem_erro() -> None:
@@ -37,4 +42,53 @@ def test_plot_pairwise_pvalue_heatmap_gera_figura_sem_erro() -> None:
     fig, ax = plot_pairwise_pvalue_heatmap(df_testes_modelo, "auprc")
 
     assert ax.images
+    plt.close(fig)
+
+
+def test_plot_metric_scatter_gera_figura_sem_erro() -> None:
+    df_base = pd.DataFrame(
+        [
+            {"modelo": "u2netp", "auprc": 0.9, "soft_dice": 0.8},
+            {"modelo": "u2netp", "auprc": 0.85, "soft_dice": 0.78},
+            {"modelo": "isnet", "auprc": 0.7, "soft_dice": 0.6},
+        ]
+    )
+
+    fig, ax = plot_metric_scatter(df_base, "auprc", "soft_dice")
+
+    assert ax.has_data()
+    plt.close(fig)
+
+
+def test_plot_metric_correlation_heatmap_gera_figura_sem_erro() -> None:
+    df_base = pd.DataFrame(
+        [
+            {"auprc": 0.9, "soft_dice": 0.8, "brier_score": 0.1},
+            {"auprc": 0.85, "soft_dice": 0.78, "brier_score": 0.11},
+            {"auprc": 0.7, "soft_dice": 0.6, "brier_score": 0.2},
+        ]
+    )
+
+    fig, ax = plot_metric_correlation_heatmap(
+        df_base,
+        ["auprc", "soft_dice", "brier_score"],
+        "pearson",
+    )
+
+    assert ax.images
+    plt.close(fig)
+
+
+def test_plot_simple_regression_gera_figura_sem_erro() -> None:
+    df_base = pd.DataFrame(
+        [
+            {"modelo": "u2netp", "num_tags_problema": 0, "soft_dice": 0.85},
+            {"modelo": "u2netp", "num_tags_problema": 1, "soft_dice": 0.75},
+            {"modelo": "isnet", "num_tags_problema": 2, "soft_dice": 0.55},
+        ]
+    )
+
+    fig, ax = plot_simple_regression(df_base, "num_tags_problema", "soft_dice")
+
+    assert ax.has_data()
     plt.close(fig)
