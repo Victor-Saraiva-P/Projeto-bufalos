@@ -115,6 +115,8 @@ class MetricsCollector:
                     segmentacao_binarizada.area is None
                     or segmentacao_binarizada.perimetro is None
                     or segmentacao_binarizada.iou is None
+                    or segmentacao_binarizada.precision is None
+                    or segmentacao_binarizada.recall is None
                 ):
                     modelos_com_erro.add(segmentacao_bruta.nome_modelo)
                     break

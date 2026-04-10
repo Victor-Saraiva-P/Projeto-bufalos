@@ -178,6 +178,8 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
             area=9.0,
             perimetro=21.0,
             iou=0.8,
+            precision=0.75,
+            recall=0.7,
         )
     )
 
@@ -191,6 +193,8 @@ def test_segmentacao_binarizada_repository_save_persiste_relacao(tmp_path) -> No
     )
     assert segmentacao.segmentacoes_binarizadas[0].execucao == 1
     assert segmentacao.segmentacoes_binarizadas[0].area == 9.0
+    assert segmentacao.segmentacoes_binarizadas[0].precision == 0.75
+    assert segmentacao.segmentacoes_binarizadas[0].recall == 0.7
     assert (
         binarizacao_repository.get(
             "1166_Calcula_506",
@@ -514,6 +518,8 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
             area=9.0,
             perimetro=21.0,
             iou=0.8,
+            precision=0.75,
+            recall=0.7,
         )
     )
 
@@ -534,6 +540,8 @@ def test_imagem_repository_get_carrega_binarizacoes_aninhadas(tmp_path) -> None:
     assert imagem_persistida.segmentacoes_brutas[0].soft_dice == 0.94
     assert imagem_persistida.segmentacoes_brutas[0].brier_score == 0.0
     assert imagem_persistida.segmentacoes_brutas[0].segmentacoes_binarizadas[0].iou == 0.8
+    assert imagem_persistida.segmentacoes_brutas[0].segmentacoes_binarizadas[0].precision == 0.75
+    assert imagem_persistida.segmentacoes_brutas[0].segmentacoes_binarizadas[0].recall == 0.7
 
 
 def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:
@@ -545,6 +553,8 @@ def test_modelos_metricos_exigem_metricas_nao_nulas_no_schema() -> None:
     assert not SegmentacaoBinarizada.__table__.c.area.nullable
     assert not SegmentacaoBinarizada.__table__.c.perimetro.nullable
     assert not SegmentacaoBinarizada.__table__.c.iou.nullable
+    assert not SegmentacaoBinarizada.__table__.c.precision.nullable
+    assert not SegmentacaoBinarizada.__table__.c.recall.nullable
     assert "execucao" in SegmentacaoBruta.__table__.c
     assert "execucao" in SegmentacaoBinarizada.__table__.c
 
@@ -576,6 +586,8 @@ def test_segmentacao_binarizada_repository_rejeita_segmentacao_parcial(tmp_path)
                 area=1.0,
                 perimetro=2.0,
                 iou=None,  # type: ignore[arg-type]
+                precision=0.5,
+                recall=0.5,
             )
         )
 

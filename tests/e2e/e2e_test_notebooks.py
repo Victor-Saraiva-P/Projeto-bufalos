@@ -412,6 +412,8 @@ def test_notebook_03_calcula_e_persiste_avaliacoes(
         segmentacao_binarizada.area > 0
         and segmentacao_binarizada.perimetro > 0
         and 0.0 <= segmentacao_binarizada.iou <= 1.0
+        and 0.0 <= segmentacao_binarizada.precision <= 1.0
+        and 0.0 <= segmentacao_binarizada.recall <= 1.0
         for imagem in imagens
         for segmentacao_bruta in imagem.segmentacoes_brutas
         for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas

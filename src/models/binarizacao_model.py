@@ -50,6 +50,8 @@ class SegmentacaoBinarizada(Base):
     area: Mapped[float] = mapped_column(Float, nullable=False)
     perimetro: Mapped[float] = mapped_column(Float, nullable=False)
     iou: Mapped[float] = mapped_column(Float, nullable=False)
+    precision: Mapped[float] = mapped_column(Float, nullable=False)
+    recall: Mapped[float] = mapped_column(Float, nullable=False)
 
     segmentacao_bruta: Mapped["SegmentacaoBruta"] = relationship(
         "SegmentacaoBruta",
@@ -65,5 +67,7 @@ class SegmentacaoBinarizada(Base):
             f"estrategia_binarizacao={self.estrategia_binarizacao!r}, "
             f"area={self.area!r}, "
             f"perimetro={self.perimetro!r}, "
-            f"iou={self.iou!r})"
+            f"iou={self.iou!r}, "
+            f"precision={self.precision!r}, "
+            f"recall={self.recall!r})"
         )

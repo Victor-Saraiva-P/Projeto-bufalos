@@ -9,6 +9,7 @@ from src.visualization import (
     plot_metric_scatter,
     plot_pairwise_pvalue_heatmap,
     plot_simple_regression,
+    plot_stability_bars,
 )
 
 
@@ -91,4 +92,20 @@ def test_plot_simple_regression_gera_figura_sem_erro() -> None:
     fig, ax = plot_simple_regression(df_base, "num_tags_problema", "soft_dice")
 
     assert ax.has_data()
+    plt.close(fig)
+
+
+def test_plot_stability_bars_gera_figura_sem_erro() -> None:
+    df_estabilidade = pd.DataFrame(
+        [
+            {"nome_modelo": "u2netp", "metric_name": "auprc", "cv_execucoes": 0.00001},
+            {"nome_modelo": "sam", "metric_name": "auprc", "cv_execucoes": 0.00005},
+            {"nome_modelo": "isnet", "metric_name": "auprc", "cv_execucoes": 0.00002},
+        ]
+    )
+
+    fig, ax = plot_stability_bars(df_estabilidade, "auprc")
+
+    assert ax.has_data()
+    assert len(ax.patches) == 3
     plt.close(fig)

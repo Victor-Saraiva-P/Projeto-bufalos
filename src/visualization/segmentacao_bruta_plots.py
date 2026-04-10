@@ -282,6 +282,45 @@ def plot_stability_heatmap(
     return fig, ax
 
 
+def plot_stability_bars(
+    df_estabilidade: pd.DataFrame,
+    metric_name: str,
+    value_column: str = "cv_execucoes",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_estabilidade, "grafico de estabilidade")
+    _require_columns(
+        df_estabilidade,
+        {"nome_modelo", "metric_name", value_column},
+        "grafico de estabilidade",
+    )
+
+    df_plot = df_estabilidade.loc[df_estabilidade["metric_name"] == metric_name].copy()
+    _require_non_empty(df_plot, f"grafico de estabilidade da metrica {metric_name}")
+    df_plot = df_plot.sort_values(value_column, ascending=True)
+
+    fig, ax = plt.subplots(figsize=(10, max(4, len(df_plot) * 0.45)))
+    bars = ax.barh(df_plot["nome_modelo"], df_plot[value_column], color="#E9C46A")
+    ax.set_title(f"{value_column} por modelo em {metric_name}")
+    ax.set_xlabel(value_column)
+    ax.set_ylabel("Modelo")
+    ax.invert_yaxis()
+
+    max_value = float(df_plot[value_column].max()) if not df_plot.empty else 0.0
+    offset = max(max_value * 0.02, 1e-6)
+    for bar, value in zip(bars, df_plot[value_column], strict=False):
+        ax.text(
+            float(bar.get_width()) + offset,
+            float(bar.get_y()) + float(bar.get_height()) / 2,
+            f"{float(value):.6f}",
+            va="center",
+            ha="left",
+            fontsize=9,
+        )
+
+    fig.tight_layout()
+    return fig, ax
+
+
 def plot_pairwise_pvalue_heatmap(
     df_testes_modelo: pd.DataFrame,
     metric_name: str,

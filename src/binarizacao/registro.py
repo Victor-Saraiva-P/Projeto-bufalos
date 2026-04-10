@@ -3,11 +3,27 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from src.binarizacao.binarizacao_base import BinarizationStrategy
-from src.binarizacao.estrategias import GaussianOpeningBinarizationStrategy
+from src.binarizacao.estrategias import (
+    FixedThresholdHighBinarizationStrategy,
+    FixedThresholdLowBinarizationStrategy,
+    GaussianOpeningHighBinarizationStrategy,
+    GaussianOpeningLowBinarizationStrategy,
+    HysteresisClosingHighBinarizationStrategy,
+    HysteresisClosingLowBinarizationStrategy,
+    OtsuOpeningHighBinarizationStrategy,
+    OtsuOpeningLowBinarizationStrategy,
+)
 
 
 _STRATEGY_FACTORIES = {
-    "GaussianaOpening": GaussianOpeningBinarizationStrategy,
+    "GaussianaOpeningAlta": GaussianOpeningHighBinarizationStrategy,
+    "GaussianaOpeningBaixa": GaussianOpeningLowBinarizationStrategy,
+    "HistereseClosingAlta": HysteresisClosingHighBinarizationStrategy,
+    "HistereseClosingBaixa": HysteresisClosingLowBinarizationStrategy,
+    "LimiarFixoAlta": FixedThresholdHighBinarizationStrategy,
+    "LimiarFixoBaixa": FixedThresholdLowBinarizationStrategy,
+    "OtsuOpeningAlta": OtsuOpeningHighBinarizationStrategy,
+    "OtsuOpeningBaixa": OtsuOpeningLowBinarizationStrategy,
 }
 
 

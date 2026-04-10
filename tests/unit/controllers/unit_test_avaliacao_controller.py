@@ -12,6 +12,11 @@ from src.models import (
     SegmentacaoBinarizada,
     SegmentacaoBruta,
 )
+from src.services.avaliacao_service import (
+    AvaliacaoExecucaoResultado,
+    SegmentacaoBinarizadaResultado,
+    SegmentacaoBrutaResultado,
+)
 
 
 class FakeImagemRepository:
@@ -56,84 +61,122 @@ class FakeAvaliacaoService:
     def __init__(self) -> None:
         self.chamadas: list[
             tuple[
-                Imagem,
-                np.ndarray,
-                dict[str, np.ndarray],
-                dict[str, np.ndarray],
                 str,
+                np.ndarray,
+                dict[str, dict[str, np.ndarray]],
+                dict[str, np.ndarray],
                 int,
             ]
         ] = []
 
-    def avaliar(
+    def avaliar_execucao(
         self,
-        imagem: Imagem,
+        nome_arquivo: str,
         ground_truth_mask: np.ndarray,
-        mascaras_modelo: dict[str, np.ndarray],
+        mascaras_modelo_por_estrategia: dict[str, dict[str, np.ndarray]],
         score_masks_modelo: dict[str, np.ndarray],
-        estrategia_binarizacao: str,
         execucao: int,
-    ) -> Imagem:
+    ) -> AvaliacaoExecucaoResultado:
         self.chamadas.append(
             (
-                imagem,
+                nome_arquivo,
                 ground_truth_mask,
-                mascaras_modelo,
+                mascaras_modelo_por_estrategia,
                 score_masks_modelo,
-                estrategia_binarizacao,
                 execucao,
             )
         )
-        imagem.ground_truth_binarizada = GroundTruthBinarizada(
-            nome_arquivo=imagem.nome_arquivo,
-            area=10.0,
-            perimetro=20.0,
-        )
-        segmentacao = next(
-            (
-                existente
-                for existente in imagem.segmentacoes_brutas
-                if existente.nome_modelo == "u2netp" and existente.execucao == execucao
-            ),
-            None,
-        )
-        if segmentacao is None:
-            segmentacao = SegmentacaoBruta(
-                nome_arquivo=imagem.nome_arquivo,
-                nome_modelo="u2netp",
-                execucao=execucao,
-                auprc=0.9,
-                soft_dice=0.82,
-                brier_score=0.08,
+        return AvaliacaoExecucaoResultado(
+            nome_arquivo=nome_arquivo,
+            execucao=execucao,
+            ground_truth_area=10.0,
+            ground_truth_perimetro=20.0,
+            segmentacoes_brutas=(
+                SegmentacaoBrutaResultado(
+                    nome_arquivo=nome_arquivo,
+                    nome_modelo="u2netp",
+                    execucao=execucao,
+                    auprc=0.9,
+                    soft_dice=0.82,
+                    brier_score=0.08,
+                ),
             )
-            imagem.segmentacoes_brutas.append(segmentacao)
-        segmentacao.auprc = 0.9
-        segmentacao.soft_dice = 0.82
-        segmentacao.brier_score = 0.08
-        binarizada = next(
-            (
-                existente
-                for existente in segmentacao.segmentacoes_binarizadas
-                if existente.estrategia_binarizacao == estrategia_binarizacao
-            ),
-            None,
-        )
-        if binarizada is None:
-            segmentacao.segmentacoes_binarizadas.append(
-                SegmentacaoBinarizada(
-                    nome_arquivo=imagem.nome_arquivo,
+            ,
+            segmentacoes_binarizadas=tuple(
+                SegmentacaoBinarizadaResultado(
+                    nome_arquivo=nome_arquivo,
                     nome_modelo="u2netp",
                     execucao=execucao,
                     estrategia_binarizacao=estrategia_binarizacao,
                     area=5.0,
                     perimetro=7.0,
                     iou=0.8,
+                    precision=0.85,
+                    recall=0.75,
+                )
+                for estrategia_binarizacao in mascaras_modelo_por_estrategia
+            ),
+        )
+
+    def aplicar_resultado(
+        self,
+        imagem: Imagem,
+        resultado: AvaliacaoExecucaoResultado,
+    ) -> Imagem:
+        imagem.ground_truth_binarizada = GroundTruthBinarizada(
+            nome_arquivo=imagem.nome_arquivo,
+            area=resultado.ground_truth_area,
+            perimetro=resultado.ground_truth_perimetro,
+        )
+        for segmentacao_resultado in resultado.segmentacoes_brutas:
+            segmentacao = next(
+                (
+                    existente
+                    for existente in imagem.segmentacoes_brutas
+                    if (
+                        existente.nome_modelo == segmentacao_resultado.nome_modelo
+                        and existente.execucao == segmentacao_resultado.execucao
+                    )
+                ),
+                None,
+            )
+            if segmentacao is None:
+                segmentacao = SegmentacaoBruta(
+                    nome_arquivo=segmentacao_resultado.nome_arquivo,
+                    nome_modelo=segmentacao_resultado.nome_modelo,
+                    execucao=segmentacao_resultado.execucao,
+                    auprc=segmentacao_resultado.auprc,
+                    soft_dice=segmentacao_resultado.soft_dice,
+                    brier_score=segmentacao_resultado.brier_score,
+                )
+                imagem.segmentacoes_brutas.append(segmentacao)
+            else:
+                segmentacao.auprc = segmentacao_resultado.auprc
+                segmentacao.soft_dice = segmentacao_resultado.soft_dice
+                segmentacao.brier_score = segmentacao_resultado.brier_score
+
+        for binarizada_resultado in resultado.segmentacoes_binarizadas:
+            segmentacao = next(
+                existente
+                for existente in imagem.segmentacoes_brutas
+                if (
+                    existente.nome_modelo == binarizada_resultado.nome_modelo
+                    and existente.execucao == binarizada_resultado.execucao
                 )
             )
-        else:
-            binarizada.area = 5.0
-            binarizada.perimetro = 7.0
-            binarizada.iou = 0.8
+            segmentacao.segmentacoes_binarizadas.append(
+                SegmentacaoBinarizada(
+                    nome_arquivo=binarizada_resultado.nome_arquivo,
+                    nome_modelo=binarizada_resultado.nome_modelo,
+                    execucao=binarizada_resultado.execucao,
+                    estrategia_binarizacao=binarizada_resultado.estrategia_binarizacao,
+                    area=binarizada_resultado.area,
+                    perimetro=binarizada_resultado.perimetro,
+                    iou=binarizada_resultado.iou,
+                    precision=binarizada_resultado.precision,
+                    recall=binarizada_resultado.recall,
+                )
+            )
         imagem.segmentacoes_brutas.sort(
             key=lambda existente: (existente.nome_modelo, existente.execucao)
         )
@@ -204,19 +247,13 @@ def test_processar_imagem_carrega_masks_e_persiste_resultado(monkeypatch) -> Non
     assert len(ground_truth_repository.salvos) == 1
     assert len(segmentacao_repository.salvos) == 2
     assert len(binarizacao_repository.salvos) == 4
-    assert service.chamadas[0][0] is imagem
+    assert service.chamadas[0][0] == imagem.nome_arquivo
     assert np.array_equal(service.chamadas[0][1], ground_truth_mask)
-    assert list(service.chamadas[0][2]) == ["u2netp"]
-    assert np.array_equal(service.chamadas[0][2]["u2netp"], model_mask)
+    assert list(service.chamadas[0][2]) == ["GaussianaOpening", "LimiarFixo"]
+    assert np.array_equal(service.chamadas[0][2]["GaussianaOpening"]["u2netp"], model_mask)
     assert list(service.chamadas[0][3]) == ["u2netp"]
     assert np.array_equal(service.chamadas[0][3]["u2netp"], score_mask)
-    assert [chamada[4] for chamada in service.chamadas] == [
-        "GaussianaOpening",
-        "LimiarFixo",
-        "GaussianaOpening",
-        "LimiarFixo",
-    ]
-    assert [chamada[5] for chamada in service.chamadas] == [1, 1, 2, 2]
+    assert [chamada[4] for chamada in service.chamadas] == [1, 2]
     assert [segmentacao.execucao for segmentacao in imagem_avaliada.segmentacoes_brutas] == [
         1,
         2,
@@ -267,6 +304,8 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
             area=5.0,
             perimetro=7.0,
             iou=0.8,
+            precision=0.85,
+            recall=0.75,
         )
     )
     segmentacao_skip.segmentacoes_binarizadas.append(
@@ -278,6 +317,8 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
             area=5.2,
             perimetro=7.1,
             iou=0.78,
+            precision=0.82,
+            recall=0.73,
         )
     )
     segmentacao_skip_execucao_2 = SegmentacaoBruta(
@@ -297,6 +338,8 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
             area=5.0,
             perimetro=7.0,
             iou=0.81,
+            precision=0.86,
+            recall=0.76,
         )
     )
     segmentacao_skip_execucao_2.segmentacoes_binarizadas.append(
@@ -308,6 +351,8 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
             area=5.1,
             perimetro=7.2,
             iou=0.79,
+            precision=0.83,
+            recall=0.74,
         )
     )
     imagem_skip.segmentacoes_brutas = [segmentacao_skip, segmentacao_skip_execucao_2]
@@ -338,12 +383,10 @@ def test_processar_imagens_registra_ok_e_skip(monkeypatch) -> None:
     assert processadas == [
         "avaliar:1:GaussianaOpening",
         "avaliar:2:GaussianaOpening",
-        "avaliar:1:LimiarFixo",
-        "avaliar:2:LimiarFixo",
     ]
-    assert stats.total == 8
-    assert stats.ok == 4
-    assert stats.skip == 4
+    assert stats.total == 4
+    assert stats.ok == 2
+    assert stats.skip == 2
     assert stats.erro == 0
 
 
@@ -382,6 +425,8 @@ def test_processar_imagens_nao_considera_execucao_sem_soft_dice_como_avaliada(
             area=5.0,
             perimetro=7.0,
             iou=0.8,
+            precision=0.85,
+            recall=0.75,
         ),
         SegmentacaoBinarizada(
             nome_arquivo="reavaliar",
@@ -391,6 +436,8 @@ def test_processar_imagens_nao_considera_execucao_sem_soft_dice_como_avaliada(
             area=5.1,
             perimetro=7.1,
             iou=0.79,
+            precision=0.82,
+            recall=0.74,
         ),
     ]
     imagem.segmentacoes_brutas = [segmentacao]
@@ -419,9 +466,8 @@ def test_processar_imagens_nao_considera_execucao_sem_soft_dice_como_avaliada(
 
     assert processadas == [
         "reavaliar:1:GaussianaOpening",
-        "reavaliar:1:LimiarFixo",
     ]
-    assert stats.ok == 2
+    assert stats.ok == 1
     assert stats.skip == 0
 
 
@@ -456,6 +502,8 @@ def test_execucao_estrategia_ja_avaliada_exige_brier_score_valido() -> None:
             area=5.0,
             perimetro=7.0,
             iou=0.8,
+            precision=0.85,
+            recall=0.75,
         )
     )
     imagem.segmentacoes_brutas = [segmentacao]

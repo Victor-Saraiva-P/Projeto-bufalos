@@ -83,7 +83,7 @@ def test_binarizacao_controller_processa_segmentacoes_e_gera_pngs(
     resumos = BinarizacaoController().processar_segmentacoes_configuradas(imagens=linhas)
     imagem_persistida = ImagemRepository(resolver.sqlite_path).get(linhas[0].nome_arquivo)
 
-    assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GaussianaOpening"
+    assert GROUND_TRUTH_BINARIZATION_STRATEGY == "GaussianaOpeningBaixa"
     assert set(resumos) == set(SEGMENTACAO_BINARIZATION_STRATEGIES)
     for strategy_name in SEGMENTACAO_BINARIZATION_STRATEGIES:
         assert set(resumos[strategy_name]) == set(MODELOS_PARA_AVALIACAO)

@@ -33,6 +33,8 @@ def test_build_metrics_dataframe_inclui_metricas_brutas() -> None:
             area=90.0,
             perimetro=38.0,
             iou=0.8,
+            precision=0.82,
+            recall=0.78,
         ),
         SegmentacaoBinarizada(
             nome_arquivo="bufalo_001",
@@ -42,6 +44,8 @@ def test_build_metrics_dataframe_inclui_metricas_brutas() -> None:
             area=88.0,
             perimetro=36.0,
             iou=0.76,
+            precision=0.8,
+            recall=0.74,
         ),
     ]
     imagem.segmentacoes_brutas = [segmentacao]
@@ -138,6 +142,8 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_auprc_valido() -> None
             area=90.0,
             perimetro=38.0,
             iou=0.8,
+            precision=0.82,
+            recall=0.78,
         )
     ]
     imagem.segmentacoes_brutas = [segmentacao]
@@ -172,6 +178,8 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_soft_dice_valido() -> 
             area=90.0,
             perimetro=38.0,
             iou=0.8,
+            precision=0.82,
+            recall=0.78,
         )
     ]
     imagem.segmentacoes_brutas = [segmentacao]
@@ -206,6 +214,8 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_brier_score_valido() -
             area=90.0,
             perimetro=38.0,
             iou=0.8,
+            precision=0.82,
+            recall=0.78,
         )
     ]
     imagem.segmentacoes_brutas = [segmentacao]

@@ -14,8 +14,23 @@ sqlite_file = "tests/e2e_generated/bufalos-e2e.sqlite3"
 num_execucoes = 3
 
 [binarization]
-ground_truth_strategy = "GaussianaOpening"
-segmentacao_strategies = ["GaussianaOpening"]
+ground_truth_strategy = "GaussianaOpeningBaixa"
+segmentacao_strategies = [
+    "GaussianaOpeningBaixa",
+    "GaussianaOpeningAlta",
+    "LimiarFixoBaixa",
+    "LimiarFixoAlta",
+    "OtsuOpeningBaixa",
+    "OtsuOpeningAlta",
+    "HistereseClosingBaixa",
+    "HistereseClosingAlta",
+]
 
 [models]
 u2netp = "cpu"
+
+[evaluation.parallelism]
+enabled = false
+executor = "process"
+max_workers = 1
+batch_size = 4
