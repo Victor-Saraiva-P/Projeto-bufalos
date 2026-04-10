@@ -76,6 +76,8 @@ _COLUMNS = _CONFIG["columns"]
 _FILE_TYPES = _CONFIG["file_types"]
 _BINARIZATION = _CONFIG["binarization"]
 _EXECUTION = _CONFIG["execution"]
+_ANALYSIS = _CONFIG.get("analysis", {})
+_ANALYSIS_BINARIZED = _ANALYSIS.get("segmentacao_binarizada", {})
 _EVALUATION = _CONFIG["evaluation"]
 _EVALUATION_PARALLELISM = _EVALUATION.get("parallelism", {})
 
@@ -115,6 +117,9 @@ SEGMENTACAO_BINARIZATION_STRATEGIES = list(_BINARIZATION["segmentacao_strategies
 
 # Configuracao de execucao
 NUM_EXECUCOES = _EXECUTION["num_execucoes"]
+SEGMENTACAO_BINARIZADA_ANALISE_EXECUCAO = int(
+    _ANALYSIS_BINARIZED.get("execucao_escolhida", 1)
+)
 
 # Configuracoes declarativas
 MODELOS_PARA_AVALIACAO = _CONFIG["models"]

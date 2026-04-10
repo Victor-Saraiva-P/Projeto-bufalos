@@ -13,6 +13,9 @@ sqlite_file = "tests/e2e_generated/bufalos-e2e.sqlite3"
 [execution]
 num_execucoes = 3
 
+[analysis.segmentacao_binarizada]
+execucao_escolhida = 1
+
 [binarization]
 ground_truth_strategy = "GaussianaOpeningBaixa"
 segmentacao_strategies = [

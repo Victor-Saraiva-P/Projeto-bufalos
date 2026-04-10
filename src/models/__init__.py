@@ -1,3 +1,30 @@
+from src.models.analysis_segmentacao_binarizada_estabilidade_model import (
+    AnaliseSegmentacaoBinarizadaEstabilidade,
+)
+from src.models.analysis_segmentacao_binarizada_interacao_tag_estrategia_model import (
+    AnaliseSegmentacaoBinarizadaInteracaoTagEstrategia,
+)
+from src.models.analysis_segmentacao_binarizada_intervalo_confianca_model import (
+    AnaliseSegmentacaoBinarizadaIntervaloConfianca,
+)
+from src.models.analysis_segmentacao_binarizada_resumo_estrategia_model import (
+    AnaliseSegmentacaoBinarizadaResumoEstrategia,
+)
+from src.models.analysis_segmentacao_binarizada_resumo_execucao_model import (
+    AnaliseSegmentacaoBinarizadaResumoExecucao,
+)
+from src.models.analysis_segmentacao_binarizada_resumo_modelo_estrategia_model import (
+    AnaliseSegmentacaoBinarizadaResumoModeloEstrategia,
+)
+from src.models.analysis_segmentacao_binarizada_resumo_tag_model import (
+    AnaliseSegmentacaoBinarizadaResumoTag,
+)
+from src.models.analysis_segmentacao_binarizada_teste_estrategia_model import (
+    AnaliseSegmentacaoBinarizadaTesteEstrategia,
+)
+from src.models.analysis_segmentacao_binarizada_teste_tag_estrategia_model import (
+    AnaliseSegmentacaoBinarizadaTesteTagEstrategia,
+)
 from src.models.analysis_segmentacao_bruta_estabilidade_model import (
     AnaliseSegmentacaoBrutaEstabilidade,
 )
@@ -30,6 +57,15 @@ from src.models.segmentacao_model import SegmentacaoBruta
 from src.models.tag_model import Tag, normalizar_tags
 
 __all__ = [
+    "AnaliseSegmentacaoBinarizadaEstabilidade",
+    "AnaliseSegmentacaoBinarizadaInteracaoTagEstrategia",
+    "AnaliseSegmentacaoBinarizadaIntervaloConfianca",
+    "AnaliseSegmentacaoBinarizadaResumoEstrategia",
+    "AnaliseSegmentacaoBinarizadaResumoExecucao",
+    "AnaliseSegmentacaoBinarizadaResumoModeloEstrategia",
+    "AnaliseSegmentacaoBinarizadaResumoTag",
+    "AnaliseSegmentacaoBinarizadaTesteEstrategia",
+    "AnaliseSegmentacaoBinarizadaTesteTagEstrategia",
     "AnaliseSegmentacaoBrutaEstabilidade",
     "AnaliseSegmentacaoBrutaInteracaoTagModelo",
     "AnaliseSegmentacaoBrutaIntervaloConfianca",

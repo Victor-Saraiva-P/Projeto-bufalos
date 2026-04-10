@@ -37,6 +37,9 @@ segmentacao_strategies = [
 [execution]
 num_execucoes = 3
 
+[analysis.segmentacao_binarizada]
+execucao_escolhida = 1
+
 [models]
 u2net = "gpu"
 u2netp = "gpu"

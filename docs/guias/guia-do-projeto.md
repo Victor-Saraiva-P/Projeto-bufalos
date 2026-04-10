@@ -26,6 +26,53 @@ generated/
   bufalos.sqlite3          # fonte de verdade do pipeline
 ```
 
+## Dificuldades praticas do projeto
+
+Algumas dificuldades do projeto nao sao apenas de codigo ou modelagem, mas tambem de operacao e custo de execucao.
+
+### Segmentacao manual e qualidade do ground truth
+
+A construcao do `ground truth` foi uma das partes mais trabalhosas do projeto.
+
+Motivos principais:
+
+- a segmentacao manual de imagens de bufalos exige bastante tempo por imagem;
+- para que a avaliacao dos modelos seja confiavel, o `ground truth` precisa ter boa qualidade;
+- erros ou aproximacoes grosseiras no recorte manual contaminam as metricas e enfraquecem as comparacoes entre modelos;
+- por isso, a etapa manual nao podia ser tratada como um detalhe operacional, mas como parte critica da validade experimental do projeto.
+
+Em termos praticos:
+
+- a segmentacao manual era demorada justamente porque um `ground truth` fraco comprometeria a avaliacao;
+- o projeto preferiu aceitar o custo maior de anotacao para preservar a qualidade da referencia usada nas comparacoes.
+
+### Software escolhido para segmentacao manual
+
+O software adotado para produzir as mascaras manuais de referencia foi o `GIMP`.
+
+Essa escolha deve ser registrada como contexto do projeto porque:
+
+- o `GIMP` foi a ferramenta efetivamente usada para construir as mascaras humanas de referencia;
+- a qualidade final dessas mascaras depende diretamente do trabalho manual realizado nele;
+- qualquer discusssao sobre custo de anotacao, refinamento de borda ou confiabilidade do `ground truth` passa por essa etapa externa ao codigo.
+
+### Limitacoes de hardware e tempo de execucao
+
+Outra dificuldade importante foi o custo computacional do pipeline.
+
+Os modelos de segmentacao usados no projeto exigem bastante do hardware e aumentam significativamente o tempo total de processamento. Isso afeta:
+
+- a geracao das segmentacoes brutas;
+- a binarizacao das mascaras previstas e das mascaras de referencia;
+- o recálculo de metricas;
+- as analises estatisticas e exploratorias baseadas nessas saidas.
+
+Na pratica, isso significa que:
+
+- iterar sobre muitos modelos e multiplas execucoes pode demorar bastante;
+- repetir experimentos por mudancas pequenas nem sempre e barato;
+- limitacoes de CPU, GPU, memoria e tempo de execucao impactam diretamente o ritmo do projeto.
+
 Organizacao do codigo em `src/`:
 
 - `src/segmentacao/`: gera mascaras previstas e faz verificacoes de integridade;
@@ -114,6 +161,19 @@ source .venv/bin/activate
 ```
 
 O numero de repeticoes do pipeline fica em `config.toml`, na chave `[execution].num_execucoes`.
+
+Para a analise estatistica da segmentacao binarizada, os notebooks 06 e 07 usam apenas uma execucao escolhida por configuracao:
+
+```toml
+[analysis.segmentacao_binarizada]
+execucao_escolhida = 1
+```
+
+Motivo tecnico:
+
+- a estabilidade entre execucoes ja e analisada na segmentacao bruta;
+- para a segmentacao binarizada, manter `modelo x estrategia x execucao` em todas as etapas aumenta bastante o custo computacional e a quantidade de combinacoes;
+- a decisao detalhada esta em `docs/decisoes-tecnicas/analise-da-segmentacao-binarizada-por-execucao-fixa.md`.
 
 ## Abordagem de desenvolvimento
 

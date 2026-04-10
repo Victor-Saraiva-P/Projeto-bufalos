@@ -30,3 +30,15 @@ Para isso, o projeto precisa guardar cada repeticao como um artefato distinto, e
 - os controllers precisam iterar de `1` ate `num_execucoes`;
 - o criterio de `skip` passa a considerar a execucao;
 - analises estatisticas entre execucoes ficam para uma etapa posterior.
+
+## Estado atual da analise
+
+A etapa posterior de analise de estabilidade ja passou a existir neste worktree.
+
+Para a leitura dos resultados observados nos graficos do notebook 05, consulte:
+
+- `docs/avaliacao/estabilidade-entre-execucoes.md`
+
+Para a decisao complementar de usar apenas uma execucao configurada na analise da segmentacao binarizada, consulte:
+
+- `docs/decisoes-tecnicas/analise-da-segmentacao-binarizada-por-execucao-fixa.md`

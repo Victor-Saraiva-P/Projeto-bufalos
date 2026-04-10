@@ -6,7 +6,7 @@ Este módulo fornece ferramentas para:
 - Calcular estatísticas descritivas genéricas por métrica
 """
 
-from src.analysis.collector import MetricsCollector
+from src.analysis.collector import MetricsCollector, build_binarized_metrics_dataframe
 from src.analysis.bootstrap import build_bootstrap_confidence_intervals
 from src.analysis.descriptive_stats import (
     MetricConfig,
@@ -14,6 +14,16 @@ from src.analysis.descriptive_stats import (
     build_descriptive_stats,
 )
 from src.analysis.persistence import (
+    BINARIZED_METRIC_CONFIGS,
+    build_and_persist_analysis_segmentacao_binarizada_estabilidade,
+    build_and_persist_analysis_segmentacao_binarizada_interacao_tag_estrategia,
+    build_and_persist_analysis_segmentacao_binarizada_intervalo_confianca,
+    build_and_persist_analysis_segmentacao_binarizada_resumo_estrategia,
+    build_and_persist_analysis_segmentacao_binarizada_resumo_execucao,
+    build_and_persist_analysis_segmentacao_binarizada_resumo_modelo_estrategia,
+    build_and_persist_analysis_segmentacao_binarizada_resumo_tag,
+    build_and_persist_analysis_segmentacao_binarizada_testes_estrategia,
+    build_and_persist_analysis_segmentacao_binarizada_testes_tag_estrategia,
     build_and_persist_analysis_segmentacao_bruta_estabilidade,
     build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo,
     build_and_persist_analysis_segmentacao_bruta_intervalo_confianca,
@@ -36,9 +46,11 @@ from src.analysis.statistical_tests import (
 
 __all__ = [
     "MetricsCollector",
+    "BINARIZED_METRIC_CONFIGS",
     "GLOBAL_SCOPE",
     "MetricConfig",
     "RAW_METRIC_CONFIGS",
+    "build_binarized_metrics_dataframe",
     "build_bootstrap_confidence_intervals",
     "build_descriptive_stats",
     "build_execution_stability",
@@ -48,6 +60,15 @@ __all__ = [
     "cliffs_delta",
     "cliffs_delta_label",
     "holm_adjust",
+    "build_and_persist_analysis_segmentacao_binarizada_estabilidade",
+    "build_and_persist_analysis_segmentacao_binarizada_interacao_tag_estrategia",
+    "build_and_persist_analysis_segmentacao_binarizada_intervalo_confianca",
+    "build_and_persist_analysis_segmentacao_binarizada_resumo_estrategia",
+    "build_and_persist_analysis_segmentacao_binarizada_resumo_execucao",
+    "build_and_persist_analysis_segmentacao_binarizada_resumo_modelo_estrategia",
+    "build_and_persist_analysis_segmentacao_binarizada_resumo_tag",
+    "build_and_persist_analysis_segmentacao_binarizada_testes_estrategia",
+    "build_and_persist_analysis_segmentacao_binarizada_testes_tag_estrategia",
     "build_and_persist_analysis_segmentacao_bruta_estabilidade",
     "build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo",
     "build_and_persist_analysis_segmentacao_bruta_intervalo_confianca",

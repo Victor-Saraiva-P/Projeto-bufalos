@@ -1,3 +1,30 @@
+from src.repositories.analysis_segmentacao_binarizada_estabilidade_repository import (
+    AnaliseSegmentacaoBinarizadaEstabilidadeRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_interacao_tag_estrategia_repository import (
+    AnaliseSegmentacaoBinarizadaInteracaoTagEstrategiaRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_intervalo_confianca_repository import (
+    AnaliseSegmentacaoBinarizadaIntervaloConfiancaRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_resumo_estrategia_repository import (
+    AnaliseSegmentacaoBinarizadaResumoEstrategiaRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_resumo_execucao_repository import (
+    AnaliseSegmentacaoBinarizadaResumoExecucaoRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_resumo_modelo_estrategia_repository import (
+    AnaliseSegmentacaoBinarizadaResumoModeloEstrategiaRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_resumo_tag_repository import (
+    AnaliseSegmentacaoBinarizadaResumoTagRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_teste_estrategia_repository import (
+    AnaliseSegmentacaoBinarizadaTesteEstrategiaRepository,
+)
+from src.repositories.analysis_segmentacao_binarizada_teste_tag_estrategia_repository import (
+    AnaliseSegmentacaoBinarizadaTesteTagEstrategiaRepository,
+)
 from src.repositories.analysis_segmentacao_bruta_estabilidade_repository import (
     AnaliseSegmentacaoBrutaEstabilidadeRepository,
 )
@@ -36,6 +63,15 @@ from src.repositories.tag_repository import TagRepository
 from src.repositories.imagem_tag_repository import ImagemTagRepository
 
 __all__ = [
+    "AnaliseSegmentacaoBinarizadaEstabilidadeRepository",
+    "AnaliseSegmentacaoBinarizadaInteracaoTagEstrategiaRepository",
+    "AnaliseSegmentacaoBinarizadaIntervaloConfiancaRepository",
+    "AnaliseSegmentacaoBinarizadaResumoEstrategiaRepository",
+    "AnaliseSegmentacaoBinarizadaResumoExecucaoRepository",
+    "AnaliseSegmentacaoBinarizadaResumoModeloEstrategiaRepository",
+    "AnaliseSegmentacaoBinarizadaResumoTagRepository",
+    "AnaliseSegmentacaoBinarizadaTesteEstrategiaRepository",
+    "AnaliseSegmentacaoBinarizadaTesteTagEstrategiaRepository",
     "AnaliseSegmentacaoBrutaEstabilidadeRepository",
     "AnaliseSegmentacaoBrutaInteracaoTagModeloRepository",
     "AnaliseSegmentacaoBrutaIntervaloConfiancaRepository",

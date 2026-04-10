@@ -10,6 +10,7 @@ from typing import Optional
 import pandas as pd
 from tqdm.auto import tqdm
 
+from src.config import SEGMENTACAO_BINARIZADA_ANALISE_EXECUCAO
 from src.controllers.avaliacao_controller import (
     AvaliacaoController,
     MascaraBinarizadaNaoEncontradaError,
@@ -25,6 +26,72 @@ TAG_COLUMNS = (
     "baixo_contraste",
     "ocluido",
 )
+
+
+def build_binarized_metrics_dataframe(
+    imagens: list[Imagem],
+    execucao_escolhida: int | None = None,
+) -> pd.DataFrame:
+    if execucao_escolhida is None:
+        execucao_escolhida = SEGMENTACAO_BINARIZADA_ANALISE_EXECUCAO
+
+    if execucao_escolhida < 1:
+        raise ValueError("A execucao escolhida para analise binarizada deve ser >= 1.")
+
+    registros: list[dict[str, float | str | bool | int]] = []
+
+    for imagem in imagens:
+        tags = sorted(dict.fromkeys(imagem.nomes_tags))
+        tags_sem_ok = [tag for tag in tags if tag != "ok"]
+        num_tags_problema = len(tags_sem_ok)
+
+        if not tags:
+            grupo_dificuldade = "nao_revisada"
+        elif "ok" in tags and num_tags_problema == 0:
+            grupo_dificuldade = "ok"
+        elif num_tags_problema <= 1:
+            grupo_dificuldade = "1_problema"
+        else:
+            grupo_dificuldade = "2_ou_mais_problemas"
+
+        for segmentacao_bruta in imagem.segmentacoes_brutas:
+            # Docs: docs/decisoes-tecnicas/analise-da-segmentacao-binarizada-por-execucao-fixa.md
+            if segmentacao_bruta.execucao != execucao_escolhida:
+                continue
+
+            for segmentacao_binarizada in segmentacao_bruta.segmentacoes_binarizadas:
+                if (
+                    segmentacao_binarizada.iou is None
+                    or segmentacao_binarizada.precision is None
+                    or segmentacao_binarizada.recall is None
+                ):
+                    continue
+
+                registro = {
+                    "nome_arquivo": imagem.nome_arquivo,
+                    "fazenda": imagem.fazenda,
+                    "peso": imagem.peso,
+                    "modelo": segmentacao_bruta.nome_modelo,
+                    "execucao": segmentacao_bruta.execucao,
+                    "estrategia_binarizacao": segmentacao_binarizada.estrategia_binarizacao,
+                    "iou": float(segmentacao_binarizada.iou),
+                    "precision": float(segmentacao_binarizada.precision),
+                    "recall": float(segmentacao_binarizada.recall),
+                    "area": float(segmentacao_binarizada.area),
+                    "perimetro": float(segmentacao_binarizada.perimetro),
+                    "tags": ",".join(tags),
+                    "tags_sem_ok": ",".join(tags_sem_ok),
+                    "num_tags_problema": num_tags_problema,
+                    "tem_tag_problema": num_tags_problema > 0,
+                    "grupo_dificuldade": grupo_dificuldade,
+                }
+
+                for tag_name in TAG_COLUMNS:
+                    registro[f"tag_{tag_name}"] = tag_name in tags
+
+                registros.append(registro)
+
+    return pd.DataFrame(registros)
 
 
 class MetricsCollector:
