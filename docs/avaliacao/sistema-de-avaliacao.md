@@ -9,8 +9,8 @@ O sistema avalia cada modelo comparando a mascara prevista com a mascara de refe
 As metricas principais sao:
 
 - `iou`: mede sobreposicao entre previsao e ground truth;
-- `area_diff_rel`: mede o erro relativo de area;
-- `perimetro_diff_rel`: mede o erro relativo de contorno.
+- `area_similarity`: mede o quao proxima a area prevista fica da area do ground truth;
+- `perimetro_similarity`: mede o quao proximo o contorno previsto fica do contorno do ground truth.
 
 ## Fluxo de avaliacao
 
@@ -53,7 +53,8 @@ Observacao importante:
 
 - `SegmentacaoBruta`, `GroundTruthBinarizada` e `SegmentacaoBinarizada` representam resultados metricos completos; elas nao sao criadas nas etapas 01 e 02.
 - `SegmentacaoBruta` persiste `auprc`, `soft_dice` e `brier_score`.
-- `SegmentacaoBinarizada` persiste `area`, `perimetro` e `iou` por estrategia de binarizacao.
+- `SegmentacaoBinarizada` persiste `area`, `perimetro`, `iou`, `precision` e `recall` por estrategia de binarizacao.
+- `area_similarity` e `perimetro_similarity` sao derivadas na base analitica a partir de `area` e `perimetro` comparados com o ground truth persistido.
 
 Metricas de segmentacao bruta com score continuo:
 
@@ -103,31 +104,33 @@ Leitura:
 - varia entre `0` e `1`;
 - quanto maior, melhor.
 
-### `area_diff_rel`
+### `area_similarity`
 
 Formula:
 
 ```text
-|area_modelo - area_gt| / area_gt
+max(0, 1 - |area_modelo - area_gt| / area_gt)
 ```
 
 Leitura:
 
-- valores menores sao melhores;
-- ajuda a detectar excesso ou falta de area segmentada.
+- varia entre `0` e `1`;
+- valores maiores sao melhores;
+- ajuda a detectar excesso ou falta de area segmentada sem perder a leitura de "quanto maior, melhor".
 
-### `perimetro_diff_rel`
+### `perimetro_similarity`
 
 Formula:
 
 ```text
-|perimetro_modelo - perimetro_gt| / perimetro_gt
+max(0, 1 - |perimetro_modelo - perimetro_gt| / perimetro_gt)
 ```
 
 Leitura:
 
-- valores menores sao melhores;
-- ajuda a medir a qualidade do contorno.
+- varia entre `0` e `1`;
+- valores maiores sao melhores;
+- ajuda a medir a qualidade do contorno em relacao ao ground truth.
 
 ## Persistencia
 

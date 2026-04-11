@@ -1,4 +1,6 @@
-from src.analysis.collector import MetricsCollector
+import math
+
+from src.analysis.collector import MetricsCollector, build_binarized_metrics_dataframe
 from src.models import (
     GroundTruthBinarizada,
     Imagem,
@@ -223,3 +225,48 @@ def test_build_metrics_dataframe_descarta_segmentacao_sem_brier_score_valido() -
     df = MetricsCollector._build_metrics_dataframe([imagem])
 
     assert df.empty
+
+
+def test_build_binarized_metrics_dataframe_inclui_similaridades_de_area_e_perimetro() -> None:
+    imagem = Imagem(nome_arquivo="bufalo_001", fazenda="A", peso=1.0)
+    imagem.tags = []
+    imagem.ground_truth_binarizada = GroundTruthBinarizada(
+        nome_arquivo="bufalo_001",
+        area=100.0,
+        perimetro=40.0,
+    )
+    segmentacao = SegmentacaoBruta(
+        nome_arquivo="bufalo_001",
+        nome_modelo="u2netp",
+        execucao=1,
+        auprc=0.92,
+        soft_dice=0.81,
+        brier_score=0.08,
+    )
+    segmentacao.segmentacoes_binarizadas = [
+        SegmentacaoBinarizada(
+            nome_arquivo="bufalo_001",
+            nome_modelo="u2netp",
+            execucao=1,
+            estrategia_binarizacao="GaussianaOpeningBaixa",
+            area=90.0,
+            perimetro=38.0,
+            iou=0.8,
+            precision=0.82,
+            recall=0.78,
+        )
+    ]
+    imagem.segmentacoes_brutas = [segmentacao]
+
+    df = build_binarized_metrics_dataframe([imagem], execucao_escolhida=1)
+
+    assert set(
+        [
+            "area_ground_truth",
+            "perimetro_ground_truth",
+            "area_similarity",
+            "perimetro_similarity",
+        ]
+    ).issubset(df.columns)
+    assert math.isclose(df.iloc[0]["area_similarity"], 0.9, rel_tol=1e-9)
+    assert math.isclose(df.iloc[0]["perimetro_similarity"], 0.95, rel_tol=1e-9)
