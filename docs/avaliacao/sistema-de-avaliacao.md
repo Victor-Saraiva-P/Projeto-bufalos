@@ -2,6 +2,10 @@
 
 Este documento resume como o projeto compara os modelos de segmentacao e onde cada etapa se encaixa no fluxo de analise.
 
+Para a definicao das perguntas analiticas dos notebooks 04 a 07, consulte tambem:
+
+- `docs/avaliacao/objetivos-das-analises-estatisticas.md`
+
 ## Objetivo
 
 O sistema avalia cada modelo comparando a mascara prevista com a mascara de referencia.
@@ -164,4 +168,17 @@ Ao analisar os resultados, normalmente vale olhar:
 - estabilidade entre execucoes;
 - comportamento por tags de curadoria.
 
+Na versao atual do worktree, a leitura estatistica foi refinada para responder explicitamente:
+
+- qual e o melhor modelo da segmentacao bruta em tres cenarios analiticos;
+- quais tags impactam negativamente o resultado agregado;
+- qual e a melhor estrategia de binarizacao;
+- como a binarizacao afeta o melhor modelo identificado na segmentacao bruta.
+
 As tags de curadoria descritas em [`tags-de-imagem.md`](./tags-de-imagem.md) ajudam a entender por que certos grupos de imagem tendem a performar pior.
+
+O recorte `cenario_ideal` nao e inferido automaticamente a partir do agregado. Ele e controlado por listas declarativas no `config.toml`, separadas para segmentacao bruta e binarizada, e deve ser revisado com base nas secoes de interacao com dificuldade.
+
+Na leitura atual da segmentacao bruta, o `cenario_ideal` aceita `angulo_extremo` e `cortado`, e continua excluindo `baixo_contraste`, `multi_bufalos` e `ocluido`. O criterio dessa decisao esta documentado em `docs/avaliacao/objetivos-das-analises-estatisticas.md`.
+
+Na leitura atual da segmentacao binarizada, o `cenario_ideal` tambem aceita `angulo_extremo` e `cortado`, e continua excluindo `baixo_contraste`, `multi_bufalos` e `ocluido`. Nesse caso, a decisao prioriza `iou`, `precision`, `recall` e `area_similarity`, usando `perimetro_similarity` apenas como complemento.
