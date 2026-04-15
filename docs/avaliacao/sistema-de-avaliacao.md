@@ -2,7 +2,7 @@
 
 Este documento resume como o projeto compara os modelos de segmentacao e onde cada etapa se encaixa no fluxo de analise.
 
-Para a definicao das perguntas analiticas dos notebooks 04 a 07, consulte tambem:
+Para a definicao das perguntas analiticas dos notebooks 04 a 08, consulte tambem:
 
 - `docs/avaliacao/objetivos-das-analises-estatisticas.md`
 
@@ -172,13 +172,23 @@ Na versao atual do worktree, a leitura estatistica foi refinada para responder e
 
 - qual e o melhor modelo da segmentacao bruta em tres cenarios analiticos;
 - quais tags impactam negativamente o resultado agregado;
-- qual e a melhor estrategia de binarizacao;
-- como a binarizacao afeta o melhor modelo identificado na segmentacao bruta.
+- qual e a melhor estrategia de binarizacao para cada modelo;
+- se as melhores combinacoes `modelo + estrategia` continuam coerentes com os melhores modelos da segmentacao bruta;
+- se os melhores resultados disponiveis ja passam em um criterio minimo absoluto de qualidade.
 
 As tags de curadoria descritas em [`tags-de-imagem.md`](./tags-de-imagem.md) ajudam a entender por que certos grupos de imagem tendem a performar pior.
 
 O recorte `cenario_ideal` nao e inferido automaticamente a partir do agregado. Ele e controlado por listas declarativas no `config.toml`, separadas para segmentacao bruta e binarizada, e deve ser revisado com base nas secoes de interacao com dificuldade.
 
+Na leitura atual, os rankings por cenario nao precisam agregar todas as execucoes da segmentacao bruta. A estabilidade entre execucoes continua sendo medida separadamente, e o ranking final da segmentacao bruta pode usar uma execucao fixa configuravel em `analysis.segmentacao_bruta.execucao_escolhida`, alinhada por padrao com a execucao escolhida para a segmentacao binarizada.
+
 Na leitura atual da segmentacao bruta, o `cenario_ideal` aceita `angulo_extremo` e `cortado`, e continua excluindo `baixo_contraste`, `multi_bufalos` e `ocluido`. O criterio dessa decisao esta documentado em `docs/avaliacao/objetivos-das-analises-estatisticas.md`.
 
 Na leitura atual da segmentacao binarizada, o `cenario_ideal` tambem aceita `angulo_extremo` e `cortado`, e continua excluindo `baixo_contraste`, `multi_bufalos` e `ocluido`. Nesse caso, a decisao prioriza `iou`, `precision`, `recall` e `area_similarity`, usando `perimetro_similarity` apenas como complemento.
+
+O notebook 07 nao trata mais o ranking agregado global por estrategia como resultado principal. A leitura central passa a ser:
+
+- qual binarizacao fica em primeiro lugar dentro de cada modelo;
+- quais combinacoes `modelo + estrategia` concentram os melhores ranks finais.
+
+O notebook 08 fecha o fluxo com uma validacao final configuravel em `analysis.validacao_final`, usando thresholds absolutos para decidir se os melhores modelos com suas melhores binarizacoes ja sao suficientes ou se ainda apontam necessidade de retreinamento.

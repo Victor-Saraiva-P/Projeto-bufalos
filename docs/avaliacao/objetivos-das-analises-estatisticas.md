@@ -1,6 +1,6 @@
 # Objetivos das Analises Estatisticas
 
-Este documento registra quais perguntas cada etapa analitica do projeto precisa responder e como essas perguntas se conectam com os notebooks 04 a 07.
+Este documento registra quais perguntas cada etapa analitica do projeto precisa responder e como essas perguntas se conectam com os notebooks 04 a 08.
 
 ## Segmentacao bruta
 
@@ -21,6 +21,14 @@ O ranking da segmentacao bruta usa apenas as metricas calculadas sobre a mascara
 
 O objetivo aqui e descobrir qual modelo entrega a melhor base antes da binarizacao. Isso evita misturar a qualidade intrinseca da mascara continua com o efeito posterior da estrategia de binarizacao.
 
+Na leitura atual do worktree, esse ranking por cenario nao agrega mais as tres execucoes ao mesmo tempo. Como a estabilidade entre execucoes ja e medida separadamente, o ranking final da segmentacao bruta passa a usar uma execucao fixa configuravel, preferencialmente a mesma execucao usada na segmentacao binarizada.
+
+Essa configuracao fica em:
+
+- `analysis.segmentacao_bruta.execucao_escolhida`
+
+Se ela nao for declarada, a analise bruta herda a mesma execucao definida para a segmentacao binarizada.
+
 ### Estabilidade entre execucoes
 
 Como a segmentacao bruta tem menos combinacoes do que a segmentacao binarizada, ela e o lugar apropriado para medir estabilidade entre execucoes.
@@ -32,6 +40,8 @@ Essa leitura usa:
 - amplitude entre melhor e pior execucao.
 
 Se a estabilidade for alta, a analise da segmentacao binarizada pode ser reduzida para uma execucao configuravel sem perda interpretativa relevante.
+
+Pelo mesmo motivo, o ranking por cenario da segmentacao bruta tambem pode ser lido a partir de uma execucao fixa, desde que a estabilidade continue sendo reportada separadamente com todas as execucoes.
 
 ### Tags que impactam negativamente
 
@@ -95,14 +105,14 @@ Resumo da decisao:
 
 A analise estatistica da segmentacao binarizada existe para responder quatro perguntas principais:
 
-1. qual estrategia de binarizacao performa melhor no agregado;
-2. como a binarizacao afeta o melhor modelo da segmentacao bruta;
+1. qual e a melhor estrategia de binarizacao para cada modelo;
+2. como as melhores combinacoes `modelo + estrategia` se relacionam com os melhores modelos da segmentacao bruta;
 3. quais tags impactam negativamente a binarizacao e se esse padrao repete a segmentacao bruta;
 4. como o melhor resultado muda nos mesmos tres cenarios analiticos.
 
-### Melhor forma de binarizacao
+### Melhor forma de binarizacao por modelo
 
-O ranking principal da segmentacao binarizada deve ser lido primeiro no nivel da estrategia, e nao no nivel do modelo.
+O ranking principal da segmentacao binarizada nao deve mais ser lido primeiro no agregado por estrategia. A pergunta central agora e: qual estrategia funciona melhor para cada modelo.
 
 As metricas centrais sao:
 
@@ -112,17 +122,27 @@ As metricas centrais sao:
 - `area_similarity`;
 - `perimetro_similarity`.
 
-O objetivo e descobrir qual forma de binarizacao produz melhor equilibrio entre sobreposicao, cobertura e preservacao geometrica da mascara final.
+O objetivo e descobrir qual forma de binarizacao produz melhor equilibrio entre sobreposicao, cobertura e preservacao geometrica da mascara final para cada distribuicao de scores gerada pelos modelos.
 
-### Gargalo entre modelo e binarizacao
+Consequencia pratica:
 
-Depois de identificar o melhor modelo da segmentacao bruta, a analise binarizada precisa verificar como cada estrategia afeta especificamente esse modelo.
+- o notebook 07 passa a mostrar heatmaps `modelo x estrategia`, com rank interno por modelo;
+- o top 15 `modelo + estrategia` entra como leitura complementar para verificar se as melhores combinacoes finais continuam concentradas nos modelos fortes da segmentacao bruta;
+- o ranking agregado global por estrategia deixa de ser a resposta principal, porque ele dilui o efeito do modelo e pode esconder combinacoes fortes.
 
-Essa etapa responde a uma pergunta importante do projeto:
+### Comparacao entre bruto e binarizado
 
-- se o melhor modelo bruto deixa de performar bem apos a binarizacao, o gargalo pode estar na estrategia de binarizacao e nao na mascara continua original.
+A comparacao entre segmentacao bruta e segmentacao binarizada continua sendo uma pergunta importante do projeto:
 
-Por isso, a leitura binarizada deve incluir um recorte focado no melhor modelo bruto em cada cenario.
+- se o melhor resultado bruto nao coincide com o melhor resultado binarizado, o gargalo pode estar na estrategia de binarizacao e nao na mascara continua original.
+
+Mas essa comparacao nao deve ser codificada como recorte automatico dentro dos notebooks 06 e 07.
+
+Regra adotada:
+
+- os notebooks da segmentacao binarizada analisam apenas dados da propria binarizacao;
+- a confrontacao com o melhor modelo bruto deve ser feita pela interpretacao conjunta dos artefatos finais dos notebooks 05 e 07;
+- isso evita carregar para a analise binarizada uma decisao derivada de outra analise e preserva a leitura interpretativa dos resultados.
 
 ### Por que nao testar execucoes na segmentacao binarizada
 
@@ -174,11 +194,35 @@ Resumo da decisao:
 - `multi_bufalos` teve leitura mista, mas continuou associado a queda em `iou`, `precision` e `area_similarity`, que pesam mais na qualidade final da mascara;
 - `ocluido` seguiu como a tag mais claramente negativa no conjunto, com piora consistente em todas as estrategias.
 
+## Validacao final dos melhores resultados
+
+Depois das leituras de segmentacao bruta e binarizada, o projeto passa a responder uma pergunta final adicional:
+
+- se os melhores modelos, combinados com suas melhores binarizacoes, ja sao suficientes para segmentar bufalos sem retreinamento.
+
+Essa leitura fica no notebook 08 e usa apenas o cenario configurado em:
+
+- `analysis.validacao_final.cenario_base`
+
+O fluxo esperado e:
+
+1. selecionar os top `N` modelos da segmentacao bruta no cenario base;
+2. selecionar a melhor binarizacao de cada um desses modelos no mesmo cenario;
+3. avaliar as combinacoes finalistas contra thresholds absolutos configurados em `config.toml`;
+4. concluir se os melhores resultados atuais sao suficientes ou se o projeto precisa de retreinamento.
+
+A regra atual de aceitacao e declarativa e fica em:
+
+- `analysis.validacao_final.acceptance_rule`
+
+Na configuracao atual, a regra e `all_metrics`: a combinacao finalista so passa se atender aos thresholds minimos em todas as metricas binarizadas.
+
 ## Consequencia pratica nos notebooks
 
 Os notebooks passam a se dividir assim:
 
 - `04`: calcula a analise estatistica da segmentacao bruta, incluindo tags negativas e ranking por cenario;
 - `05`: visualiza a segmentacao bruta, incluindo melhor modelo por cenario e estabilidade entre execucoes;
-- `06`: calcula a analise estatistica da segmentacao binarizada, incluindo tags negativas, ranking por cenario e recorte do melhor modelo bruto;
-- `07`: visualiza a segmentacao binarizada, destacando melhor estrategia, melhor combinacao `modelo + estrategia` e comportamento do melhor modelo bruto apos a binarizacao.
+- `06`: calcula a analise estatistica da segmentacao binarizada, incluindo tags negativas e ranking por cenario apenas com dados da propria binarizacao;
+- `07`: visualiza a segmentacao binarizada, destacando a melhor estrategia por modelo e as melhores combinacoes `modelo + estrategia`, deixando a comparacao com a segmentacao bruta para a leitura conjunta dos artefatos finais;
+- `08`: valida os melhores modelos com suas melhores binarizacoes no cenario configurado e decide se os resultados atuais ja sao suficientes ou se apontam necessidade de retreinamento.

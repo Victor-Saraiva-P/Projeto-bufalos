@@ -5,11 +5,17 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from src.visualization import (
+    plot_best_by_scenario,
+    plot_finalist_metric_heatmap,
     plot_metric_correlation_heatmap,
     plot_metric_scatter,
+    plot_model_strategy_preference_heatmap,
     plot_pairwise_pvalue_heatmap,
+    plot_scenario_rankings_grid,
+    plot_scenario_leaderboard,
     plot_simple_regression,
     plot_stability_bars,
+    plot_threshold_pass_heatmap,
 )
 
 
@@ -108,4 +114,239 @@ def test_plot_stability_bars_gera_figura_sem_erro() -> None:
 
     assert ax.has_data()
     assert len(ax.patches) == 3
+    plt.close(fig)
+
+
+def test_plot_best_by_scenario_gera_figura_sem_erro() -> None:
+    df_best = pd.DataFrame(
+        [
+            {
+                "scenario_label": "Dataset completo",
+                "modelo": "u2netp",
+                "auprc": 0.99,
+            },
+            {
+                "scenario_label": "Cenario ideal",
+                "modelo": "birefnet-hrsod",
+                "auprc": 0.995,
+            },
+            {
+                "scenario_label": "Apenas imagens ok",
+                "modelo": "birefnet-general",
+                "auprc": 0.994,
+            },
+        ]
+    )
+
+    fig, ax = plot_best_by_scenario(df_best, "modelo", "auprc")
+
+    assert ax.has_data()
+    assert len(ax.patches) == 3
+    plt.close(fig)
+
+
+def test_plot_scenario_leaderboard_gera_figura_sem_erro() -> None:
+    df_rankings = pd.DataFrame(
+        [
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "u2netp",
+                "auprc": 0.99,
+                "mean_rank": 1.2,
+            },
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "sam",
+                "auprc": 0.80,
+                "mean_rank": 2.8,
+            },
+        ]
+    )
+
+    fig, ax = plot_scenario_leaderboard(
+        df_rankings,
+        "dataset_completo",
+        "modelo",
+        "auprc",
+        title_prefix="Ranking por auprc",
+    )
+
+    assert ax.has_data()
+    assert len(ax.patches) == 2
+    plt.close(fig)
+
+
+def test_plot_scenario_rankings_grid_gera_figura_sem_erro() -> None:
+    df_rankings = pd.DataFrame(
+        [
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "u2netp",
+                "mean_rank": 1.2,
+                "scenario_rank": 1,
+            },
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "sam",
+                "mean_rank": 2.8,
+                "scenario_rank": 2,
+            },
+            {
+                "scenario_key": "cenario_ideal",
+                "scenario_label": "Cenario ideal",
+                "modelo": "birefnet-hrsod",
+                "mean_rank": 1.0,
+                "scenario_rank": 1,
+            },
+            {
+                "scenario_key": "apenas_ok",
+                "scenario_label": "Apenas imagens ok",
+                "modelo": "birefnet-general",
+                "mean_rank": 1.1,
+                "scenario_rank": 1,
+            },
+        ]
+    )
+
+    fig, axes = plot_scenario_rankings_grid(
+        df_rankings,
+        "modelo",
+        title="Rankings por cenario",
+        x_label="mean_rank (menor = melhor)",
+    )
+
+    assert axes.size == 3
+    assert sum(len(ax.patches) for ax in axes.flatten()) == 4
+    plt.close(fig)
+
+
+def test_plot_scenario_rankings_grid_limita_top_n() -> None:
+    df_rankings = pd.DataFrame(
+        [
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "a",
+                "mean_rank": 1.0,
+                "scenario_rank": 1,
+            },
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "b",
+                "mean_rank": 2.0,
+                "scenario_rank": 2,
+            },
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "c",
+                "mean_rank": 3.0,
+                "scenario_rank": 3,
+            },
+        ]
+    )
+
+    fig, axes = plot_scenario_rankings_grid(
+        df_rankings,
+        "modelo",
+        top_n=2,
+    )
+
+    assert axes.size == 1
+    assert len(axes.flatten()[0].patches) == 2
+    plt.close(fig)
+
+
+def test_plot_finalist_metric_heatmap_gera_figura_sem_erro() -> None:
+    df_finalists = pd.DataFrame(
+        [
+            {
+                "combo": "m1 | e1",
+                "iou": 0.981,
+                "precision": 0.993,
+                "recall": 0.986,
+            },
+            {
+                "combo": "m2 | e2",
+                "iou": 0.977,
+                "precision": 0.991,
+                "recall": 0.984,
+            },
+        ]
+    )
+
+    fig, ax = plot_finalist_metric_heatmap(
+        df_finalists,
+        ["iou", "precision", "recall"],
+    )
+
+    assert ax.images
+    plt.close(fig)
+
+
+def test_plot_threshold_pass_heatmap_gera_figura_sem_erro() -> None:
+    df_thresholds = pd.DataFrame(
+        [
+            {
+                "combo": "m1 | e1",
+                "iou_ok": True,
+                "precision_ok": True,
+                "recall_ok": True,
+            },
+            {
+                "combo": "m2 | e2",
+                "iou_ok": False,
+                "precision_ok": True,
+                "recall_ok": False,
+            },
+        ]
+    )
+
+    fig, ax = plot_threshold_pass_heatmap(
+        df_thresholds,
+        ["iou", "precision", "recall"],
+    )
+
+    assert ax.images
+    plt.close(fig)
+
+
+def test_plot_model_strategy_preference_heatmap_gera_figura_sem_erro() -> None:
+    df_rankings = pd.DataFrame(
+        [
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "birefnet-general",
+                "estrategia_binarizacao": "LimiarFixoBaixa",
+                "strategy_rank_within_model": 1,
+            },
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "birefnet-general",
+                "estrategia_binarizacao": "OtsuOpeningBaixa",
+                "strategy_rank_within_model": 2,
+            },
+            {
+                "scenario_key": "dataset_completo",
+                "scenario_label": "Dataset completo",
+                "modelo": "birefnet-hrsod",
+                "estrategia_binarizacao": "LimiarFixoBaixa",
+                "strategy_rank_within_model": 1,
+            },
+        ]
+    )
+
+    fig, ax = plot_model_strategy_preference_heatmap(
+        df_rankings,
+        "dataset_completo",
+    )
+
+    assert ax.images
     plt.close(fig)

@@ -18,6 +18,8 @@ from src.visualization.artifact_export import (
 )
 from src.visualization.pdf_report import PdfReportSection, save_pdf_report
 from src.visualization.segmentacao_bruta_plots import (
+    plot_best_by_scenario,
+    plot_finalist_metric_heatmap,
     plot_metric_bars_with_ci_by_model,
     plot_metric_bars_by_model,
     plot_metric_correlation_heatmap,
@@ -25,13 +27,17 @@ from src.visualization.segmentacao_bruta_plots import (
     plot_metric_distribution_by_model,
     plot_metric_distribution_by_tag,
     plot_metric_scatter,
+    plot_model_strategy_preference_heatmap,
     plot_model_tag_interaction_heatmap,
     plot_pairwise_pvalue_heatmap,
+    plot_scenario_rankings_grid,
+    plot_scenario_leaderboard,
     plot_simple_regression,
     plot_stability_bars,
     plot_stability_heatmap,
     plot_tag_effect_bars,
     plot_metric_tag_comparison,
+    plot_threshold_pass_heatmap,
 )
 
 __all__ = [
@@ -43,6 +49,8 @@ __all__ = [
     "export_table_csv",
     "PdfReportSection",
     "save_pdf_report",
+    "plot_best_by_scenario",
+    "plot_finalist_metric_heatmap",
     "plot_metric_bars_with_ci_by_model",
     "plot_metric_bars_by_model",
     "plot_metric_correlation_heatmap",
@@ -50,11 +58,15 @@ __all__ = [
     "plot_metric_distribution_by_model",
     "plot_metric_distribution_by_tag",
     "plot_metric_scatter",
+    "plot_model_strategy_preference_heatmap",
     "plot_model_tag_interaction_heatmap",
     "plot_pairwise_pvalue_heatmap",
+    "plot_scenario_rankings_grid",
+    "plot_scenario_leaderboard",
     "plot_simple_regression",
     "plot_stability_bars",
     "plot_stability_heatmap",
     "plot_tag_effect_bars",
     "plot_metric_tag_comparison",
+    "plot_threshold_pass_heatmap",
 ]
