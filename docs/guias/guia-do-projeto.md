@@ -175,6 +175,28 @@ Motivo tecnico:
 - para a segmentacao binarizada, manter `modelo x estrategia x execucao` em todas as etapas aumenta bastante o custo computacional e a quantidade de combinacoes;
 - a decisao detalhada esta em `docs/decisoes-tecnicas/analise-da-segmentacao-binarizada-por-execucao-fixa.md`.
 
+Os objetivos analiticos de cada etapa estatistica estao descritos em:
+
+- `docs/avaliacao/objetivos-das-analises-estatisticas.md`
+
+Resumo da leitura esperada:
+
+- a segmentacao bruta decide melhor modelo, estabilidade entre execucoes e tags negativas;
+- a segmentacao binarizada decide a melhor estrategia para cada modelo e reaplica os tres cenarios analiticos (`dataset_completo`, `cenario_ideal` e `apenas_ok`) apenas com dados da propria binarizacao;
+- a validacao final decide se os melhores modelos, combinados com suas melhores binarizacoes, ja passam no criterio minimo configurado para o projeto.
+- o `cenario_ideal` e controlado no `config.toml` por listas separadas para segmentacao bruta e binarizada, revisadas a partir das secoes de interacao com dificuldade.
+
+O notebook final de decisao e:
+
+- `notebooks/08_validacao_final_melhores_modelos.ipynb`
+
+Ele usa a secao `analysis.validacao_final` do `config.toml`, que controla:
+
+- `cenario_base`;
+- `top_n_modelos`;
+- thresholds minimos das metricas binarizadas;
+- a regra de aceitacao (`all_metrics` na configuracao atual).
+
 ## Abordagem de desenvolvimento
 
 O projeto adota TDD (`Test-Driven Development`) como abordagem preferencial de implementacao.

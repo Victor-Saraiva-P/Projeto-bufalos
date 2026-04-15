@@ -58,6 +58,8 @@ BINARIZED_METRIC_CONFIGS = (
     MetricConfig(metric_name="iou", higher_is_better=True),
     MetricConfig(metric_name="precision", higher_is_better=True),
     MetricConfig(metric_name="recall", higher_is_better=True),
+    MetricConfig(metric_name="area_similarity", higher_is_better=True),
+    MetricConfig(metric_name="perimetro_similarity", higher_is_better=True),
 )
 
 

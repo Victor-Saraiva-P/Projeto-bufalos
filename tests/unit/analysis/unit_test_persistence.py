@@ -1,6 +1,7 @@
 import pandas as pd
 
 from src.analysis import (
+    build_and_persist_analysis_segmentacao_binarizada_resumo_estrategia,
     build_and_persist_analysis_segmentacao_bruta_estabilidade,
     build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo,
     build_and_persist_analysis_segmentacao_bruta_intervalo_confianca,
@@ -11,6 +12,7 @@ from src.analysis import (
     build_and_persist_analysis_segmentacao_bruta_testes_tag,
 )
 from src.repositories import (
+    AnaliseSegmentacaoBinarizadaResumoEstrategiaRepository,
     AnaliseSegmentacaoBrutaEstabilidadeRepository,
     AnaliseSegmentacaoBrutaInteracaoTagModeloRepository,
     AnaliseSegmentacaoBrutaIntervaloConfiancaRepository,
@@ -55,6 +57,69 @@ def _build_df_base() -> pd.DataFrame:
                 "auprc": 0.7,
                 "soft_dice": 0.6,
                 "brier_score": 0.2,
+                "tags": "",
+                "tags_sem_ok": "",
+                "num_tags_problema": 0,
+                "tem_tag_problema": False,
+                "grupo_dificuldade": "nao_revisada",
+                "tag_ok": False,
+                "tag_multi_bufalos": False,
+                "tag_cortado": False,
+                "tag_angulo_extremo": False,
+                "tag_baixo_contraste": False,
+                "tag_ocluido": False,
+            },
+        ]
+    )
+
+
+def _build_df_base_binarizada() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {
+                "nome_arquivo": "a",
+                "fazenda": "F1",
+                "peso": 1.0,
+                "modelo": "u2netp",
+                "execucao": 1,
+                "estrategia_binarizacao": "GaussianaOpeningBaixa",
+                "iou": 0.9,
+                "precision": 0.88,
+                "recall": 0.86,
+                "area": 90.0,
+                "perimetro": 38.0,
+                "area_ground_truth": 100.0,
+                "perimetro_ground_truth": 40.0,
+                "area_similarity": 0.9,
+                "perimetro_similarity": 0.95,
+                "tags": "",
+                "tags_sem_ok": "",
+                "num_tags_problema": 0,
+                "tem_tag_problema": False,
+                "grupo_dificuldade": "nao_revisada",
+                "tag_ok": False,
+                "tag_multi_bufalos": False,
+                "tag_cortado": False,
+                "tag_angulo_extremo": False,
+                "tag_baixo_contraste": False,
+                "tag_ocluido": False,
+            },
+            {
+                "nome_arquivo": "b",
+                "fazenda": "F1",
+                "peso": 2.0,
+                "modelo": "u2netp",
+                "execucao": 1,
+                "estrategia_binarizacao": "LimiarFixoAlta",
+                "iou": 0.7,
+                "precision": 0.72,
+                "recall": 0.68,
+                "area": 70.0,
+                "perimetro": 30.0,
+                "area_ground_truth": 100.0,
+                "perimetro_ground_truth": 40.0,
+                "area_similarity": 0.7,
+                "perimetro_similarity": 0.75,
                 "tags": "",
                 "tags_sem_ok": "",
                 "num_tags_problema": 0,
@@ -215,3 +280,24 @@ def test_build_and_persist_analysis_segmentacao_bruta_interacao_tag_modelo_grava
     assert len(registros) == len(df_interacoes)
     persistidos = repository.list(nome_modelo="u2netp", tag_name="tag_multi_bufalos")
     assert persistidos
+
+
+def test_build_and_persist_analysis_segmentacao_binarizada_resumo_estrategia_inclui_similaridades(
+    tmp_path,
+) -> None:
+    sqlite_path = str(tmp_path / "bufalos.sqlite3")
+    repository = AnaliseSegmentacaoBinarizadaResumoEstrategiaRepository(sqlite_path)
+
+    df_resumo, registros = build_and_persist_analysis_segmentacao_binarizada_resumo_estrategia(
+        df_base=_build_df_base_binarizada(),
+        repository=repository,
+    )
+
+    assert {"area_similarity", "perimetro_similarity"}.issubset(
+        set(df_resumo["metric_name"])
+    )
+    assert len(registros) == len(df_resumo)
+    persistidos = repository.list()
+    assert {"area_similarity", "perimetro_similarity"}.issubset(
+        {registro.metric_name for registro in persistidos}
+    )

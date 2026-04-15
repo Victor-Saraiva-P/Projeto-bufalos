@@ -11,7 +11,15 @@ from src.models import (
     SegmentacaoBruta,
 )
 from src.metricas import AUPRC, BrierScore, SoftDice
-from src.metricas.segmentacao_binarizada import Area, IoU, Perimetro, Precision, Recall
+from src.metricas.segmentacao_binarizada import (
+    Area,
+    AreaSimilarity,
+    IoU,
+    Perimetro,
+    PerimetroSimilarity,
+    Precision,
+    Recall,
+)
 
 
 @dataclass(frozen=True)
@@ -32,6 +40,8 @@ class SegmentacaoBinarizadaResultado:
     estrategia_binarizacao: str
     area: float
     perimetro: float
+    area_similarity: float
+    perimetro_similarity: float
     iou: float
     precision: float
     recall: float
@@ -131,6 +141,18 @@ class AvaliacaoService:
                     mask_array=mask_modelo,
                     modelo=nome_modelo,
                 ).calcular()
+                area_similarity = AreaSimilarity(
+                    nome_arquivo=nome_arquivo,
+                    area_modelo=area,
+                    area_ground_truth=area_ground_truth,
+                    modelo=nome_modelo,
+                ).calcular()
+                perimetro_similarity = PerimetroSimilarity(
+                    nome_arquivo=nome_arquivo,
+                    perimetro_modelo=perimetro,
+                    perimetro_ground_truth=perimetro_ground_truth,
+                    modelo=nome_modelo,
+                ).calcular()
                 iou = IoU(
                     nome_arquivo=nome_arquivo,
                     mask_modelo=mask_modelo,
@@ -158,6 +180,8 @@ class AvaliacaoService:
                         estrategia_binarizacao=estrategia_binarizacao,
                         area=float(area),
                         perimetro=float(perimetro),
+                        area_similarity=float(area_similarity),
+                        perimetro_similarity=float(perimetro_similarity),
                         iou=float(iou),
                         precision=float(precision),
                         recall=float(recall),

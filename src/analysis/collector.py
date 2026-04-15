@@ -28,6 +28,14 @@ TAG_COLUMNS = (
 )
 
 
+def _relative_similarity(valor_modelo: float, valor_ground_truth: float) -> float:
+    if valor_ground_truth == 0.0:
+        return 1.0 if valor_modelo == 0.0 else 0.0
+
+    relative_error = abs(valor_modelo - valor_ground_truth) / abs(valor_ground_truth)
+    return float(max(0.0, 1.0 - relative_error))
+
+
 def build_binarized_metrics_dataframe(
     imagens: list[Imagem],
     execucao_escolhida: int | None = None,
@@ -41,6 +49,10 @@ def build_binarized_metrics_dataframe(
     registros: list[dict[str, float | str | bool | int]] = []
 
     for imagem in imagens:
+        ground_truth = imagem.ground_truth_binarizada
+        if ground_truth is None:
+            continue
+
         tags = sorted(dict.fromkeys(imagem.nomes_tags))
         tags_sem_ok = [tag for tag in tags if tag != "ok"]
         num_tags_problema = len(tags_sem_ok)
@@ -67,6 +79,15 @@ def build_binarized_metrics_dataframe(
                 ):
                     continue
 
+                area = float(segmentacao_binarizada.area)
+                perimetro = float(segmentacao_binarizada.perimetro)
+                # A analise usa similaridades derivadas das metricas persistidas, evitando
+                # expandir o schema do SQLite para valores que podem ser reconstruidos.
+                area_similarity = _relative_similarity(area, float(ground_truth.area))
+                perimetro_similarity = _relative_similarity(
+                    perimetro, float(ground_truth.perimetro)
+                )
+
                 registro = {
                     "nome_arquivo": imagem.nome_arquivo,
                     "fazenda": imagem.fazenda,
@@ -77,8 +98,12 @@ def build_binarized_metrics_dataframe(
                     "iou": float(segmentacao_binarizada.iou),
                     "precision": float(segmentacao_binarizada.precision),
                     "recall": float(segmentacao_binarizada.recall),
-                    "area": float(segmentacao_binarizada.area),
-                    "perimetro": float(segmentacao_binarizada.perimetro),
+                    "area": area,
+                    "perimetro": perimetro,
+                    "area_ground_truth": float(ground_truth.area),
+                    "perimetro_ground_truth": float(ground_truth.perimetro),
+                    "area_similarity": area_similarity,
+                    "perimetro_similarity": perimetro_similarity,
                     "tags": ",".join(tags),
                     "tags_sem_ok": ",".join(tags_sem_ok),
                     "num_tags_problema": num_tags_problema,

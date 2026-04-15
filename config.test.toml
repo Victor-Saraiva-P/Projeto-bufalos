@@ -13,8 +13,23 @@ sqlite_file = "tests/mock_generated/bufalos-testes.sqlite3"
 [execution]
 num_execucoes = 3
 
+[analysis.segmentacao_bruta]
+execucao_escolhida = 1
+cenario_ideal_tags_permitidas = ["ocluido"]
+
 [analysis.segmentacao_binarizada]
 execucao_escolhida = 1
+cenario_ideal_tags_permitidas = ["ocluido"]
+
+[analysis.validacao_final]
+cenario_base = "apenas_ok"
+top_n_modelos = 3
+acceptance_rule = "all_metrics"
+iou_min = 0.97
+precision_min = 0.99
+recall_min = 0.985
+area_similarity_min = 0.99
+perimetro_similarity_min = 0.96
 
 [binarization]
 threshold = 127

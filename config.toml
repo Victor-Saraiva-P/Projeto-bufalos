@@ -40,8 +40,36 @@ segmentacao_strategies = [
 [execution]
 num_execucoes = 3
 
+[analysis.segmentacao_bruta]
+execucao_escolhida = 1
+# Docs: docs/avaliacao/objetivos-das-analises-estatisticas.md
+# Esta lista define quais tags de problema continuam aceitas no cenario ideal
+# da segmentacao bruta apos a leitura da secao "Interacao entre modelo e dificuldade".
+# Leitura atual: `angulo_extremo` e `cortado` permaneceram neutras ou favoraveis
+# nas metricas principais dos modelos competitivos; `baixo_contraste`,
+# `multi_bufalos` e `ocluido` seguiram associados a piora relevante.
+cenario_ideal_tags_permitidas = ["angulo_extremo", "cortado"]
+
 [analysis.segmentacao_binarizada]
 execucao_escolhida = 1
+# Esta lista define quais tags de problema continuam aceitas no cenario ideal
+# da segmentacao binarizada apos a leitura da secao
+# "Interacao entre estrategia e dificuldade".
+# Leitura atual: `angulo_extremo` e `cortado` permaneceram neutras ou
+# favoraveis no conjunto principal de metricas; `baixo_contraste`,
+# `multi_bufalos` e `ocluido` seguiram associados a piora relevante no
+# equilibrio final da binarizacao.
+cenario_ideal_tags_permitidas = ["angulo_extremo", "cortado"]
+
+[analysis.validacao_final]
+cenario_base = "apenas_ok"
+top_n_modelos = 3
+acceptance_rule = "all_metrics"
+iou_min = 0.97
+precision_min = 0.99
+recall_min = 0.985
+area_similarity_min = 0.99
+perimetro_similarity_min = 0.96
 
 [models]
 u2net = "gpu"

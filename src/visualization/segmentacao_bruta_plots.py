@@ -47,6 +47,327 @@ def plot_metric_bars_by_model(
     return fig, ax
 
 
+def plot_best_by_scenario(
+    df_best: pd.DataFrame,
+    entity_column: str,
+    metric_name: str,
+    *,
+    title: str | None = None,
+    y_label: str | None = None,
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_best, "grafico de melhor por cenario")
+    _require_columns(
+        df_best,
+        {"scenario_label", entity_column, metric_name},
+        "grafico de melhor por cenario",
+    )
+
+    df_plot = df_best.copy()
+    labels = [
+        f"{scenario_label}\n{entity_value}"
+        for scenario_label, entity_value in zip(
+            df_plot["scenario_label"],
+            df_plot[entity_column],
+            strict=True,
+        )
+    ]
+
+    fig, ax = plt.subplots(figsize=(10, 4))
+    bars = ax.bar(labels, df_plot[metric_name], color="#577590")
+    ax.set_title(title or f"Melhor por cenario em {metric_name}")
+    ax.set_xlabel("Cenario")
+    ax.set_ylabel(y_label or metric_name)
+    ax.tick_params(axis="x", rotation=0)
+    for bar, entity_value in zip(bars, df_plot[entity_column], strict=True):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            str(entity_value),
+            ha="center",
+            va="bottom",
+            fontsize=9,
+            rotation=0,
+        )
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_scenario_leaderboard(
+    df_rankings: pd.DataFrame,
+    scenario_key: str,
+    entity_column: str,
+    value_column: str,
+    title_prefix: str = "Ranking",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_rankings, "grafico de ranking por cenario")
+    _require_columns(
+        df_rankings,
+        {"scenario_key", "scenario_label", entity_column, value_column},
+        "grafico de ranking por cenario",
+    )
+
+    df_plot = df_rankings.loc[df_rankings["scenario_key"] == scenario_key].copy()
+    _require_non_empty(df_plot, f"grafico de ranking do cenario {scenario_key}")
+
+    ascending = value_column == "mean_rank"
+    df_plot = df_plot.sort_values(value_column, ascending=ascending).reset_index(drop=True)
+
+    fig_height = max(3.5, len(df_plot) * 0.45)
+    fig, ax = plt.subplots(figsize=(10, fig_height))
+    bars = ax.barh(df_plot[entity_column], df_plot[value_column], color="#4D908E")
+    ax.invert_yaxis()
+    ax.set_title(f"{title_prefix}: {df_plot['scenario_label'].iloc[0]}")
+    ax.set_xlabel(value_column)
+    ax.set_ylabel("Entidade")
+
+    for bar, entity_value in zip(bars, df_plot[entity_column], strict=True):
+        ax.text(
+            bar.get_width(),
+            bar.get_y() + bar.get_height() / 2,
+            f" {entity_value}",
+            va="center",
+            ha="left",
+            fontsize=8,
+        )
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_scenario_rankings_grid(
+    df_rankings: pd.DataFrame,
+    entity_column: str,
+    *,
+    scenario_keys: list[str] | tuple[str, ...] = (
+        "dataset_completo",
+        "cenario_ideal",
+        "apenas_ok",
+    ),
+    value_column: str = "mean_rank",
+    title: str | None = None,
+    x_label: str | None = None,
+    top_n: int | None = None,
+) -> tuple[plt.Figure, np.ndarray]:
+    _require_non_empty(df_rankings, "grade de rankings por cenario")
+    _require_columns(
+        df_rankings,
+        {"scenario_key", "scenario_label", entity_column, value_column},
+        "grade de rankings por cenario",
+    )
+
+    available_scenarios = [
+        scenario_key
+        for scenario_key in scenario_keys
+        if not df_rankings.loc[df_rankings["scenario_key"] == scenario_key].empty
+    ]
+    if not available_scenarios:
+        raise ValueError("Nenhum cenario disponivel para a grade de rankings.")
+
+    fig_height = max(4.5, len(available_scenarios) * 4.0)
+    fig, axes = plt.subplots(
+        len(available_scenarios),
+        1,
+        figsize=(12, fig_height),
+        squeeze=False,
+    )
+    axes_flat = axes.flatten()
+
+    for ax, scenario_key in zip(axes_flat, available_scenarios, strict=True):
+        df_plot = df_rankings.loc[df_rankings["scenario_key"] == scenario_key].copy()
+        ascending = value_column == "mean_rank"
+        df_plot = df_plot.sort_values(value_column, ascending=ascending).reset_index(
+            drop=True
+        )
+        if top_n is not None:
+            if top_n < 1:
+                raise ValueError("top_n deve ser >= 1 quando informado.")
+            df_plot = df_plot.head(top_n).copy()
+
+        colors = ["#ADB5BD"] * len(df_plot)
+        for index in range(min(3, len(df_plot))):
+            colors[index] = ["#2A9D8F", "#E9C46A", "#F4A261"][index]
+
+        bars = ax.barh(df_plot[entity_column], df_plot[value_column], color=colors)
+        ax.invert_yaxis()
+        ax.set_title(str(df_plot["scenario_label"].iloc[0]))
+        ax.set_xlabel(x_label or value_column)
+        ax.set_ylabel("Entidade")
+
+        for bar, rank, entity_value in zip(
+            bars,
+            df_plot.get("scenario_rank", pd.Series([None] * len(df_plot))),
+            df_plot[entity_column],
+            strict=True,
+        ):
+            label_parts = []
+            if pd.notna(rank):
+                label_parts.append(f"#{int(rank)}")
+            label_parts.append(str(entity_value))
+            ax.text(
+                bar.get_width(),
+                bar.get_y() + bar.get_height() / 2,
+                f" {' - '.join(label_parts)}",
+                va="center",
+                ha="left",
+                fontsize=8,
+            )
+
+    if title:
+        fig.suptitle(title, fontsize=14)
+        fig.tight_layout(rect=(0, 0, 1, 0.98))
+    else:
+        fig.tight_layout()
+    return fig, axes
+
+
+def plot_model_strategy_preference_heatmap(
+    df_rankings: pd.DataFrame,
+    scenario_key: str,
+    *,
+    model_column: str = "modelo",
+    strategy_column: str = "estrategia_binarizacao",
+    value_column: str = "strategy_rank_within_model",
+    title_prefix: str = "Melhor binarizacao por modelo",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_rankings, "heatmap de preferencia por modelo")
+    _require_columns(
+        df_rankings,
+        {"scenario_key", "scenario_label", model_column, strategy_column, value_column},
+        "heatmap de preferencia por modelo",
+    )
+
+    df_plot = df_rankings.loc[df_rankings["scenario_key"] == scenario_key].copy()
+    _require_non_empty(df_plot, f"heatmap de preferencia do cenario {scenario_key}")
+
+    pivot = (
+        df_plot.pivot(index=model_column, columns=strategy_column, values=value_column)
+        .sort_index()
+        .sort_index(axis=1)
+    )
+
+    fig_width = max(8, len(pivot.columns) * 1.4)
+    fig_height = max(4, len(pivot.index) * 0.6)
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    image = ax.imshow(pivot.to_numpy(), aspect="auto", cmap="YlGn_r")
+    ax.set_title(f"{title_prefix}: {df_plot['scenario_label'].iloc[0]}")
+    ax.set_xlabel("Estrategia de binarizacao")
+    ax.set_ylabel("Modelo")
+    ax.set_xticks(range(len(pivot.columns)))
+    ax.set_xticklabels(pivot.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(pivot.index)))
+    ax.set_yticklabels(pivot.index)
+    fig.colorbar(image, ax=ax, label=f"{value_column} (menor = melhor)")
+
+    for i, model_name in enumerate(pivot.index):
+        for j, strategy_name in enumerate(pivot.columns):
+            value = pivot.loc[model_name, strategy_name]
+            if pd.isna(value):
+                continue
+            ax.text(
+                j,
+                i,
+                int(value),
+                ha="center",
+                va="center",
+                fontsize=8,
+                color="black",
+            )
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_finalist_metric_heatmap(
+    df_finalists: pd.DataFrame,
+    metric_names: Sequence[str],
+    *,
+    entity_column: str = "combo",
+    title: str = "Metricas dos finalistas",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_finalists, "heatmap de metricas dos finalistas")
+    _require_columns(
+        df_finalists,
+        {entity_column, *metric_names},
+        "heatmap de metricas dos finalistas",
+    )
+
+    pivot = df_finalists.set_index(entity_column)[list(metric_names)].copy()
+    fig_width = max(8, len(metric_names) * 1.6)
+    fig_height = max(3, len(pivot.index) * 0.7)
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    image = ax.imshow(pivot.to_numpy(), aspect="auto", cmap="YlGn")
+    ax.set_title(title)
+    ax.set_xlabel("Metrica")
+    ax.set_ylabel("Finalista")
+    ax.set_xticks(range(len(pivot.columns)))
+    ax.set_xticklabels(pivot.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(pivot.index)))
+    ax.set_yticklabels(pivot.index)
+    fig.colorbar(image, ax=ax, label="Valor da metrica")
+
+    for i, entity in enumerate(pivot.index):
+        for j, metric_name in enumerate(pivot.columns):
+            ax.text(
+                j,
+                i,
+                f"{pivot.loc[entity, metric_name]:.3f}",
+                ha="center",
+                va="center",
+                fontsize=8,
+                color="black",
+            )
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_threshold_pass_heatmap(
+    df_thresholds: pd.DataFrame,
+    metric_names: Sequence[str],
+    *,
+    entity_column: str = "combo",
+    title: str = "Aprovacao nos thresholds",
+) -> tuple[plt.Figure, plt.Axes]:
+    _require_non_empty(df_thresholds, "heatmap de aprovacao nos thresholds")
+    required_columns = {entity_column, *(f"{metric_name}_ok" for metric_name in metric_names)}
+    _require_columns(
+        df_thresholds,
+        required_columns,
+        "heatmap de aprovacao nos thresholds",
+    )
+
+    pivot = df_thresholds.set_index(entity_column)[
+        [f"{metric_name}_ok" for metric_name in metric_names]
+    ].astype(int)
+    fig_width = max(8, len(metric_names) * 1.6)
+    fig_height = max(3, len(pivot.index) * 0.7)
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height))
+    image = ax.imshow(pivot.to_numpy(), aspect="auto", cmap="RdYlGn")
+    ax.set_title(title)
+    ax.set_xlabel("Metrica")
+    ax.set_ylabel("Finalista")
+    ax.set_xticks(range(len(pivot.columns)))
+    ax.set_xticklabels(metric_names, rotation=45, ha="right")
+    ax.set_yticks(range(len(pivot.index)))
+    ax.set_yticklabels(pivot.index)
+    fig.colorbar(image, ax=ax, label="Aprovado (1) / Reprovado (0)")
+
+    for i, entity in enumerate(pivot.index):
+        for j, metric_name in enumerate(metric_names):
+            passed = bool(pivot.iloc[i, j])
+            ax.text(
+                j,
+                i,
+                "OK" if passed else "NOK",
+                ha="center",
+                va="center",
+                fontsize=8,
+                color="black",
+            )
+
+    fig.tight_layout()
+    return fig, ax
+
+
 def plot_metric_by_execution_heatmap(
     df_resumo_execucao: pd.DataFrame,
     metric_name: str,

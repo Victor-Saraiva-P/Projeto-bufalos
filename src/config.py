@@ -77,7 +77,9 @@ _FILE_TYPES = _CONFIG["file_types"]
 _BINARIZATION = _CONFIG["binarization"]
 _EXECUTION = _CONFIG["execution"]
 _ANALYSIS = _CONFIG.get("analysis", {})
+_ANALYSIS_RAW = _ANALYSIS.get("segmentacao_bruta", {})
 _ANALYSIS_BINARIZED = _ANALYSIS.get("segmentacao_binarizada", {})
+_ANALYSIS_FINAL = _ANALYSIS.get("validacao_final", {})
 _EVALUATION = _CONFIG["evaluation"]
 _EVALUATION_PARALLELISM = _EVALUATION.get("parallelism", {})
 
@@ -123,6 +125,29 @@ LIMIAR_BINARIZACAO = BINARIZATION_THRESHOLD
 NUM_EXECUCOES = _EXECUTION["num_execucoes"]
 SEGMENTACAO_BINARIZADA_ANALISE_EXECUCAO = int(
     _ANALYSIS_BINARIZED.get("execucao_escolhida", 1)
+)
+SEGMENTACAO_BRUTA_ANALISE_EXECUCAO = int(
+    _ANALYSIS_RAW.get("execucao_escolhida", SEGMENTACAO_BINARIZADA_ANALISE_EXECUCAO)
+)
+SEGMENTACAO_BRUTA_CENARIO_IDEAL_TAGS_PERMITIDAS = list(
+    _ANALYSIS_RAW.get("cenario_ideal_tags_permitidas", [])
+)
+SEGMENTACAO_BINARIZADA_CENARIO_IDEAL_TAGS_PERMITIDAS = list(
+    _ANALYSIS_BINARIZED.get("cenario_ideal_tags_permitidas", [])
+)
+VALIDACAO_FINAL_CENARIO_BASE = str(_ANALYSIS_FINAL.get("cenario_base", "apenas_ok"))
+VALIDACAO_FINAL_TOP_N_MODELOS = int(_ANALYSIS_FINAL.get("top_n_modelos", 3))
+VALIDACAO_FINAL_ACCEPTANCE_RULE = str(
+    _ANALYSIS_FINAL.get("acceptance_rule", "all_metrics")
+)
+VALIDACAO_FINAL_IOU_MIN = float(_ANALYSIS_FINAL.get("iou_min", 0.97))
+VALIDACAO_FINAL_PRECISION_MIN = float(_ANALYSIS_FINAL.get("precision_min", 0.99))
+VALIDACAO_FINAL_RECALL_MIN = float(_ANALYSIS_FINAL.get("recall_min", 0.985))
+VALIDACAO_FINAL_AREA_SIMILARITY_MIN = float(
+    _ANALYSIS_FINAL.get("area_similarity_min", 0.99)
+)
+VALIDACAO_FINAL_PERIMETRO_SIMILARITY_MIN = float(
+    _ANALYSIS_FINAL.get("perimetro_similarity_min", 0.96)
 )
 
 # Configuracoes declarativas
